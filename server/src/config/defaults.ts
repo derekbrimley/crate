@@ -1,0 +1,23 @@
+export const DEFAULT_CONFIG: Record<string, unknown> = {
+  dashboard_modes: ["favorites", "discover", "for_right_now", "surprise"],
+  cards_per_mode: 2,
+  cooldown_days: 3,
+  weight_recent_days: 14,
+  weight_medium_days: 30,
+  weight_low: 1,
+  weight_medium: 3,
+  weight_high: 5,
+  weight_never_picked_bonus: 2,
+  contexts: [
+    "driving",
+    "gym",
+    "deep_work",
+    "cooking",
+    "winding_down",
+    "hosting",
+    "morning",
+    "walking",
+    "chill",
+  ],
+  randomness_factor: 1.0,
+};
