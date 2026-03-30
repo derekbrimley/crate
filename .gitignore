@@ -14,3 +14,4 @@ dist-server/
 # Compiled server files (generated during Vercel build)
 api/**/*.js
 lib/**/*.js
+.vercel-server-build/
