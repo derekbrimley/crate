@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import express from "express";
 import session from "express-session";
 import cors from "cors";
@@ -12,7 +15,7 @@ import configRouter from "./routes/config";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const CLIENT_URL = process.env.CLIENT_URL || "http://127.0.0.1:5173";
 
 // Initialize DB
 getDb();
