@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "buildCommand": "vite build",
+  "buildCommand": "tsc -p tsconfig.server.json && find api lib -name '*.ts' -delete && vite build",
   "outputDirectory": "dist",
   "rewrites": [{ "source": "/((?!api(?:/|$)|@)[^.]*)", "destination": "/index.html" }]
 }

@@ -10,3 +10,7 @@ dist-server/
 .DS_Store
 .vercel
 .env*.local
+
+# Compiled server files (generated during Vercel build)
+api/**/*.js
+lib/**/*.js

@@ -9,8 +9,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "outDir": "dist-server"
+    "noUnusedParameters": false
   },
-  "include": ["lib", "api"]
+  "include": ["lib/**/*.ts", "api/**/*.ts"]
 }
