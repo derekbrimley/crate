@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "buildCommand": "vite build && tsc -p tsconfig.server.json && cp -r .vercel-server-build/api/* api/ && cp -r .vercel-server-build/lib/* lib/ && find api lib -name '*.ts' -delete",
+  "buildCommand": "vite build",
   "outputDirectory": "dist",
   "rewrites": [{ "source": "/((?!api(?:/|$)|@)[^.]*)", "destination": "/index.html" }]
 }

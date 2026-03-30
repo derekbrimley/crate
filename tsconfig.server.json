@@ -10,7 +10,7 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "outDir": ".vercel-server-build"
+    "outDir": "dist-server"
   },
   "include": ["lib/**/*.ts", "api/**/*.ts"]
 }
