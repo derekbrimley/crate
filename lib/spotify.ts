@@ -196,3 +196,40 @@ export function getBestImageUrl(images: SpotifyAlbum["images"]): string | null {
   const sorted = [...images].sort((a, b) => (b.width || 0) - (a.width || 0));
   return sorted[0].url;
 }
+
+// ── Artist Genres ────────────────────────────────────────────────────────────
+// Spotify deprecated /audio-features for apps created after Nov 2024.
+// Artist genres are still available and work well for context-based filtering.
+
+interface SpotifyAlbumDetail {
+  artists: { id: string }[];
+}
+
+interface SpotifyArtistDetail {
+  id: string;
+  genres: string[];
+}
+
+export async function fetchAlbumGenres(
+  userId: number,
+  albumId: string
+): Promise<string[]> {
+  // Step 1: get artist IDs from the album
+  const albumRes = await spotifyFetch(userId, `/albums/${albumId}?fields=artists(id)`);
+  if (!albumRes.ok) throw new Error(`Failed to fetch album: ${albumRes.status}`);
+  const albumData = (await albumRes.json()) as SpotifyAlbumDetail;
+  const artistIds = albumData.artists.map((a) => a.id).filter(Boolean);
+  if (artistIds.length === 0) return [];
+
+  // Step 2: batch-fetch artist genres (up to 50 per request)
+  const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
+  const artistRes = await spotifyFetch(userId, `/artists?${params}`);
+  if (!artistRes.ok) throw new Error(`Failed to fetch artists: ${artistRes.status}`);
+  const artistData = (await artistRes.json()) as { artists: SpotifyArtistDetail[] };
+
+  const genres = new Set<string>();
+  for (const artist of artistData.artists ?? []) {
+    for (const g of artist.genres ?? []) genres.add(g);
+  }
+  return Array.from(genres);
+}

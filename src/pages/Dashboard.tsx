@@ -13,11 +13,18 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [data, setData] = useState<DashboardData>({});
   const [loading, setLoading] = useState(true);
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
-  const [context, setContext] = useState("chill");
+  const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
   const [config, setConfig] = useState<AppConfig | null>(null);
 
   useEffect(() => {
-    getConfig().then(({ config }) => setConfig(config)).catch(() => {});
+    getConfig()
+      .then(({ config }) => {
+        setConfig(config);
+        if (config?.contexts?.length) {
+          setContext(config.contexts[0]);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const loadDashboard = useCallback(async (ctx?: string) => {
@@ -83,7 +90,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const headerRight = (
     <button
       onClick={onLogout}
-      className="text-xs text-crate-muted hover:text-crate-text transition-colors"
+      className="text-[11px] tracking-widest uppercase text-crate-muted hover:text-crate-text transition-colors font-medium"
     >
       Sign out
     </button>
@@ -92,11 +99,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
   return (
     <Layout headerRight={headerRight}>
       {/* Crate Header */}
-      <div className="px-4 pt-5 pb-2">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-2xl font-bold text-crate-text tracking-tight">crate</h1>
-          <span className="text-sm text-crate-muted">what should we listen to?</span>
-        </div>
+      <div className="px-5 pt-7 pb-2">
+        <h1 className="font-display text-[52px] font-semibold text-crate-text tracking-tight leading-none">
+          crate
+        </h1>
+        <p className="text-xs text-crate-muted mt-1.5 tracking-wide font-light">
+          what should we listen to?
+        </p>
       </div>
 
       {modes.includes("favorites") && (
@@ -134,20 +143,20 @@ export function Dashboard({ onLogout }: DashboardProps) {
           onRefresh={() => refreshMode("for_right_now")}
         >
           {/* Context pills */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3.5">
             {contexts.map((ctx) => {
               const info = CONTEXT_LABELS[ctx];
               return (
                 <button
                   key={ctx}
                   onClick={() => handleContextChange(ctx)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 ${
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium tracking-wide transition-all duration-150 ${
                     context === ctx
                       ? "bg-crate-accent text-black"
-                      : "bg-crate-elevated text-crate-muted hover:text-crate-text"
+                      : "bg-crate-elevated text-crate-muted hover:text-crate-text border border-crate-border/60"
                   }`}
                 >
-                  <span>{info?.emoji || "🎵"}</span>
+                  <span className="leading-none">{info?.emoji || "🎵"}</span>
                   <span>{info?.label || ctx}</span>
                 </button>
               );

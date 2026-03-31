@@ -44,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         result.favorites = selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig);
         break;
       case "discover":
-        result.discover = selectAlbums(recommendations, cardsPerMode, recentPicks, selectionConfig);
+        result.discover = selectAlbums(recommendations, cardsPerMode, [], selectionConfig);
         break;
       case "for_right_now":
         if (context && allItems.length > 0) {

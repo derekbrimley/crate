@@ -131,6 +131,7 @@ export async function bulkAddItems(
     external_id: string;
     external_uri: string | null;
     external_url: string | null;
+    metadata?: Record<string, unknown> | null;
   }[]
 ): Promise<number> {
   if (albums.length === 0) return 0;
@@ -147,7 +148,7 @@ export async function bulkAddItems(
     external_uri: a.external_uri,
     external_url: a.external_url,
     added_at: now,
-    metadata: null,
+    metadata: a.metadata ?? null,
   }));
 
   const { data, error } = await supabaseAdmin

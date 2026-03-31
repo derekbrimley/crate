@@ -5,18 +5,19 @@ export default {
     extend: {
       colors: {
         crate: {
-          bg: "#0f0f0f",
-          surface: "#1a1a1a",
-          elevated: "#252525",
-          border: "#2e2e2e",
-          text: "#f0ece4",
-          muted: "#888880",
-          accent: "#e8a838",
-          "accent-dim": "#b37f1e",
+          bg: "#0d0b09",
+          surface: "#181510",
+          elevated: "#211c16",
+          border: "#2c2520",
+          text: "#ede8df",
+          muted: "#8a7d6e",
+          accent: "#c8892a",
+          "accent-dim": "#9a6518",
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["DM Sans", "system-ui", "sans-serif"],
+        display: ['"Cormorant Garamond"', "Georgia", "serif"],
       },
     },
   },

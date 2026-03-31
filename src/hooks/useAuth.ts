@@ -33,11 +33,14 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let initialized = false;
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         await syncUser(session);
         setUser(mapUser(session.user));
       }
+      initialized = true;
       setLoading(false);
     });
 
@@ -45,6 +48,8 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+        // Skip the initial SIGNED_IN that fires at the same time as getSession
+        if (!initialized && event === "SIGNED_IN") return;
         await syncUser(session);
         setUser(mapUser(session.user));
       } else if (event === "SIGNED_OUT") {

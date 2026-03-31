@@ -58,12 +58,12 @@ export function History() {
 
   return (
     <Layout title="History">
-      <div className="px-4 pt-4">
+      <div className="px-5 pt-4">
         {loading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-12 h-12 rounded-lg bg-crate-elevated animate-pulse shrink-0" />
+              <div key={i} className="flex gap-3.5 py-2">
+                <div className="w-12 h-12 rounded-md bg-crate-elevated animate-pulse shrink-0" />
                 <div className="flex-1 space-y-2 py-1">
                   <div className="h-3 rounded bg-crate-elevated animate-pulse w-40" />
                   <div className="h-2.5 rounded bg-crate-elevated animate-pulse w-24" />
@@ -72,20 +72,21 @@ export function History() {
             ))}
           </div>
         ) : history.length === 0 ? (
-          <div className="mt-12 text-center">
-            <p className="text-4xl mb-4">📖</p>
-            <p className="text-crate-muted text-sm">
-              Your listening history will appear here once you start picking albums
+          <div className="mt-16 text-center">
+            <p className="font-display text-5xl italic text-crate-muted/30 mb-4">nothing yet</p>
+            <p className="text-crate-muted text-sm font-light leading-relaxed">
+              Your listening history will appear here
+              <br />once you start picking albums
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-7">
             {grouped.map(({ label, entries }) => (
               <div key={label}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-crate-muted mb-3">
+                <h3 className="font-display text-base italic text-crate-muted mb-2 pl-0.5">
                   {label}
                 </h3>
-                <ul className="space-y-2">
+                <ul className="divide-y divide-crate-border">
                   {entries.map((entry) => {
                     const modeInfo = MODE_LABELS[entry.mode] || { label: entry.mode, emoji: "🎵" };
                     const contextInfo = entry.context ? CONTEXT_LABELS[entry.context] : null;
@@ -93,34 +94,32 @@ export function History() {
                     return (
                       <li
                         key={entry.id}
-                        className="flex items-center gap-3 p-3 bg-crate-elevated rounded-xl"
+                        className="flex items-center gap-3.5 py-2.5"
                       >
                         {entry.image_url ? (
                           <img
                             src={entry.image_url}
                             alt={entry.title}
-                            className="w-12 h-12 rounded-lg object-cover shrink-0"
+                            className="w-11 h-11 rounded-md object-cover shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-crate-border flex items-center justify-center shrink-0">
-                            <span className="text-xl">🎵</span>
+                          <div className="w-11 h-11 rounded-md bg-crate-elevated flex items-center justify-center shrink-0">
+                            <span className="text-lg opacity-20">♪</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-crate-text truncate">
                             {entry.title}
                           </p>
-                          <p className="text-xs text-crate-muted truncate">{entry.creator}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs text-crate-muted">
-                              {modeInfo.emoji}{" "}
-                              {entry.context && contextInfo
-                                ? `${modeInfo.label}: ${contextInfo.label}`
-                                : modeInfo.label}
-                            </span>
-                          </div>
+                          <p className="text-xs text-crate-muted truncate font-light">{entry.creator}</p>
+                          <p className="text-[10px] text-crate-muted/60 mt-0.5">
+                            {modeInfo.emoji}{" "}
+                            {entry.context && contextInfo
+                              ? `${modeInfo.label}: ${contextInfo.label}`
+                              : modeInfo.label}
+                          </p>
                         </div>
-                        <span className="text-xs text-crate-muted shrink-0">
+                        <span className="text-[11px] text-crate-muted/70 shrink-0 font-light tabular-nums">
                           {formatTime(entry.picked_at_ts)}
                         </span>
                       </li>
