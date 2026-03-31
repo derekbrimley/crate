@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     image_url: getBestImageUrl(album.images),
     spotify_uri: album.uri,
     spotify_url: album.external_urls.spotify,
+    total_tracks: album.total_tracks,
   }));
 
   res.json({ albums });

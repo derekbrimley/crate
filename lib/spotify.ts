@@ -6,6 +6,8 @@ const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 export interface SpotifyAlbum {
   id: string;
   name: string;
+  album_type: string;
+  total_tracks: number;
   artists: { name: string }[];
   images: { url: string; width: number; height: number }[];
   external_urls: { spotify: string };
@@ -107,7 +109,7 @@ export async function searchAlbums(
   const res = await spotifyFetch(userId, `/search?${params}`);
   if (!res.ok) throw new Error(`Spotify search failed: ${res.status}`);
   const data = (await res.json()) as { albums: { items: SpotifyAlbum[] } };
-  return data.albums.items;
+  return data.albums.items.filter((a) => a.album_type !== "single");
 }
 
 export interface SpotifySavedAlbum {
@@ -152,14 +154,14 @@ const MAX_PLAYLIST_TRACKS = 500;
 export async function getPlaylistAlbums(
   userId: number,
   playlistId: string
-): Promise<{ spotify_id: string; name: string; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[]> {
+): Promise<{ spotify_id: string; name: string; total_tracks: number; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[]> {
   const seen = new Set<string>();
-  const albums: { spotify_id: string; name: string; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[] = [];
+  const albums: { spotify_id: string; name: string; total_tracks: number; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[] = [];
   let offset = 0;
   const limit = 100;
 
   while (offset < MAX_PLAYLIST_TRACKS) {
-    const fields = "items(track(type,album(id,name,artists(name),images,external_urls,uri))),total";
+    const fields = "items(track(type,album(id,name,album_type,total_tracks,artists(name),images,external_urls,uri))),total";
     const params = new URLSearchParams({ fields, limit: String(limit), offset: String(offset) });
     const res = await spotifyFetch(userId, `/playlists/${playlistId}/tracks?${params}`);
     if (!res.ok) throw new Error(`Spotify playlist tracks failed: ${res.status}`);
@@ -172,11 +174,13 @@ export async function getPlaylistAlbums(
     for (const item of data.items) {
       const track = item.track;
       if (!track || track.type !== "track" || !track.album?.id) continue;
+      if (track.album.album_type === "single") continue;
       if (seen.has(track.album.id)) continue;
       seen.add(track.album.id);
       albums.push({
         spotify_id: track.album.id,
         name: track.album.name,
+        total_tracks: track.album.total_tracks,
         artists: track.album.artists,
         images: track.album.images,
         external_urls: track.album.external_urls,

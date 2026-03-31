@@ -9,6 +9,10 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Genres come from Spotify's artist genre taxonomy (lowercase, hyphenated).
 
 const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[] }> = {
+  morning: {
+    prefer: ["indie pop", "folk", "acoustic", "singer-songwriter", "pop", "jazz", "soul"],
+    avoid: ["metal", "punk", "ambient", "sleep"],
+  },
   gym: {
     prefer: ["hip hop", "rap", "metal", "rock", "electronic", "edm", "pop", "punk", "hard rock", "drum and bass"],
     avoid: ["ambient", "classical", "folk", "acoustic", "sleep", "meditation", "jazz"],
@@ -25,25 +29,21 @@ const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[]
     prefer: ["pop", "soul", "r&b", "jazz", "funk", "bossa nova", "latin", "indie pop"],
     avoid: ["metal", "ambient", "classical", "sleep"],
   },
-  winding_down: {
-    prefer: ["ambient", "folk", "acoustic", "indie folk", "classical", "singer-songwriter", "jazz", "lo-fi", "neo-soul"],
-    avoid: ["metal", "punk", "hip hop", "edm", "drum and bass"],
-  },
   hosting: {
     prefer: ["pop", "indie pop", "soul", "r&b", "funk", "jazz", "latin", "dance"],
     avoid: ["metal", "ambient", "sleep", "meditation"],
   },
-  morning: {
-    prefer: ["indie pop", "folk", "acoustic", "singer-songwriter", "pop", "jazz", "soul"],
-    avoid: ["metal", "punk", "ambient", "sleep"],
-  },
   walking: {
-    prefer: ["pop", "indie", "rock", "hip hop", "electronic", "folk"],
-    avoid: ["ambient", "sleep", "meditation", "classical"],
+    prefer: ["pop", "indie", "rock", "hip hop", "electronic", "folk", "jazz", "classical"],
+    avoid: ["ambient", "sleep", "meditation"],
   },
   chill: {
     prefer: ["lo-fi", "chillhop", "indie", "soul", "r&b", "jazz", "ambient", "neo-soul", "folk"],
     avoid: ["metal", "punk", "edm", "drum and bass"],
+  },
+  winding_down: {
+    prefer: ["ambient", "folk", "acoustic", "indie folk", "classical", "singer-songwriter", "jazz", "lo-fi", "neo-soul"],
+    avoid: ["metal", "punk", "hip hop", "edm", "drum and bass"],
   },
 };
 

@@ -142,7 +142,7 @@ export async function getHistory(
   offset = 0
 ): Promise<{ history: PickHistoryEntry[] }> {
   return request<{ history: PickHistoryEntry[] }>(
-    `/picks/history?limit=${limit}&offset=${offset}`
+    `/picks?limit=${limit}&offset=${offset}`
   );
 }
 

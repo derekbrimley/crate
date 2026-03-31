@@ -5,16 +5,82 @@
 @layer base {
   html, body {
     @apply bg-crate-bg text-crate-text;
+    font-family: "IBM Plex Mono", "Courier New", monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
   * {
     -webkit-tap-highlight-color: transparent;
   }
 }
 
+/* ── Film grain overlay ───────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* ── Neon text effects ────────────────────────────── */
 @layer utilities {
+  .neon-green {
+    color: #39ff14;
+    text-shadow:
+      0 0 4px #39ff14,
+      0 0 8px #39ff14,
+      0 0 18px #39ff14,
+      0 0 40px #0fa,
+      0 0 70px #0fa;
+  }
+  .neon-pink {
+    color: #ff0091;
+    text-shadow:
+      0 0 4px #ff0091,
+      0 0 8px #ff0091,
+      0 0 18px #ff0091,
+      0 0 40px #f09,
+      0 0 70px #f09;
+  }
+  .neon-orange {
+    color: #ff5e00;
+    text-shadow:
+      0 0 4px #ff5e00,
+      0 0 8px #ff5e00,
+      0 0 18px #ff5e00,
+      0 0 40px #f40,
+      0 0 70px #f40;
+  }
+  .neon-yellow {
+    color: #ffe400;
+    text-shadow:
+      0 0 4px #ffe400,
+      0 0 8px #ffe400,
+      0 0 18px #ffe400,
+      0 0 40px #fa0,
+      0 0 70px #fa0;
+  }
+  .neon-box-green {
+    box-shadow:
+      0 0 6px #39ff14,
+      0 0 14px #39ff14,
+      inset 0 0 6px rgba(57, 255, 20, 0.12);
+    border-color: #39ff14 !important;
+  }
+  .neon-box-orange {
+    box-shadow:
+      0 0 6px #ff5e00,
+      0 0 14px #ff5e00,
+      inset 0 0 6px rgba(255, 94, 0, 0.1);
+    border-color: #ff5e00 !important;
+  }
+
+  /* ── Scrollbar hide ─────────────────────────────── */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -22,17 +88,55 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* ── Record sleeve pick-up hover ────────────────── */
+  .record-sleeve {
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.3s ease;
+    transform-origin: bottom center;
+    will-change: transform;
+    cursor: pointer;
+    display: block;
+  }
+  .record-sleeve:hover {
+    transform: perspective(700px) rotateY(-16deg) translateY(-10px) rotate(-2deg);
+    box-shadow:
+      10px 18px 40px rgba(0, 0, 0, 0.85),
+      4px 6px 12px rgba(0, 0, 0, 0.6);
+  }
+  .record-sleeve:active {
+    transform: perspective(700px) rotateY(-8deg) translateY(-5px) rotate(-1deg);
+    transition-duration: 0.1s;
+    box-shadow: 4px 8px 18px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ── Crate animation classes ────────────────────── */
+  .crate-exit {
+    animation: crateSlideOut 0.28s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  }
+  .crate-enter {
+    animation: crateSlideIn 0.36s cubic-bezier(0, 0.55, 0.45, 1) forwards;
+  }
+
+  /* ── Wood grain texture ─────────────────────────── */
+  .wood-grain {
+    background-image:
+      repeating-linear-gradient(
+        92deg,
+        transparent 0px,
+        transparent 20px,
+        rgba(0, 0, 0, 0.05) 20px,
+        rgba(0, 0, 0, 0.05) 21px
+      );
+  }
 }
 
-/* Subtle analogue grain texture */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 200px 200px;
+/* ── Crate keyframes (consumed by .crate-exit/enter) */
+@keyframes crateSlideOut {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-115%); opacity: 0; }
+}
+@keyframes crateSlideIn {
+  from { transform: translateX(115%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }

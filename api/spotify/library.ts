@@ -35,6 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     image_url: getBestImageUrl(saved.album.images),
     spotify_uri: saved.album.uri,
     spotify_url: saved.album.external_urls.spotify,
+    total_tracks: saved.album.total_tracks,
     already_added: existingMap.get(saved.album.id) ?? null,
   }));
 

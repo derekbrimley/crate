@@ -27,6 +27,7 @@ export interface SpotifySearchResult {
   image_url: string | null;
   spotify_uri: string;
   spotify_url: string;
+  total_tracks?: number;
 }
 
 export interface PickHistoryEntry {
@@ -45,6 +46,7 @@ export interface PickHistoryEntry {
 }
 
 export interface LibraryAlbum extends SpotifySearchResult {
+  total_tracks?: number;
   already_added: "favorite" | "recommendation" | null;
 }
 
