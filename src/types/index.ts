@@ -44,6 +44,18 @@ export interface PickHistoryEntry {
   list_type: string;
 }
 
+export interface LibraryAlbum extends SpotifySearchResult {
+  already_added: "favorite" | "recommendation" | null;
+}
+
+export interface SpotifyPlaylistInfo {
+  id: string;
+  name: string;
+  image_url: string | null;
+  track_count: number;
+  owner: string;
+}
+
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise";
 
 export interface DashboardData {

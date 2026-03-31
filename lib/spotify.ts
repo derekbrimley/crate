@@ -87,6 +87,14 @@ async function spotifyFetch(
     });
   }
 
+  if (res.status === 429) {
+    const retryAfter = res.headers.get("Retry-After");
+    const seconds = retryAfter ? parseInt(retryAfter, 10) : 30;
+    const err = new Error(`Spotify rate limited. Try again in ${seconds} seconds.`) as Error & { retryAfter: number };
+    err.retryAfter = seconds;
+    throw err;
+  }
+
   return res;
 }
 
@@ -100,6 +108,87 @@ export async function searchAlbums(
   if (!res.ok) throw new Error(`Spotify search failed: ${res.status}`);
   const data = (await res.json()) as { albums: { items: SpotifyAlbum[] } };
   return data.albums.items;
+}
+
+export interface SpotifySavedAlbum {
+  added_at: string;
+  album: SpotifyAlbum;
+}
+
+export interface SpotifyPlaylist {
+  id: string;
+  name: string;
+  images: { url: string; width: number; height: number }[];
+  tracks: { total: number };
+  owner: { display_name: string };
+}
+
+export async function getSavedAlbums(
+  userId: number,
+  limit = 50,
+  offset = 0
+): Promise<{ items: SpotifySavedAlbum[]; total: number }> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const res = await spotifyFetch(userId, `/me/albums?${params}`);
+  if (!res.ok) throw new Error(`Spotify library fetch failed: ${res.status}`);
+  const data = (await res.json()) as { items: SpotifySavedAlbum[]; total: number };
+  return { items: data.items, total: data.total };
+}
+
+export async function getUserPlaylists(
+  userId: number,
+  limit = 50,
+  offset = 0
+): Promise<{ items: SpotifyPlaylist[]; total: number }> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const res = await spotifyFetch(userId, `/me/playlists?${params}`);
+  if (!res.ok) throw new Error(`Spotify playlists fetch failed: ${res.status}`);
+  const data = (await res.json()) as { items: SpotifyPlaylist[]; total: number };
+  return { items: data.items, total: data.total };
+}
+
+const MAX_PLAYLIST_TRACKS = 500;
+
+export async function getPlaylistAlbums(
+  userId: number,
+  playlistId: string
+): Promise<{ spotify_id: string; name: string; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[]> {
+  const seen = new Set<string>();
+  const albums: { spotify_id: string; name: string; artists: { name: string }[]; images: SpotifyAlbum["images"]; external_urls: { spotify: string }; uri: string }[] = [];
+  let offset = 0;
+  const limit = 100;
+
+  while (offset < MAX_PLAYLIST_TRACKS) {
+    const fields = "items(track(type,album(id,name,artists(name),images,external_urls,uri))),total";
+    const params = new URLSearchParams({ fields, limit: String(limit), offset: String(offset) });
+    const res = await spotifyFetch(userId, `/playlists/${playlistId}/tracks?${params}`);
+    if (!res.ok) throw new Error(`Spotify playlist tracks failed: ${res.status}`);
+
+    const data = (await res.json()) as {
+      items: { track: { type: string; album: SpotifyAlbum | null } | null }[];
+      total: number;
+    };
+
+    for (const item of data.items) {
+      const track = item.track;
+      if (!track || track.type !== "track" || !track.album?.id) continue;
+      if (seen.has(track.album.id)) continue;
+      seen.add(track.album.id);
+      albums.push({
+        spotify_id: track.album.id,
+        name: track.album.name,
+        artists: track.album.artists,
+        images: track.album.images,
+        external_urls: track.album.external_urls,
+        uri: track.album.uri,
+      });
+    }
+
+    offset += limit;
+    if (offset >= data.total) break;
+  }
+
+  return albums;
 }
 
 export function getBestImageUrl(images: SpotifyAlbum["images"]): string | null {

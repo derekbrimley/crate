@@ -121,6 +121,44 @@ export async function addItem(
   return data as Item;
 }
 
+export async function bulkAddItems(
+  userId: number,
+  listType: "favorite" | "recommendation",
+  albums: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+  }[]
+): Promise<number> {
+  if (albums.length === 0) return 0;
+
+  const now = Math.floor(Date.now() / 1000);
+  const rows = albums.map((a) => ({
+    user_id: userId,
+    media_type: "album" as const,
+    list_type: listType,
+    title: a.title,
+    creator: a.creator,
+    image_url: a.image_url,
+    external_id: a.external_id,
+    external_uri: a.external_uri,
+    external_url: a.external_url,
+    added_at: now,
+    metadata: null,
+  }));
+
+  const { data, error } = await supabaseAdmin
+    .from("items")
+    .upsert(rows, { onConflict: "user_id,external_id,media_type" })
+    .select("id");
+
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 export async function getItems(
   userId: number,
   listType?: "favorite" | "recommendation"

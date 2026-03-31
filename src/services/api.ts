@@ -1,6 +1,8 @@
 import type {
   Item,
   SpotifySearchResult,
+  LibraryAlbum,
+  SpotifyPlaylistInfo,
   PickHistoryEntry,
   DashboardData,
   AppConfig,
@@ -70,6 +72,54 @@ export async function searchSpotify(
   return request<{ albums: SpotifySearchResult[] }>(
     `/albums/search?q=${encodeURIComponent(query)}`
   );
+}
+
+// ── Spotify Import ───────────────────────────────────────────────────────────
+
+export async function getSpotifyLibrary(
+  limit = 50,
+  offset = 0
+): Promise<{ albums: LibraryAlbum[]; total: number }> {
+  return request<{ albums: LibraryAlbum[]; total: number }>(
+    `/spotify/library?limit=${limit}&offset=${offset}`
+  );
+}
+
+export async function getSpotifyPlaylists(
+  limit = 50,
+  offset = 0
+): Promise<{ playlists: SpotifyPlaylistInfo[]; total: number }> {
+  return request<{ playlists: SpotifyPlaylistInfo[]; total: number }>(
+    `/spotify/playlists?limit=${limit}&offset=${offset}`
+  );
+}
+
+export async function getPlaylistAlbums(
+  playlistId: string
+): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(
+    `/spotify/playlists/${playlistId}/albums`
+  );
+}
+
+export async function bulkAddAlbums(
+  albums: SpotifySearchResult[],
+  listType: "favorite" | "recommendation"
+): Promise<{ added: number }> {
+  return request<{ added: number }>("/albums/bulk", {
+    method: "POST",
+    body: JSON.stringify({
+      albums: albums.map((a) => ({
+        spotify_id: a.spotify_id,
+        title: a.title,
+        artist: a.artist,
+        image_url: a.image_url,
+        spotify_uri: a.spotify_uri,
+        spotify_url: a.spotify_url,
+      })),
+      list_type: listType,
+    }),
+  });
 }
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
