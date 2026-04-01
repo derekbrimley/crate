@@ -31,15 +31,16 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - Vercel serverless functions — each file exports a default `handler(req, res)`
 - Auth: `lib/auth.ts` — verifies Bearer JWT via Supabase admin client, returns `public.users` row
 - Routes:
-  - `api/auth/me.ts` — GET current user
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
   - `api/albums/index.ts` — GET/POST albums
   - `api/albums/search.ts` — GET Spotify search
-  - `api/albums/[id].ts` — DELETE album
-  - `api/albums/[id]/promote.ts` — POST promote to favorite
+  - `api/albums/bulk.ts` — POST bulk-add albums
+  - `api/albums/[id].ts` — DELETE album, POST promote to favorite, GET album details (tracks + artist albums)
+  - `api/spotify/library.ts` — GET albums from user's Spotify library
+  - `api/spotify/playlists/index.ts` — GET user's Spotify playlists
+  - `api/spotify/playlists/[id]/albums.ts` — GET albums from a specific playlist
   - `api/picks/dashboard.ts` — GET picks for all modes
-  - `api/picks/index.ts` — POST record a pick
-  - `api/picks/history.ts` — GET pick history
+  - `api/picks/index.ts` — GET pick history, POST record a pick
   - `api/config/index.ts` — GET/PATCH user config
 
 ### Shared library (`lib/`)
