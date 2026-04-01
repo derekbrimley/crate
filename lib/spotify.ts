@@ -214,6 +214,55 @@ interface SpotifyArtistDetail {
   genres: string[];
 }
 
+// ── Album Tracks ────────────────────────────────────────────────────────────
+
+export interface SpotifyTrack {
+  id: string;
+  name: string;
+  track_number: number;
+  disc_number: number;
+  duration_ms: number;
+  artists: { name: string }[];
+}
+
+export async function getAlbumTracks(
+  userId: number,
+  albumId: string
+): Promise<SpotifyTrack[]> {
+  const res = await spotifyFetch(userId, `/albums/${albumId}/tracks?limit=50`);
+  if (!res.ok) throw new Error(`Failed to fetch album tracks: ${res.status}`);
+  const data = (await res.json()) as { items: SpotifyTrack[] };
+  return data.items;
+}
+
+// ── Artist Albums ───────────────────────────────────────────────────────────
+
+export async function getArtistAlbums(
+  userId: number,
+  artistId: string
+): Promise<SpotifyAlbum[]> {
+  const params = new URLSearchParams({
+    include_groups: "album",
+    limit: "20",
+    market: "from_token",
+  });
+  const res = await spotifyFetch(userId, `/artists/${artistId}/albums?${params}`);
+  if (!res.ok) throw new Error(`Failed to fetch artist albums: ${res.status}`);
+  const data = (await res.json()) as { items: SpotifyAlbum[] };
+  return data.items;
+}
+
+// ── Album Detail (full album with artist IDs) ──────────────────────────────
+
+export async function getAlbumFull(
+  userId: number,
+  albumId: string
+): Promise<SpotifyAlbum & { artists: { id: string; name: string }[] }> {
+  const res = await spotifyFetch(userId, `/albums/${albumId}`);
+  if (!res.ok) throw new Error(`Failed to fetch album: ${res.status}`);
+  return (await res.json()) as SpotifyAlbum & { artists: { id: string; name: string }[] };
+}
+
 export async function fetchAlbumGenres(
   userId: number,
   albumId: string

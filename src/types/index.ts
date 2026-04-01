@@ -58,6 +58,30 @@ export interface SpotifyPlaylistInfo {
   owner: string;
 }
 
+export interface AlbumTrack {
+  number: number;
+  disc: number;
+  name: string;
+  duration_ms: number;
+  artists: string;
+}
+
+export interface ArtistAlbum {
+  spotify_id: string;
+  title: string;
+  artist: string;
+  image_url: string | null;
+  spotify_uri: string;
+  spotify_url: string;
+  total_tracks: number;
+  already_added: "favorite" | "recommendation" | null;
+}
+
+export interface AlbumDetails {
+  tracks: AlbumTrack[];
+  artist_albums: ArtistAlbum[];
+}
+
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise";
 
 export interface DashboardData {

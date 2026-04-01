@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
 import { ModeSection } from "../components/ModeSection";
+import { NowPlayingModal } from "../components/NowPlayingModal";
 import { getDashboard, recordPick, getConfig } from "../services/api";
 import type { Item, DashboardData, AppConfig } from "../types";
 import { CONTEXT_LABELS } from "../types";
@@ -22,6 +23,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
   const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
 
   useEffect(() => {
     getConfig()
@@ -51,6 +53,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   }, []);
 
   const handlePick = async (item: Item, mode: string) => {
+    setNowPlaying(item);
     try {
       await recordPick({
         item_id: item.id,
@@ -214,6 +217,13 @@ export function Dashboard({ onLogout }: DashboardProps) {
           mode="surprise"
           onPick={handlePick}
           onRefresh={() => refreshMode("surprise")}
+        />
+      )}
+
+      {nowPlaying && (
+        <NowPlayingModal
+          item={nowPlaying}
+          onClose={() => setNowPlaying(null)}
         />
       )}
     </Layout>

@@ -54,11 +54,6 @@ export function AlbumCard({
     onPick?.();
     setPicked(true);
     setTimeout(() => setPicked(false), 1200);
-    if (externalUri) {
-      window.location.href = externalUri;
-    } else if (externalUrl) {
-      window.open(externalUrl, "_blank", "noopener,noreferrer");
-    }
   };
 
   return (

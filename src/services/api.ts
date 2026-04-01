@@ -6,6 +6,7 @@ import type {
   PickHistoryEntry,
   DashboardData,
   AppConfig,
+  AlbumDetails,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -120,6 +121,12 @@ export async function bulkAddAlbums(
       list_type: listType,
     }),
   });
+}
+
+// ── Album Details ────────────────────────────────────────────────────────────
+
+export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> {
+  return request<AlbumDetails>(`/albums/${spotifyId}/details`);
 }
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
