@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
-import { getAlbums, deleteAlbum, promoteAlbum } from "../services/api";
+import { deleteAlbum, promoteAlbum } from "../services/api";
+import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 
 type Tab = "favorites" | "recommendations";
@@ -106,20 +107,20 @@ function WallRecord({
 
 export function Lists() {
   const [tab, setTab] = useState<Tab>("favorites");
-  const [favorites, setFavorites] = useState<Item[]>([]);
-  const [recommendations, setRecommendations] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    favorites, setFavorites,
+    recommendations, setRecommendations,
+    listsLoaded, loadLists,
+  } = useDataCache();
+  const [loading, setLoading] = useState(!listsLoaded);
   const [actionId, setActionId] = useState<number | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([getAlbums("favorite"), getAlbums("recommendation")])
-      .then(([favRes, recRes]) => {
-        setFavorites(favRes.items);
-        setRecommendations(recRes.items);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    if (!listsLoaded) {
+      setLoading(true);
+      loadLists().finally(() => setLoading(false));
+    }
+  }, [listsLoaded, loadLists]);
 
   const handleDelete = async (item: Item) => {
     setActionId(item.id);

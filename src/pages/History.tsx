@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
-import { getHistory } from "../services/api";
-import type { PickHistoryEntry } from "../types";
-import { CONTEXT_LABELS } from "../types";
+import { useDataCache } from "../contexts/DataCache";
+import { CONTEXT_LABELS, PickHistoryEntry } from "../types";
 
-const MODE_SYMBOLS: Record<string, { symbol: string; label: string }> = {
-  favorites:    { symbol: "★", label: "HOT PICKS"   },
-  discover:     { symbol: "◈", label: "NEW ARRIVAL"  },
-  for_right_now:{ symbol: "◉", label: "RIGHT NOW"    },
-  surprise:     { symbol: "?", label: "LUCKY DIP"    },
+const MODE_SYMBOLS: Record<string, { label: string }> = {
+  favorites:    { label: "Favorites" },
+  discover:     { label: "Recommendations" },
+  for_right_now:{ label: "Right Now" },
+  surprise:     { label: "Surprise Me" },
 };
 
 function formatDate(timestamp: number): string {
@@ -30,15 +29,15 @@ function formatTime(timestamp: number): string {
 }
 
 export function History() {
-  const [history, setHistory] = useState<PickHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { history, historyLoaded, loadHistory } = useDataCache();
+  const [loading, setLoading] = useState(!historyLoaded);
 
   useEffect(() => {
-    getHistory(100)
-      .then(({ history }) => setHistory(history))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    if (!historyLoaded) {
+      setLoading(true);
+      loadHistory().finally(() => setLoading(false));
+    }
+  }, [historyLoaded, loadHistory]);
 
   const grouped: { label: string; entries: PickHistoryEntry[] }[] = [];
   for (const entry of history) {
@@ -100,7 +99,7 @@ export function History() {
               {/* Entries */}
               <ul className="px-5">
                 {entries.map((entry, i) => {
-                  const modeInfo = MODE_SYMBOLS[entry.mode] || { symbol: "♪", label: entry.mode.toUpperCase() };
+                  const modeInfo = MODE_SYMBOLS[entry.mode] || { label: entry.mode.toUpperCase() };
                   const contextInfo = entry.context ? CONTEXT_LABELS[entry.context] : null;
 
                   return (
@@ -135,13 +134,6 @@ export function History() {
                             <VinylDisc size={32} />
                           </div>
                         )}
-                        {/* Catalog corner */}
-                        <div
-                          className="absolute bottom-0 right-0 font-mono text-[6px] px-0.5"
-                          style={{ background: "rgba(0,0,0,0.7)", color: "rgba(144,117,88,0.6)", letterSpacing: "0.05em" }}
-                        >
-                          {modeInfo.symbol}
-                        </div>
                       </div>
 
                       {/* Info */}
@@ -159,12 +151,6 @@ export function History() {
                           {entry.creator}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span
-                            className="font-mono"
-                            style={{ fontSize: 9, color: "#ff5e00", opacity: 0.7, letterSpacing: "0.05em" }}
-                          >
-                            {modeInfo.symbol}
-                          </span>
                           <span
                             className="font-mono"
                             style={{ fontSize: 9, color: "rgba(144,117,88,0.5)", letterSpacing: "0.08em" }}

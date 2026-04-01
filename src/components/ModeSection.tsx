@@ -5,7 +5,6 @@ import type { Item } from "../types";
 
 interface ModeSectionProps {
   title: string;
-  icon: string;
   items: Item[];
   loading?: boolean;
   mode: string;
@@ -24,7 +23,6 @@ const MODE_NUMS: Record<string, string> = {
 
 export function ModeSection({
   title,
-  icon,
   items,
   loading = false,
   mode,
@@ -72,7 +70,6 @@ export function ModeSection({
             <h2 className="font-display text-[28px] leading-none text-crate-text tracking-wide">
               {title.toUpperCase()}
             </h2>
-            <span className="text-base leading-none opacity-60 -mb-0.5">{icon}</span>
           </div>
         </div>
 

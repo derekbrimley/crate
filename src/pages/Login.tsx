@@ -78,7 +78,7 @@ export function Login({ onLogin, error }: LoginProps) {
           className="font-display leading-none"
           style={{ fontSize: 112, letterSpacing: "0.04em", color: "#f2e8d2", textShadow: "0 0 60px rgba(255,94,0,0.15),0 4px 32px rgba(0,0,0,0.8)", lineHeight: 0.9 }}
         >
-          CRATE
+          CRATES
         </h1>
 
         {/* Neon RECORDS */}

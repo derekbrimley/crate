@@ -1,56 +1,55 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { ModeSection } from "../components/ModeSection";
 import { NowPlayingModal } from "../components/NowPlayingModal";
-import { getDashboard, recordPick, getConfig } from "../services/api";
-import type { Item, DashboardData, AppConfig } from "../types";
+import { recordPick } from "../services/api";
+import { useDataCache } from "../contexts/DataCache";
+import type { Item } from "../types";
 import { CONTEXT_LABELS } from "../types";
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
-const MODE_CONFIG: Record<string, { title: string; icon: string }> = {
-  favorites:    { title: "Hot Picks",    icon: "★" },
-  discover:     { title: "New Arrivals", icon: "◈" },
-  for_right_now:{ title: "Right Now",    icon: "◉" },
-  surprise:     { title: "Lucky Dip",    icon: "?" },
+const MODE_CONFIG: Record<string, { title: string; }> = {
+  favorites:    { title: "Favorites" },
+  discover:     { title: "Recommendations" },
+  for_right_now:{ title: "Right Now" },
+  surprise:     { title: "Surprise Me" },
 };
 
 export function Dashboard({ onLogout }: DashboardProps) {
-  const [data, setData] = useState<DashboardData>({});
-  const [loading, setLoading] = useState(true);
+  const {
+    dashboardData: data,
+    dashboardConfig: config,
+    dashboardLoaded,
+    loadDashboard,
+    refreshDashboardMode,
+    loadConfig,
+  } = useDataCache();
+  const [loading, setLoading] = useState(!dashboardLoaded);
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
   const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
-  const [config, setConfig] = useState<AppConfig | null>(null);
   const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
 
   useEffect(() => {
-    getConfig()
-      .then(({ config }) => {
-        setConfig(config);
-        if (config?.contexts?.length) {
-          setContext(config.contexts[0]);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const loadDashboard = useCallback(async (ctx?: string) => {
-    setLoading(true);
-    try {
-      const result = await getDashboard(ctx || context);
-      setData(result);
-    } catch (err) {
-      console.error("Failed to load dashboard:", err);
-    } finally {
-      setLoading(false);
+    if (!config) {
+      loadConfig();
     }
-  }, [context]);
+  }, [config, loadConfig]);
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (config?.contexts?.length) {
+      setContext(config.contexts[0]);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    if (!dashboardLoaded) {
+      setLoading(true);
+      loadDashboard(context).finally(() => setLoading(false));
+    }
+  }, [dashboardLoaded, loadDashboard, context]);
 
   const handlePick = async (item: Item, mode: string) => {
     setNowPlaying(item);
@@ -68,8 +67,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const refreshMode = async (mode: string) => {
     setLoadingModes((prev) => new Set([...prev, mode]));
     try {
-      const result = await getDashboard(context);
-      setData((prev) => ({ ...prev, [mode]: result[mode as keyof DashboardData] }));
+      await refreshDashboardMode(mode, context);
     } finally {
       setLoadingModes((prev) => {
         const next = new Set(prev);
@@ -83,8 +81,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     setContext(newCtx);
     setLoadingModes((prev) => new Set([...prev, "for_right_now"]));
     try {
-      const result = await getDashboard(newCtx);
-      setData((prev) => ({ ...prev, for_right_now: result.for_right_now }));
+      await refreshDashboardMode("for_right_now", newCtx);
     } finally {
       setLoadingModes((prev) => {
         const next = new Set(prev);
@@ -124,14 +121,14 @@ export function Dashboard({ onLogout }: DashboardProps) {
           className="font-display leading-none"
           style={{ fontSize: 78, letterSpacing: "0.04em", color: "#f2e8d2", lineHeight: 0.9, textShadow: "0 2px 24px rgba(0,0,0,0.6)" }}
         >
-          CRATE
+          CRATES
         </h1>
 
         {/* Subtitle */}
         <div className="flex items-center gap-2 mt-2">
           <div className="w-3 h-px" style={{ background: "#907558" }} />
           <p className="font-mono text-[9px] text-crate-muted tracking-widest uppercase" style={{ letterSpacing: "0.22em" }}>
-            what's spinning tonight?
+            listen up
           </p>
         </div>
       </div>
@@ -145,7 +142,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
       {modes.includes("favorites") && (
         <ModeSection
           title={MODE_CONFIG.favorites.title}
-          icon={MODE_CONFIG.favorites.icon}
           items={data.favorites || []}
           loading={loading || loadingModes.has("favorites")}
           mode="favorites"
@@ -157,7 +153,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
       {modes.includes("discover") && (
         <ModeSection
           title={MODE_CONFIG.discover.title}
-          icon={MODE_CONFIG.discover.icon}
           items={data.discover || []}
           loading={loading || loadingModes.has("discover")}
           mode="discover"
@@ -169,7 +164,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
       {modes.includes("for_right_now") && (
         <ModeSection
           title={MODE_CONFIG.for_right_now.title}
-          icon={MODE_CONFIG.for_right_now.icon}
           items={data.for_right_now || []}
           loading={loading || loadingModes.has("for_right_now")}
           mode="for_right_now"
@@ -211,7 +205,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
       {modes.includes("surprise") && (
         <ModeSection
           title={MODE_CONFIG.surprise.title}
-          icon={MODE_CONFIG.surprise.icon}
           items={data.surprise || []}
           loading={loading || loadingModes.has("surprise")}
           mode="surprise"

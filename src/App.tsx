@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
+import { DataCacheProvider } from "./contexts/DataCache";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { AddAlbums } from "./pages/AddAlbums";
@@ -23,13 +24,15 @@ function AppInner() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard onLogout={logout} />} />
-      <Route path="/add" element={<AddAlbums />} />
-      <Route path="/lists" element={<Lists />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/callback" element={<Dashboard onLogout={logout} />} />
-    </Routes>
+    <DataCacheProvider>
+      <Routes>
+        <Route path="/" element={<Dashboard onLogout={logout} />} />
+        <Route path="/add" element={<AddAlbums />} />
+        <Route path="/lists" element={<Lists />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/callback" element={<Dashboard onLogout={logout} />} />
+      </Routes>
+    </DataCacheProvider>
   );
 }
 
