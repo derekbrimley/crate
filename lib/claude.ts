@@ -10,8 +10,8 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[] }> = {
   morning: {
-    prefer: ["indie pop", "folk", "acoustic", "singer-songwriter", "pop", "jazz", "soul"],
-    avoid: ["metal", "punk", "ambient", "sleep"],
+    prefer: ["classical", "ambient", "electronic", "instrumental", "lo-fi", "neo-classical", "folk", "acoustic", "singer-songwriter", "jazz"],
+    avoid: ["metal", "punk", "rock"],
   },
   gym: {
     prefer: ["hip hop", "rap", "metal", "rock", "electronic", "edm", "pop", "punk", "hard rock", "drum and bass"],

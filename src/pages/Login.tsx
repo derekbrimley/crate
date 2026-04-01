@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { VinylDisc } from "../components/VinylDisc";
 
 interface LoginProps {
-  onLogin: () => void;
-  error?: string | null;
+  onEmailLogin: (email: string, password: string) => Promise<string | null>;
+  onSignUp: (email: string, password: string) => Promise<string | null>;
 }
 
 const POSTERS = [
@@ -47,7 +47,24 @@ function Poster({ p, w, h, opacity }: { p: typeof POSTERS[0]; w: number; h: numb
   );
 }
 
-export function Login({ onLogin, error }: LoginProps) {
+export function Login({ onEmailLogin, onSignUp }: LoginProps) {
+  const [emailMode, setEmailMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError(null);
+    setSubmitting(true);
+    const err = emailMode === "signin"
+      ? await onEmailLogin(email, password)
+      : await onSignUp(email, password);
+    if (err) setEmailError(err);
+    setSubmitting(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center overflow-hidden relative" style={{ background: "#09070a" }}>
       {/* Ambient glow */}
@@ -112,43 +129,68 @@ export function Login({ onLogin, error }: LoginProps) {
           ))}
         </div>
 
-        {error && (
-          <div className="mb-5 w-full px-3 py-2.5 font-mono text-xs text-center" style={{ background: "rgba(180,0,0,0.12)", border: "1px solid rgba(180,0,0,0.3)", color: "#ff6b6b" }}>
-            Authentication failed. Try again.
-          </div>
-        )}
+        {/* Sign in / Create account toggle */}
+        <div className="flex w-full mb-5">
+          {(["signin", "signup"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => { setEmailMode(mode); setEmailError(null); }}
+              className="flex-1 py-2 font-display text-xs transition-all duration-150"
+              style={{
+                borderBottom: emailMode === mode ? "1px solid #ff5e00" : "1px solid rgba(255,255,255,0.08)",
+                color: emailMode === mode ? "#ff5e00" : "#907558",
+                textShadow: emailMode === mode ? "0 0 8px rgba(255,94,0,0.4)" : "none",
+                letterSpacing: "0.2em",
+                background: "none",
+              }}
+            >
+              {mode === "signin" ? "SIGN IN" : "CREATE ACCOUNT"}
+            </button>
+          ))}
+        </div>
 
-        {/* Connect button — neon green sign */}
-        <button
-          onClick={onLogin}
-          className="w-full flex items-center justify-center gap-3 py-4 px-6 transition-all duration-150 active:scale-[0.97] font-display"
-          style={{
-            background: "transparent",
-            border: "1px solid #39ff14",
-            color: "#39ff14",
-            textShadow: "0 0 8px #39ff14,0 0 16px #39ff14",
-            boxShadow: "0 0 6px rgba(57,255,20,0.3),0 0 14px rgba(57,255,20,0.15),inset 0 0 8px rgba(57,255,20,0.05)",
-            fontSize: 14,
-            letterSpacing: "0.25em",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(57,255,20,0.06)";
-            e.currentTarget.style.boxShadow = "0 0 10px rgba(57,255,20,0.5),0 0 24px rgba(57,255,20,0.25),inset 0 0 12px rgba(57,255,20,0.08)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.boxShadow = "0 0 6px rgba(57,255,20,0.3),0 0 14px rgba(57,255,20,0.15),inset 0 0 8px rgba(57,255,20,0.05)";
-          }}
-        >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-          </svg>
-          CONNECT WITH SPOTIFY
-        </button>
-
-        <p className="mt-5 font-mono text-[9px] leading-relaxed text-center" style={{ color: "#907558", opacity: 0.6, letterSpacing: "0.05em" }}>
-          READ-ONLY ACCESS · WE DON'T MODIFY YOUR LIBRARY
-        </p>
+        <form onSubmit={handleEmailSubmit} className="w-full space-y-2">
+          <input
+            type="email"
+            placeholder="EMAIL"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full font-mono text-xs px-3 py-2.5 outline-none"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#f2e8d2", letterSpacing: "0.05em" }}
+          />
+          <input
+            type="password"
+            placeholder="PASSWORD"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full font-mono text-xs px-3 py-2.5 outline-none"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#f2e8d2", letterSpacing: "0.05em" }}
+          />
+          {emailError && (
+            <div className="px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgba(180,0,0,0.12)", border: "1px solid rgba(180,0,0,0.3)", color: "#ff6b6b" }}>
+              {emailError}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-3.5 font-display text-sm transition-all duration-150 active:scale-[0.97]"
+            style={{
+              background: "transparent",
+              border: "1px solid #ff5e00",
+              color: "#ff5e00",
+              textShadow: "0 0 8px rgba(255,94,0,0.5)",
+              boxShadow: "0 0 6px rgba(255,94,0,0.2),inset 0 0 8px rgba(255,94,0,0.04)",
+              letterSpacing: "0.25em",
+              opacity: submitting ? 0.5 : 1,
+            }}
+          >
+            {submitting ? "..." : emailMode === "signin" ? "ENTER" : "CREATE ACCOUNT"}
+          </button>
+        </form>
       </div>
 
       {/* Bottom poster strip */}

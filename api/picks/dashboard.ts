@@ -76,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Shuffle so each refresh surfaces a different suggestion
             const shuffled = [...suggestions].sort(() => Math.random() - 0.5);
             for (const { title, artist } of shuffled) {
-              const searchResults = await searchAlbums(user.id, `${title} ${artist}`, 5);
+              const searchResults = await searchAlbums(`${title} ${artist}`, 5);
               const match = searchResults.find((r) => !existingIds.has(r.id));
               if (match) {
                 aiPick = {

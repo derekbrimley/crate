@@ -2,7 +2,7 @@ export interface User {
   id: number;
   displayName: string | null;
   email: string | null;
-  spotifyId: string;
+  spotifyId: string | null;
 }
 
 export interface Item {

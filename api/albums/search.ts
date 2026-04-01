@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let results;
   try {
-    results = await searchAlbums(user.id, q);
+    results = await searchAlbums(q);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return res.status(502).json({ error: "Spotify search failed", detail: message });

@@ -3,7 +3,7 @@
 CREATE TABLE public.users (
   id SERIAL PRIMARY KEY,
   supabase_uid UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  spotify_id TEXT NOT NULL UNIQUE,
+  spotify_id TEXT UNIQUE,
   display_name TEXT,
   email TEXT,
   spotify_access_token TEXT,

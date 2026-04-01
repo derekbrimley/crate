@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   supabase_uid: string;
-  spotify_id: string;
+  spotify_id: string | null;
   display_name: string | null;
   email: string | null;
   spotify_access_token: string | null;

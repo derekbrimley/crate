@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabase";
 import type { User } from "../types";
 
 async function syncUser(session: Session): Promise<void> {
-  if (!session.provider_token) return;
   await fetch("/api/auth/sync", {
     method: "POST",
     headers: {
@@ -12,8 +11,8 @@ async function syncUser(session: Session): Promise<void> {
       Authorization: `Bearer ${session.access_token}`,
     },
     body: JSON.stringify({
-      provider_token: session.provider_token,
-      provider_refresh_token: session.provider_refresh_token,
+      provider_token: session.provider_token ?? null,
+      provider_refresh_token: session.provider_refresh_token ?? null,
     }),
   });
 }
@@ -24,7 +23,7 @@ function mapUser(supabaseUser: NonNullable<Session["user"]>): User {
     id: 0, // not used client-side
     displayName: (identity?.identity_data?.name as string) ?? null,
     email: supabaseUser.email ?? null,
-    spotifyId: (identity?.identity_data?.provider_id as string) ?? "",
+    spotifyId: (identity?.identity_data?.provider_id as string) ?? null,
   };
 }
 
@@ -60,6 +59,16 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const loginWithEmail = async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  };
+
+  const signUpWithEmail = async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    return error?.message ?? null;
+  };
+
   const login = () => {
     supabase.auth.signInWithOAuth({
       provider: "spotify",
@@ -76,5 +85,5 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { user, loading, login, logout };
+  return { user, loading, login, loginWithEmail, signUpWithEmail, logout };
 }

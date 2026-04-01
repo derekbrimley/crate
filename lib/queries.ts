@@ -29,32 +29,40 @@ export async function setConfig(userId: number, key: string, value: unknown): Pr
 
 export async function upsertUser(
   supabaseUid: string,
-  spotifyId: string,
   displayName: string | null,
-  email: string | null,
-  accessToken: string,
-  refreshToken: string,
-  expiresAt: number
+  email: string | null
 ): Promise<User> {
   const { data, error } = await supabaseAdmin
     .from("users")
     .upsert(
-      {
-        supabase_uid: supabaseUid,
-        spotify_id: spotifyId,
-        display_name: displayName,
-        email,
-        spotify_access_token: accessToken,
-        spotify_refresh_token: refreshToken,
-        token_expires_at: expiresAt,
-      },
-      { onConflict: "spotify_id" }
+      { supabase_uid: supabaseUid, display_name: displayName, email },
+      { onConflict: "supabase_uid" }
     )
     .select()
     .single();
 
   if (error) throw error;
   return data as User;
+}
+
+export async function saveSpotifyTokens(
+  supabaseUid: string,
+  spotifyId: string,
+  displayName: string | null,
+  accessToken: string,
+  refreshToken: string,
+  expiresAt: number
+): Promise<void> {
+  await supabaseAdmin
+    .from("users")
+    .update({
+      spotify_id: spotifyId,
+      display_name: displayName,
+      spotify_access_token: accessToken,
+      spotify_refresh_token: refreshToken,
+      token_expires_at: expiresAt,
+    })
+    .eq("supabase_uid", supabaseUid);
 }
 
 export async function getUserById(id: number): Promise<User | null> {

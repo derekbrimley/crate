@@ -30,8 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       try {
         const [album, tracks] = await Promise.all([
-          getAlbumFull(user.id, spotifyId),
-          getAlbumTracks(user.id, spotifyId),
+          getAlbumFull(spotifyId),
+          getAlbumTracks(spotifyId),
         ]);
 
         const primaryArtist = album.artists[0];
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }[] = [];
 
         if (primaryArtist?.id) {
-          const artistAlbums = await getArtistAlbums(user.id, primaryArtist.id);
+          const artistAlbums = await getArtistAlbums(primaryArtist.id);
           const userItems = await getItems(user.id);
           const addedMap = new Map<string, "favorite" | "recommendation">();
           for (const item of userItems) {

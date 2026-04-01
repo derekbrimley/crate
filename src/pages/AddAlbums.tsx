@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
+import { useAuth } from "../hooks/useAuth";
 import {
   searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
   getPlaylistAlbums, bulkAddAlbums,
@@ -176,7 +177,37 @@ function BulkBar({ count, adding, onAdd }: { count: number; adding: boolean; onA
   );
 }
 
-function LibraryTab() {
+function SpotifyConnectPrompt({ onConnect }: { onConnect: () => void }) {
+  return (
+    <div className="mt-16 flex flex-col items-center gap-5">
+      <VinylDisc size={64} />
+      <div className="text-center">
+        <p className="font-display text-base text-crate-muted/40 tracking-widest mb-1">SPOTIFY IMPORT</p>
+        <p className="font-mono text-[10px] text-crate-muted/40 tracking-widest">CONNECT TO IMPORT YOUR LIBRARY</p>
+      </div>
+      <button
+        onClick={onConnect}
+        className="flex items-center gap-2.5 px-5 py-3 font-display text-xs transition-all duration-150 active:scale-[0.97]"
+        style={{
+          background: "transparent",
+          border: "1px solid #39ff14",
+          color: "#39ff14",
+          textShadow: "0 0 8px #39ff14",
+          boxShadow: "0 0 6px rgba(57,255,20,0.2),inset 0 0 8px rgba(57,255,20,0.04)",
+          letterSpacing: "0.2em",
+        }}
+      >
+        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+        </svg>
+        CONNECT SPOTIFY
+      </button>
+      <p className="font-mono text-[9px] text-crate-muted/30 tracking-widest">READ-ONLY ACCESS</p>
+    </div>
+  );
+}
+
+function LibraryTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: boolean; onConnectSpotify: () => void }) {
   const [albums, setAlbums]           = useState<LibraryAlbum[]>([]);
   const [total, setTotal]             = useState(0);
   const [loading, setLoading]         = useState(true);
@@ -194,7 +225,12 @@ function LibraryTab() {
     } catch (err) { setError(err instanceof Error ? err.message : "Failed to load library"); }
   }, []);
 
-  useEffect(() => { setLoading(true); loadPage(0).finally(() => setLoading(false)); }, [loadPage]);
+  useEffect(() => {
+    if (!spotifyConnected) return;
+    setLoading(true); loadPage(0).finally(() => setLoading(false));
+  }, [loadPage, spotifyConnected]);
+
+  if (!spotifyConnected) return <SpotifyConnectPrompt onConnect={onConnectSpotify} />;
 
   const toggleSelect = (id: string) => { setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
   const selectableAlbums = albums.filter((a) => a.already_added === null);
@@ -243,7 +279,7 @@ function LibraryTab() {
   );
 }
 
-function PlaylistsTab() {
+function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: boolean; onConnectSpotify: () => void }) {
   const [playlists, setPlaylists]         = useState<SpotifyPlaylistInfo[]>([]);
   const [totalPl, setTotalPl]             = useState(0);
   const [loadingPl, setLoadingPl]         = useState(true);
@@ -264,7 +300,12 @@ function PlaylistsTab() {
     } catch (err) { setError(err instanceof Error ? err.message : "Failed to load"); }
   }, []);
 
-  useEffect(() => { setLoadingPl(true); loadPlaylists(0).finally(() => setLoadingPl(false)); }, [loadPlaylists]);
+  useEffect(() => {
+    if (!spotifyConnected) return;
+    setLoadingPl(true); loadPlaylists(0).finally(() => setLoadingPl(false));
+  }, [loadPlaylists, spotifyConnected]);
+
+  if (!spotifyConnected) return <SpotifyConnectPrompt onConnect={onConnectSpotify} />;
 
   const openPlaylist = async (pl: SpotifyPlaylistInfo) => {
     setActive(pl); setLoadingAlbums(true); setError(null); setSelected(new Set()); setSuccessMsg(null);
@@ -370,6 +411,9 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function AddAlbums() {
   const [activeTab, setActiveTab] = useState<Tab>("search");
+  const { user, login } = useAuth();
+  const spotifyConnected = !!user?.spotifyId;
+
   return (
     <Layout title="Dig for Records">
       <div className="px-5 pt-5">
@@ -395,8 +439,8 @@ export function AddAlbums() {
           })}
         </div>
         {activeTab === "search"    && <SearchTab />}
-        {activeTab === "library"   && <LibraryTab />}
-        {activeTab === "playlists" && <PlaylistsTab />}
+        {activeTab === "library"   && <LibraryTab spotifyConnected={spotifyConnected} onConnectSpotify={login} />}
+        {activeTab === "playlists" && <PlaylistsTab spotifyConnected={spotifyConnected} onConnectSpotify={login} />}
       </div>
     </Layout>
   );

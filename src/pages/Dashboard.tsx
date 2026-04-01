@@ -121,18 +121,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
     <Layout headerRight={headerRight}>
       {/* Store header */}
       <div className="px-5 pt-6 pb-4 relative">
-        {/* OPEN neon */}
-        <div
-          className="absolute top-5 right-5 font-display text-[11px] animate-neon-flicker-slow"
-          style={{ color: "#39ff14", textShadow: "0 0 5px #39ff14,0 0 10px #39ff14,0 0 20px #0fa", letterSpacing: "0.4em" }}
-        >
-          OPEN
-        </div>
+
 
         {/* Main wordmark */}
         <h1
           className="font-display leading-none"
-          style={{ fontSize: 78, letterSpacing: "0.04em", color: "#f2e8d2", lineHeight: 0.9, textShadow: "0 2px 24px rgba(0,0,0,0.6)" }}
+          style={{ fontSize: 24, color: "#39ff14", textShadow: "0 0 5px #39ff14,0 0 10px #39ff14,0 0 20px #0fa", letterSpacing: "0.4em" }}
         >
           CRATES
         </h1>

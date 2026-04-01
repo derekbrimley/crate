@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (genres?.length) metadata.genres = genres;
 
     try {
-      const fetchedGenres = await fetchAlbumGenres(user.id, spotify_id);
+      const fetchedGenres = await fetchAlbumGenres(spotify_id);
       if (fetchedGenres.length > 0) {
         metadata.genres = fetchedGenres;
       }

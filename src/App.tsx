@@ -10,7 +10,7 @@ import { History } from "./pages/History";
 import { Settings } from "./pages/Settings";
 
 function AppInner() {
-  const { user, loading, login, logout } = useAuth();
+  const { user, loading, login, loginWithEmail, signUpWithEmail, logout } = useAuth();
 
   if (loading) {
     return (
@@ -21,7 +21,7 @@ function AppInner() {
   }
 
   if (!user) {
-    return <Login onLogin={login} />;
+    return <Login onEmailLogin={loginWithEmail} onSignUp={signUpWithEmail} />;
   }
 
   return (

@@ -100,13 +100,43 @@ async function spotifyFetch(
   return res;
 }
 
+async function getClientCredentialsToken(): Promise<string> {
+  const credentials = Buffer.from(
+    `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+  ).toString("base64");
+
+  const res = await fetch(SPOTIFY_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${credentials}`,
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  if (!res.ok) throw new Error(`Spotify CC token fetch failed: ${res.status}`);
+  const data = (await res.json()) as { access_token: string };
+  return data.access_token;
+}
+
+async function spotifyPublicFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  const token = await getClientCredentialsToken();
+  return fetch(`${SPOTIFY_API}${endpoint}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+}
+
 export async function searchAlbums(
-  userId: number,
   query: string,
   limit = 20
 ): Promise<SpotifyAlbum[]> {
   const params = new URLSearchParams({ q: query, type: "album", limit: String(limit) });
-  const res = await spotifyFetch(userId, `/search?${params}`);
+  const res = await spotifyPublicFetch(`/search?${params}`);
   if (!res.ok) throw new Error(`Spotify search failed: ${res.status}`);
   const data = (await res.json()) as { albums: { items: SpotifyAlbum[] } };
   return data.albums.items.filter((a) => a.album_type !== "single");
@@ -226,10 +256,9 @@ export interface SpotifyTrack {
 }
 
 export async function getAlbumTracks(
-  userId: number,
   albumId: string
 ): Promise<SpotifyTrack[]> {
-  const res = await spotifyFetch(userId, `/albums/${albumId}/tracks?limit=50`);
+  const res = await spotifyPublicFetch(`/albums/${albumId}/tracks?limit=50`);
   if (!res.ok) throw new Error(`Failed to fetch album tracks: ${res.status}`);
   const data = (await res.json()) as { items: SpotifyTrack[] };
   return data.items;
@@ -238,15 +267,10 @@ export async function getAlbumTracks(
 // ── Artist Albums ───────────────────────────────────────────────────────────
 
 export async function getArtistAlbums(
-  userId: number,
   artistId: string
 ): Promise<SpotifyAlbum[]> {
-  const params = new URLSearchParams({
-    include_groups: "album",
-    limit: "20",
-    market: "from_token",
-  });
-  const res = await spotifyFetch(userId, `/artists/${artistId}/albums?${params}`);
+  const params = new URLSearchParams({ include_groups: "album", limit: "20" });
+  const res = await spotifyPublicFetch(`/artists/${artistId}/albums?${params}`);
   if (!res.ok) throw new Error(`Failed to fetch artist albums: ${res.status}`);
   const data = (await res.json()) as { items: SpotifyAlbum[] };
   return data.items;
@@ -255,20 +279,18 @@ export async function getArtistAlbums(
 // ── Album Detail (full album with artist IDs) ──────────────────────────────
 
 export async function getAlbumFull(
-  userId: number,
   albumId: string
 ): Promise<SpotifyAlbum & { artists: { id: string; name: string }[] }> {
-  const res = await spotifyFetch(userId, `/albums/${albumId}`);
+  const res = await spotifyPublicFetch(`/albums/${albumId}`);
   if (!res.ok) throw new Error(`Failed to fetch album: ${res.status}`);
   return (await res.json()) as SpotifyAlbum & { artists: { id: string; name: string }[] };
 }
 
 export async function fetchAlbumGenres(
-  userId: number,
   albumId: string
 ): Promise<string[]> {
   // Step 1: get artist IDs from the album
-  const albumRes = await spotifyFetch(userId, `/albums/${albumId}?fields=artists(id)`);
+  const albumRes = await spotifyPublicFetch(`/albums/${albumId}?fields=artists(id)`);
   if (!albumRes.ok) throw new Error(`Failed to fetch album: ${albumRes.status}`);
   const albumData = (await albumRes.json()) as SpotifyAlbumDetail;
   const artistIds = albumData.artists.map((a) => a.id).filter(Boolean);
@@ -276,7 +298,7 @@ export async function fetchAlbumGenres(
 
   // Step 2: batch-fetch artist genres (up to 50 per request)
   const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
-  const artistRes = await spotifyFetch(userId, `/artists?${params}`);
+  const artistRes = await spotifyPublicFetch(`/artists?${params}`);
   if (!artistRes.ok) throw new Error(`Failed to fetch artists: ${artistRes.status}`);
   const artistData = (await artistRes.json()) as { artists: SpotifyArtistDetail[] };
 
