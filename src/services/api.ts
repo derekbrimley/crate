@@ -64,7 +64,7 @@ export async function deleteAlbum(id: number): Promise<void> {
 }
 
 export async function promoteAlbum(id: number): Promise<void> {
-  await request(`/albums/${id}/promote`, { method: "POST" });
+  await request(`/albums/${id}`, { method: "POST" });
 }
 
 export async function searchSpotify(
@@ -126,7 +126,7 @@ export async function bulkAddAlbums(
 // ── Album Details ────────────────────────────────────────────────────────────
 
 export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> {
-  return request<AlbumDetails>(`/albums/${spotifyId}/details`);
+  return request<AlbumDetails>(`/albums/${spotifyId}`);
 }
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────

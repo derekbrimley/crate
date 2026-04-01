@@ -91,6 +91,15 @@ export interface DashboardData {
   surprise?: Item[];
 }
 
+export interface RightNowContext {
+  key: string;
+  label: string;
+  emoji: string;
+  prefer_genres: string[];
+  avoid_genres: string[];
+  prompt_hints: string;
+}
+
 export interface AppConfig {
   dashboard_modes: string[];
   cards_per_mode: number;
@@ -103,6 +112,7 @@ export interface AppConfig {
   weight_never_picked_bonus: number;
   contexts: string[];
   randomness_factor: number;
+  right_now_contexts: RightNowContext[];
 }
 
 export const CONTEXT_LABELS: Record<string, { label: string; emoji: string }> = {

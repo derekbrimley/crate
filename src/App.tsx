@@ -7,6 +7,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { AddAlbums } from "./pages/AddAlbums";
 import { Lists } from "./pages/Lists";
 import { History } from "./pages/History";
+import { Settings } from "./pages/Settings";
 
 function AppInner() {
   const { user, loading, login, logout } = useAuth();
@@ -30,6 +31,7 @@ function AppInner() {
         <Route path="/add" element={<AddAlbums />} />
         <Route path="/lists" element={<Lists />} />
         <Route path="/history" element={<History />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/callback" element={<Dashboard onLogout={logout} />} />
       </Routes>
     </DataCacheProvider>

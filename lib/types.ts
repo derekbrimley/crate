@@ -39,3 +39,12 @@ export interface LastPickInfo {
   picked_at: number;
   pick_count: number;
 }
+
+export interface RightNowContext {
+  key: string;
+  label: string;
+  emoji: string;
+  prefer_genres: string[];
+  avoid_genres: string[];
+  prompt_hints: string;
+}

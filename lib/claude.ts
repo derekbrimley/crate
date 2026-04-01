@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Item } from "./types";
+import type { Item, RightNowContext } from "./types";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -49,21 +49,9 @@ const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[]
 
 // Score an album against a genre profile.
 // Returns 1.0 for preferred match, 0.0 for avoided genre, 0.5 for neutral.
-function scoreAlbumForContext(item: Item, context: string): number {
-  const lower = context.toLowerCase();
-
-  // Find matching profile
-  let profile: { prefer: string[]; avoid: string[] } | null = null;
-  for (const [keyword, p] of Object.entries(CONTEXT_GENRE_PROFILES)) {
-    if (lower.includes(keyword.replace("_", " ")) || lower.includes(keyword)) {
-      profile = p;
-      break;
-    }
-  }
-  if (!profile) return 0.5;
-
+function scoreAlbum(item: Item, profile: { prefer: string[]; avoid: string[] }): number {
   const genres = (item.metadata?.genres as string[] | undefined) ?? [];
-  if (genres.length === 0) return 0.5; // No genre data — neutral score
+  if (genres.length === 0) return 0.5;
 
   const genreStr = genres.join(" ").toLowerCase();
 
@@ -72,21 +60,34 @@ function scoreAlbumForContext(item: Item, context: string): number {
     if (genreStr.includes(term)) preferMatches++;
   }
   for (const term of profile.avoid) {
-    if (genreStr.includes(term)) return 0.1; // Strong penalty
+    if (genreStr.includes(term)) return 0.1;
   }
 
   if (preferMatches > 0) return 0.5 + Math.min(preferMatches * 0.15, 0.5);
   return 0.5;
 }
 
+// Resolve genre profile for a context key, checking hardcoded profiles as fallback.
+function resolveProfile(context: string): { prefer: string[]; avoid: string[] } | null {
+  const lower = context.toLowerCase();
+  for (const [keyword, p] of Object.entries(CONTEXT_GENRE_PROFILES)) {
+    if (lower.includes(keyword.replace("_", " ")) || lower.includes(keyword)) {
+      return p;
+    }
+  }
+  return null;
+}
+
 // Pre-filter albums by genre relevance, return top N candidates for Claude.
 function preFilterAlbums(
   items: Item[],
-  context: string,
+  profile: { prefer: string[]; avoid: string[] } | null,
   maxCandidates: number
 ): Item[] {
+  if (!profile) return items.slice(0, maxCandidates);
+
   const scored = items
-    .map((item) => ({ item, score: scoreAlbumForContext(item, context) }))
+    .map((item) => ({ item, score: scoreAlbum(item, profile) }))
     .sort((a, b) => b.score - a.score);
 
   return scored.slice(0, maxCandidates).map((s) => s.item);
@@ -115,15 +116,69 @@ When the context is ambiguous or creative (e.g., "alien invasion", "first date")
 
 Return ONLY a JSON array of album IDs (integers) in your recommended order, best match first. No explanation, no markdown, just the raw JSON array. Example: [42, 7, 13]`;
 
+const SURPRISE_SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crate.
+The user has a set of favorite albums that represent their taste.
+Suggest 5 albums they would love that are NOT already in their library — albums they likely haven't heard but would genuinely enjoy.
+Make the suggestions varied: different artists, different eras, different moods — but all fitting the taste profile.
+Consider genre overlap, artist style, era, and mood from their favorites.
+Return ONLY a JSON array with 5 objects: [{"title": "Album Title", "artist": "Artist Name"}, ...]
+No explanation, no markdown, just the raw JSON array.`;
+
+export async function getSurpriseSuggestion(
+  favorites: Item[]
+): Promise<{ title: string; artist: string }[]> {
+  if (favorites.length === 0) return [];
+
+  const favoritesPayload = favorites.slice(0, 15).map((item) => ({
+    title: item.title,
+    artist: item.creator,
+    genres: (item.metadata?.genres as string[]) || [],
+  }));
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 256,
+      system: SURPRISE_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `My favorite albums:\n${JSON.stringify(favoritesPayload)}\n\nSuggest 5 varied albums I would love.`,
+        },
+      ],
+    });
+
+    const raw =
+      message.content[0].type === "text" ? message.content[0].text.trim() : "[]";
+    const text = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (s): s is { title: string; artist: string } =>
+          typeof s?.title === "string" && typeof s?.artist === "string"
+      );
+    }
+  } catch {
+    // Return empty on failure
+  }
+
+  return [];
+}
+
 export async function getContextSuggestions(
   context: string,
   items: Item[],
-  count: number
+  count: number,
+  contextProfile?: RightNowContext
 ): Promise<Item[]> {
   if (items.length === 0) return [];
 
+  const profile = contextProfile
+    ? { prefer: contextProfile.prefer_genres, avoid: contextProfile.avoid_genres }
+    : resolveProfile(context);
+
   // Pre-filter to reduce token usage
-  const candidates = preFilterAlbums(items, context, MAX_CANDIDATES);
+  const candidates = preFilterAlbums(items, profile, MAX_CANDIDATES);
 
   const albumsPayload = candidates.map((item) => ({
     id: item.id,
@@ -133,6 +188,13 @@ export async function getContextSuggestions(
     genres: (item.metadata?.genres as string[]) || [],
   }));
 
+  // Ask for a larger pool so we can randomly sample from it, giving variety on each refresh
+  const poolSize = Math.min(count * 4, MAX_CANDIDATES);
+  let userMessage = `Context: "${context}"\n\nAlbums:\n${JSON.stringify(albumsPayload)}\n\nReturn the ${poolSize} best album IDs for this context.`;
+  if (contextProfile?.prompt_hints?.trim()) {
+    userMessage += `\n\nAdditional hint: ${contextProfile.prompt_hints.trim()}`;
+  }
+
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 256,
@@ -140,7 +202,7 @@ export async function getContextSuggestions(
     messages: [
       {
         role: "user",
-        content: `Context: "${context}"\n\nAlbums:\n${JSON.stringify(albumsPayload)}\n\nReturn the ${count} best album IDs for this context.`,
+        content: userMessage,
       },
     ],
   });
@@ -158,10 +220,12 @@ export async function getContextSuggestions(
     // Return empty on parse failure
   }
 
-  // Preserve Claude's ordering
+  // Build the pool from Claude's ranked results, then randomly sample `count` from it.
+  // This keeps all picks relevant (Claude filtered them) while varying which ones appear.
   const itemMap = new Map(items.map((i) => [i.id, i]));
-  return suggestedIds
+  const pool = suggestedIds
     .map((id) => itemMap.get(id))
-    .filter((i): i is Item => !!i)
-    .slice(0, count);
+    .filter((i): i is Item => !!i);
+
+  return pool.sort(() => Math.random() - 0.5).slice(0, count);
 }

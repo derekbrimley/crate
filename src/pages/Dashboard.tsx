@@ -30,6 +30,15 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [loading, setLoading] = useState(!dashboardLoaded);
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
   const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
+
+  // Derive context pills from right_now_contexts if available, else fall back to contexts + CONTEXT_LABELS
+  const contextPills = config?.right_now_contexts?.length
+    ? config.right_now_contexts.map((c) => ({ key: c.key, label: c.label, emoji: c.emoji }))
+    : (config?.contexts || Object.keys(CONTEXT_LABELS)).map((ctx) => ({
+        key: ctx,
+        label: CONTEXT_LABELS[ctx]?.label || ctx,
+        emoji: CONTEXT_LABELS[ctx]?.emoji || "●",
+      }));
   const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
 
   useEffect(() => {
@@ -38,18 +47,23 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }, [config, loadConfig]);
 
+  // Wait for config so we know the correct initial context before loading the dashboard.
+  // Merging the "set context from config" and "initial load" effects prevents a double-call:
+  // without this, context starts as the CONTEXT_LABELS default, fires a load, then config
+  // arrives and updates context, firing a second load while dashboardLoaded is still false.
   useEffect(() => {
-    if (config?.contexts?.length) {
-      setContext(config.contexts[0]);
-    }
-  }, [config]);
+    if (!config || dashboardLoaded) return;
 
-  useEffect(() => {
-    if (!dashboardLoaded) {
-      setLoading(true);
-      loadDashboard(context).finally(() => setLoading(false));
-    }
-  }, [dashboardLoaded, loadDashboard, context]);
+    const initialCtx =
+      config.right_now_contexts?.[0]?.key ??
+      config.contexts?.[0] ??
+      Object.keys(CONTEXT_LABELS)[0];
+
+    setContext(initialCtx);
+    setLoading(true);
+    loadDashboard(initialCtx).finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, dashboardLoaded]);
 
   const handlePick = async (item: Item, mode: string) => {
     setNowPlaying(item);
@@ -91,7 +105,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
-  const contexts = config?.contexts || Object.keys(CONTEXT_LABELS);
   const modes = config?.dashboard_modes || ["favorites", "discover", "for_right_now", "surprise"];
 
   const headerRight = (
@@ -172,13 +185,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
         >
           {/* Context tags — styled as vintage catalog dividers */}
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {contexts.map((ctx) => {
-              const info = CONTEXT_LABELS[ctx];
-              const isActive = context === ctx;
+            {contextPills.map(({ key, label, emoji }) => {
+              const isActive = context === key;
               return (
                 <button
-                  key={ctx}
-                  onClick={() => handleContextChange(ctx)}
+                  key={key}
+                  onClick={() => handleContextChange(key)}
                   className="shrink-0 flex items-center gap-1.5 transition-all duration-150"
                   style={{
                     padding: "4px 10px",
@@ -193,8 +205,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
                     boxShadow: isActive ? "0 0 8px rgba(255,94,0,0.2),inset 0 0 4px rgba(255,94,0,0.05)" : "none",
                   }}
                 >
-                  <span>{info?.emoji || "●"}</span>
-                  <span>{info?.label || ctx}</span>
+                  <span>{emoji}</span>
+                  <span>{label}</span>
                 </button>
               );
             })}

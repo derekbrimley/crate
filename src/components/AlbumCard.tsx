@@ -10,6 +10,7 @@ interface AlbumCardProps {
   onPick?: () => void;
   size?: "sm" | "md" | "lg";
   actions?: React.ReactNode;
+  aiSuggested?: boolean;
 }
 
 const SIZES = { sm: 112, md: 144, lg: 176 };
@@ -23,6 +24,7 @@ export function AlbumCard({
   onPick,
   size = "md",
   actions,
+  aiSuggested = false,
 }: AlbumCardProps) {
   const [picked, setPicked] = useState(false);
   const vinylRef = useRef<HTMLDivElement>(null);
@@ -95,6 +97,25 @@ export function AlbumCard({
           )}
           {/* Cardboard edge */}
           <div className="absolute inset-0 ring-1 ring-inset ring-black/50 pointer-events-none" />
+          {/* AI Suggested badge */}
+          {aiSuggested && (
+            <div
+              className="absolute top-1.5 left-1.5 pointer-events-none"
+              style={{
+                background: "rgba(0,0,0,0.75)",
+                padding: "2px 5px",
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: 7,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#ff5e00",
+                textShadow: "0 0 6px rgba(255,94,0,0.5)",
+                border: "1px solid rgba(255,94,0,0.3)",
+              }}
+            >
+              AI Suggested
+            </div>
+          )}
           {/* Spotify badge */}
           <div
             className="absolute bottom-1.5 right-1.5 transition-opacity duration-200"

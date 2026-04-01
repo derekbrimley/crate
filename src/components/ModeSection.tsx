@@ -141,13 +141,14 @@ export function ModeSection({
             >
               {items.map((item) => (
                 <AlbumCard
-                  key={item.id}
+                  key={`${item.id}-${item.external_id}`}
                   title={item.title}
                   artist={item.creator}
                   imageUrl={item.image_url}
                   externalUri={item.external_uri}
                   externalUrl={item.external_url}
                   onPick={() => onPick(item, mode)}
+                  aiSuggested={(item.metadata as Record<string, unknown> | null)?._ai_suggested === true}
                 />
               ))}
             </div>
