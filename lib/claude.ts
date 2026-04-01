@@ -47,8 +47,6 @@ const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[]
   },
 };
 
-// Score an album against a genre profile.
-// Returns 1.0 for preferred match, 0.0 for avoided genre, 0.5 for neutral.
 function scoreAlbum(item: Item, profile: { prefer: string[]; avoid: string[] }): number {
   const genres = (item.metadata?.genres as string[] | undefined) ?? [];
   if (genres.length === 0) return 0.5;
@@ -67,7 +65,6 @@ function scoreAlbum(item: Item, profile: { prefer: string[]; avoid: string[] }):
   return 0.5;
 }
 
-// Resolve genre profile for a context key, checking hardcoded profiles as fallback.
 function resolveProfile(context: string): { prefer: string[]; avoid: string[] } | null {
   const lower = context.toLowerCase();
   for (const [keyword, p] of Object.entries(CONTEXT_GENRE_PROFILES)) {
@@ -78,7 +75,6 @@ function resolveProfile(context: string): { prefer: string[]; avoid: string[] } 
   return null;
 }
 
-// Pre-filter albums by genre relevance, return top N candidates for Claude.
 function preFilterAlbums(
   items: Item[],
   profile: { prefer: string[]; avoid: string[] } | null,
@@ -207,8 +203,9 @@ export async function getContextSuggestions(
     ],
   });
 
-  const text =
+  const raw =
     message.content[0].type === "text" ? message.content[0].text.trim() : "[]";
+  const text = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
 
   let suggestedIds: number[] = [];
   try {

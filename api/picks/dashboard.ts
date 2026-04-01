@@ -38,38 +38,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const favorites = allItems.filter((i) => i.list_type === "favorite");
   const recommendations = allItems.filter((i) => i.list_type === "recommendation");
 
-  const result: Record<string, Item[]> = {};
+  const modeEntries = await Promise.all(
+    dashboardModes.map(async (mode): Promise<[string, Item[]]> => {
+      switch (mode) {
+        case "favorites":
+          return ["favorites", selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig)];
 
-  for (const mode of dashboardModes) {
-    switch (mode) {
-      case "favorites":
-        result.favorites = selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig);
-        break;
-      case "discover":
-        result.discover = selectAlbums(recommendations, cardsPerMode, [], selectionConfig);
-        break;
-      case "for_right_now":
-        if (context && allItems.length > 0) {
-          try {
-            const contextProfile = rightNowContexts?.find((c) => c.key === context);
-            const suggestions = await getContextSuggestions(context, allItems, cardsPerMode, contextProfile);
-            result.for_right_now =
-              suggestions.length > 0
+        case "discover":
+          return ["discover", selectAlbums(recommendations, cardsPerMode, [], selectionConfig)];
+
+        case "for_right_now": {
+          if (context && allItems.length > 0) {
+            try {
+              const contextProfile = rightNowContexts?.find((c) => c.key === context);
+              const suggestions = await getContextSuggestions(context, allItems, cardsPerMode, contextProfile);
+              return ["for_right_now", suggestions.length > 0
                 ? suggestions
-                : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
-          } catch {
-            result.for_right_now = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+                : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
+            } catch {
+              return ["for_right_now", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
+            }
           }
-        } else {
-          result.for_right_now = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+          return ["for_right_now", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
         }
-        break;
-      case "surprise": {
-        const hasEnoughFavorites = favorites.length >= 2;
-        const randomCount = hasEnoughFavorites ? Math.max(0, cardsPerMode - 1) : cardsPerMode;
-        const randomPicks = selectAlbums(allItems, randomCount, recentPicks, selectionConfig);
 
-        if (hasEnoughFavorites) {
+        case "surprise": {
+          const hasEnoughFavorites = favorites.length >= 2;
+          const randomPicks = selectAlbums(allItems, hasEnoughFavorites ? cardsPerMode - 1 : cardsPerMode, recentPicks, selectionConfig);
+
+          if (!hasEnoughFavorites) return ["surprise", randomPicks];
+
           try {
             const suggestions = await getSurpriseSuggestion(favorites);
             const existingIds = new Set(allItems.map((i) => i.external_id));
@@ -99,19 +97,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               }
             }
 
-            result.surprise = aiPick
+            return ["surprise", aiPick
               ? [...randomPicks, aiPick]
-              : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+              : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
           } catch {
-            result.surprise = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+            return ["surprise", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
           }
-        } else {
-          result.surprise = randomPicks;
         }
-        break;
-      }
-    }
-  }
 
-  res.json(result);
+        default:
+          return [mode, []];
+      }
+    })
+  );
+
+  res.json(Object.fromEntries(modeEntries));
 }
