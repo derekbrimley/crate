@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { deleteItem, promoteItem, getItems } from "../../lib/queries";
-import { getAlbumFull, getAlbumTracks, getArtistAlbums, getBestImageUrl } from "../../lib/spotify";
+import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -43,29 +43,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           spotify_uri: string;
           spotify_url: string;
           total_tracks: number;
+          release_date: string;
+          popularity: number;
           already_added: "favorite" | "recommendation" | null;
         }[] = [];
 
         if (primaryArtist?.id) {
           const artistAlbums = await getArtistAlbums(primaryArtist.id);
-          const userItems = await getItems(user.id);
+          const filtered = artistAlbums.filter((a) => a.id !== spotifyId);
+
+          const [fullAlbums, userItems] = await Promise.all([
+            getAlbumsBatch(filtered.map((a) => a.id)),
+            getItems(user.id),
+          ]);
+
+          const popularityMap = new Map<string, number>();
+          for (const a of fullAlbums) popularityMap.set(a.id, a.popularity ?? 0);
+
           const addedMap = new Map<string, "favorite" | "recommendation">();
           for (const item of userItems) {
             addedMap.set(item.external_id, item.list_type as "favorite" | "recommendation");
           }
 
-          otherAlbums = artistAlbums
-            .filter((a) => a.id !== spotifyId)
-            .map((a) => ({
-              spotify_id: a.id,
-              title: a.name,
-              artist: a.artists.map((ar) => ar.name).join(", "),
-              image_url: getBestImageUrl(a.images),
-              spotify_uri: a.uri,
-              spotify_url: a.external_urls.spotify,
-              total_tracks: a.total_tracks,
-              already_added: addedMap.get(a.id) ?? null,
-            }));
+          otherAlbums = filtered.map((a) => ({
+            spotify_id: a.id,
+            title: a.name,
+            artist: a.artists.map((ar) => ar.name).join(", "),
+            image_url: getBestImageUrl(a.images),
+            spotify_uri: a.uri,
+            spotify_url: a.external_urls.spotify,
+            total_tracks: a.total_tracks,
+            release_date: a.release_date,
+            popularity: popularityMap.get(a.id) ?? 0,
+            already_added: addedMap.get(a.id) ?? null,
+          }));
         }
 
         const trackList = tracks.map((t) => ({

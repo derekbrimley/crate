@@ -65,8 +65,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, dashboardLoaded]);
 
-  const handlePick = async (item: Item, mode: string) => {
+  const [pendingPick, setPendingPick] = useState<{ item: Item; mode: string } | null>(null);
+
+  const handlePick = (item: Item, mode: string) => {
     setNowPlaying(item);
+    setPendingPick({ item, mode });
+  };
+
+  const handlePlay = async () => {
+    if (!pendingPick) return;
+    const { item, mode } = pendingPick;
+    setPendingPick(null);
     try {
       await recordPick({
         item_id: item.id,
@@ -223,6 +232,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
         <NowPlayingModal
           item={nowPlaying}
           onClose={() => setNowPlaying(null)}
+          onPlay={handlePlay}
         />
       )}
     </Layout>

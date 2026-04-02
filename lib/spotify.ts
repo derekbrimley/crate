@@ -8,11 +8,13 @@ export interface SpotifyAlbum {
   name: string;
   album_type: string;
   total_tracks: number;
+  release_date: string;
   artists: { name: string }[];
   images: { url: string; width: number; height: number }[];
   external_urls: { spotify: string };
   uri: string;
   genres?: string[];
+  popularity?: number;
 }
 
 async function refreshAccessToken(userId: number): Promise<string> {
@@ -274,6 +276,15 @@ export async function getArtistAlbums(
   if (!res.ok) throw new Error(`Failed to fetch artist albums: ${res.status}`);
   const data = (await res.json()) as { items: SpotifyAlbum[] };
   return data.items;
+}
+
+export async function getAlbumsBatch(ids: string[]): Promise<SpotifyAlbum[]> {
+  if (ids.length === 0) return [];
+  const params = new URLSearchParams({ ids: ids.slice(0, 20).join(",") });
+  const res = await spotifyPublicFetch(`/albums?${params}`);
+  if (!res.ok) throw new Error(`Failed to fetch albums batch: ${res.status}`);
+  const data = (await res.json()) as { albums: SpotifyAlbum[] };
+  return data.albums.filter(Boolean);
 }
 
 // ── Album Detail (full album with artist IDs) ──────────────────────────────

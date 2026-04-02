@@ -74,6 +74,8 @@ export interface ArtistAlbum {
   spotify_uri: string;
   spotify_url: string;
   total_tracks: number;
+  release_date: string;
+  popularity: number;
   already_added: "favorite" | "recommendation" | null;
 }
 
