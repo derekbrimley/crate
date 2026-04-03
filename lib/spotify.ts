@@ -319,3 +319,16 @@ export async function fetchAlbumGenres(
   }
   return Array.from(genres);
 }
+
+export async function getArtistGenres(artistIds: string[]): Promise<string[]> {
+  if (artistIds.length === 0) return [];
+  const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
+  const res = await spotifyPublicFetch(`/artists?${params}`);
+  if (!res.ok) return [];
+  const data = (await res.json()) as { artists: SpotifyArtistDetail[] };
+  const genres = new Set<string>();
+  for (const artist of data.artists ?? []) {
+    for (const g of artist.genres ?? []) genres.add(g);
+  }
+  return Array.from(genres);
+}

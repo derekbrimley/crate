@@ -17,6 +17,7 @@ function formatDuration(ms: number): string {
 
 export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps) {
   const [tracks, setTracks] = useState<AlbumTrack[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>([]);
   const [albumSort, setAlbumSort] = useState<"popularity" | "recency" | "title">("popularity");
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,7 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
       .then((data) => {
         if (cancelled) return;
         setTracks(data.tracks);
+        setGenres(data.genres);
         setArtistAlbums(data.artist_albums);
         // Seed addedAlbums from the API response
         const initial = new Map<string, "favorite" | "recommendation">();
@@ -212,6 +214,20 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
           style={{ background: "linear-gradient(90deg, transparent, #3d2815, transparent)" }}
         />
 
+        {/* Genres */}
+        {!loading && genres.length > 0 && (
+          <div className="px-6 pt-4 pb-0 flex flex-wrap gap-1.5">
+            {genres.map((genre) => (
+              <span
+                key={genre}
+                className="text-[9px] font-mono tracking-wider uppercase px-2 py-0.5 border border-crate-accent/30 text-crate-accent/70"
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Track list */}
         <div className="px-6 py-4">
           <h3 className="text-[10px] font-mono text-crate-muted tracking-[0.2em] uppercase mb-3">
@@ -340,8 +356,8 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
                               </button>
                               <button
                                 onClick={() => handleAddAlbum(album, "recommendation")}
-                                className="px-2 py-1 text-[9px] font-mono text-crate-muted border border-crate-muted/50
-                                           hover:bg-crate-muted/20 transition-colors tracking-wider"
+                                className="px-2 py-1 text-[9px] font-mono border transition-colors tracking-wider"
+                                style={{ color: "#00b4c8", borderColor: "rgba(0,180,200,0.4)", background: "rgba(0,180,200,0.1)" }}
                                 title="Add to recommendations"
                               >
                                 ◈ REC

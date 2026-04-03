@@ -105,7 +105,7 @@ function SearchTab() {
                       </button>
                       <button onClick={() => handleAdd(album, "recommendation")} disabled={!!(addingFav || addingRec)}
                         className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                        style={{ background: "transparent", border: "1px solid #3d2815", color: "#907558", letterSpacing: "0.12em" }}>
+                        style={{ background: "rgba(0,180,200,0.1)", border: "1px solid rgba(0,180,200,0.4)", color: "#00b4c8", letterSpacing: "0.12em" }}>
                         {addingRec ? "…" : "◈ REC"}
                       </button>
                     </>

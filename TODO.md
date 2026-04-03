@@ -1,1 +1,2 @@
-
+- make it so you can remove a recommendation by adding it to your favorites or just removing it
+- 

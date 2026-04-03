@@ -82,6 +82,7 @@ export interface ArtistAlbum {
 export interface AlbumDetails {
   tracks: AlbumTrack[];
   artist_albums: ArtistAlbum[];
+  genres: string[];
 }
 
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise";

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { deleteItem, promoteItem, getItems } from "../../lib/queries";
-import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl } from "../../lib/spotify";
+import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -33,6 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           getAlbumFull(spotifyId),
           getAlbumTracks(spotifyId),
         ]);
+
+        const genres = await getArtistGenres(album.artists.map((a) => a.id));
 
         const primaryArtist = album.artists[0];
         let otherAlbums: {
@@ -90,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.json({
           tracks: trackList,
           artist_albums: otherAlbums,
+          genres,
         });
       } catch (err: any) {
         console.error("Album details error:", err);
