@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (context && allItems.length > 0) {
             try {
               const contextProfile = rightNowContexts?.find((c) => c.key === context);
-              const suggestions = await getContextSuggestions(context, allItems, cardsPerMode, contextProfile);
+              const suggestions = await getContextSuggestions(context, allItems, cardsPerMode, contextProfile, recentPicks, selectionConfig);
               return ["for_right_now", suggestions.length > 0
                 ? suggestions
                 : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];

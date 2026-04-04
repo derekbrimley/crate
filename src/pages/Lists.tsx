@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
-import { deleteAlbum, promoteAlbum } from "../services/api";
+import { NowPlayingModal } from "../components/NowPlayingModal";
+import { deleteAlbum, promoteAlbum, moveAlbum } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 
@@ -19,10 +20,11 @@ const POSTERS = [
 ];
 
 function WallRecord({
-  item, rotation, index, onDelete, onPromote, actionId, isRec,
+  item, rotation, index, onDelete, onPromote, onOpen, actionId, isRec,
 }: {
   item: Item; rotation: number; index: number;
   onDelete: (item: Item) => void; onPromote?: (item: Item) => void;
+  onOpen: (item: Item) => void;
   actionId: number | null; isRec: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -64,13 +66,19 @@ function WallRecord({
           transition: "box-shadow 0.25s ease",
         }}
       >
-        {item.image_url ? (
-          <img src={item.image_url} alt={item.title} className="object-cover block" style={{ width: 88, height: 88 }} loading="lazy" />
-        ) : (
-          <div className="flex items-center justify-center bg-crate-elevated" style={{ width: 88, height: 88 }}>
-            <VinylDisc size={62} />
-          </div>
-        )}
+        <div
+          className="cursor-pointer"
+          onClick={() => onOpen(item)}
+          title="View album details"
+        >
+          {item.image_url ? (
+            <img src={item.image_url} alt={item.title} className="object-cover block" style={{ width: 88, height: 88 }} loading="lazy" />
+          ) : (
+            <div className="flex items-center justify-center bg-crate-elevated" style={{ width: 88, height: 88 }}>
+              <VinylDisc size={62} />
+            </div>
+          )}
+        </div>
         <div className="pt-1.5 px-0.5">
           <p className="font-type truncate text-center leading-tight" style={{ fontSize: 9, color: "#3a2a1a", maxWidth: 88 }}>
             {item.title}
@@ -114,6 +122,7 @@ export function Lists() {
   } = useDataCache();
   const [loading, setLoading] = useState(!listsLoaded);
   const [actionId, setActionId] = useState<number | null>(null);
+  const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
 
   useEffect(() => {
     if (!listsLoaded) {
@@ -145,6 +154,27 @@ export function Lists() {
     } finally {
       setActionId(null);
     }
+  };
+
+  const handleModalRemove = (item: Item) => {
+    if (item.list_type === "favorite") {
+      setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+    } else {
+      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+    }
+    setNowPlaying(null);
+  };
+
+  const handleModalListTypeChange = (item: Item, newListType: "favorite" | "recommendation") => {
+    const updated = { ...item, list_type: newListType };
+    if (newListType === "favorite") {
+      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+      setFavorites((prev) => [updated, ...prev]);
+    } else {
+      setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+      setRecommendations((prev) => [updated, ...prev]);
+    }
+    setNowPlaying(updated);
   };
 
   const items = tab === "favorites" ? favorites : recommendations;
@@ -263,6 +293,7 @@ export function Lists() {
                 index={i}
                 onDelete={handleDelete}
                 onPromote={handlePromote}
+                onOpen={setNowPlaying}
                 actionId={actionId}
                 isRec={tab === "recommendations"}
               />
@@ -270,6 +301,14 @@ export function Lists() {
           </div>
         )}
       </div>
+      {nowPlaying && (
+        <NowPlayingModal
+          item={nowPlaying}
+          onClose={() => setNowPlaying(null)}
+          onRemove={handleModalRemove}
+          onListTypeChange={handleModalListTypeChange}
+        />
+      )}
     </Layout>
   );
 }

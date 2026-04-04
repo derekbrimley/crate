@@ -233,6 +233,8 @@ export function Dashboard({ onLogout }: DashboardProps) {
           item={nowPlaying}
           onClose={() => setNowPlaying(null)}
           onPlay={handlePlay}
+          onRemove={() => setNowPlaying(null)}
+          onListTypeChange={(_item, _newListType) => { /* dashboard refreshes naturally on next interaction */ }}
         />
       )}
     </Layout>

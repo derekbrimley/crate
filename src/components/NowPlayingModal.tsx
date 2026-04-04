@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "./VinylDisc";
-import { getAlbumDetails, addAlbum } from "../services/api";
+import { getAlbumDetails, addAlbum, deleteAlbum, moveAlbum } from "../services/api";
 import type { Item, AlbumTrack, ArtistAlbum } from "../types";
 
 interface NowPlayingModalProps {
   item: Item;
   onClose: () => void;
   onPlay?: () => void;
+  onRemove?: (item: Item) => void;
+  onListTypeChange?: (item: Item, newListType: "favorite" | "recommendation") => void;
 }
 
 function formatDuration(ms: number): string {
@@ -15,7 +17,7 @@ function formatDuration(ms: number): string {
   return `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
-export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps) {
+export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeChange }: NowPlayingModalProps) {
   const [tracks, setTracks] = useState<AlbumTrack[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>([]);
@@ -24,8 +26,12 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addedAlbums, setAddedAlbums] = useState<Map<string, "favorite" | "recommendation">>(new Map());
   const [scrolled, setScrolled] = useState(false);
+  const [listType, setListType] = useState<"favorite" | "recommendation">(item.list_type);
+  const [moving, setMoving] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +81,45 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Clean up the remove confirmation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+    };
+  }, []);
+
+  const handleMove = async (newListType: "favorite" | "recommendation") => {
+    if (newListType === listType || moving) return;
+    setMoving(true);
+    const prev = listType;
+    setListType(newListType);
+    try {
+      await moveAlbum(item.id, newListType);
+      onListTypeChange?.(item, newListType);
+    } catch (err) {
+      console.error("Failed to move album:", err);
+      setListType(prev);
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  const handleRemoveClick = async () => {
+    if (!removeConfirm) {
+      setRemoveConfirm(true);
+      removeTimerRef.current = setTimeout(() => setRemoveConfirm(false), 2000);
+    } else {
+      if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+      try {
+        await deleteAlbum(item.id);
+        onRemove?.(item);
+      } catch (err) {
+        console.error("Failed to remove album:", err);
+        setRemoveConfirm(false);
+      }
+    }
+  };
 
   const handleAddAlbum = async (album: ArtistAlbum, listType: "favorite" | "recommendation") => {
     setAddingId(album.spotify_id);
@@ -193,11 +238,63 @@ export function NowPlayingModal({ item, onClose, onPlay }: NowPlayingModalProps)
             {item.creator}
           </p>
 
+          {/* List management: segmented toggle + remove */}
+          {(onRemove || onListTypeChange) && (
+            <div className="flex items-center gap-3 mt-4">
+              {/* Segmented toggle */}
+              <div className="flex border border-[#3d2815] overflow-hidden">
+                <button
+                  onClick={() => handleMove("favorite")}
+                  disabled={moving}
+                  className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all duration-150 disabled:opacity-50"
+                  style={
+                    listType === "favorite"
+                      ? { background: "rgba(255,94,0,0.15)", color: "#ff5e00", borderRight: "1px solid #3d2815" }
+                      : { background: "transparent", color: "#907558", borderRight: "1px solid #3d2815" }
+                  }
+                >
+                  {moving && listType !== "favorite" ? (
+                    <span className="inline-block w-3 h-3 border border-[#ff5e00] border-t-transparent rounded-full animate-spin" />
+                  ) : "★ FAV"}
+                </button>
+                <button
+                  onClick={() => handleMove("recommendation")}
+                  disabled={moving}
+                  className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all duration-150 disabled:opacity-50"
+                  style={
+                    listType === "recommendation"
+                      ? { background: "rgba(0,180,200,0.15)", color: "#00b4c8" }
+                      : { background: "transparent", color: "#907558" }
+                  }
+                >
+                  {moving && listType !== "recommendation" ? (
+                    <span className="inline-block w-3 h-3 border border-[#00b4c8] border-t-transparent rounded-full animate-spin" />
+                  ) : "◈ REC"}
+                </button>
+              </div>
+
+              {/* Remove button */}
+              {onRemove && (
+                <button
+                  onClick={handleRemoveClick}
+                  className="px-2.5 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150"
+                  style={
+                    removeConfirm
+                      ? { background: "rgba(180,0,0,0.15)", color: "#ff5555", borderColor: "rgba(255,85,85,0.5)" }
+                      : { background: "transparent", color: "#907558", borderColor: "rgba(180,0,0,0.3)" }
+                  }
+                >
+                  {removeConfirm ? "Remove?" : "✕"}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Open in Spotify button */}
           <a
             href={item.external_uri || item.external_url || "#"}
             onClick={() => onPlay?.()}
-            className="mt-4 flex items-center gap-2 px-4 py-2 border border-[#1DB954]/40
+            className="mt-3 flex items-center gap-2 px-4 py-2 border border-[#1DB954]/40
                        text-[11px] font-mono tracking-widest uppercase
                        text-[#1DB954] hover:bg-[#1DB954]/10 transition-colors"
           >

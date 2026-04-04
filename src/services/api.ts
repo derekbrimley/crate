@@ -67,6 +67,16 @@ export async function promoteAlbum(id: number): Promise<void> {
   await request(`/albums/${id}`, { method: "POST" });
 }
 
+export async function moveAlbum(
+  id: number,
+  listType: "favorite" | "recommendation"
+): Promise<void> {
+  await request(`/albums/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ list_type: listType }),
+  });
+}
+
 export async function searchSpotify(
   query: string
 ): Promise<{ albums: SpotifySearchResult[] }> {

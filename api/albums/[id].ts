@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { deleteItem, promoteItem, getItems } from "../../lib/queries";
+import { deleteItem, promoteItem, updateItemListType, getItems } from "../../lib/queries";
 import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,6 +21,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const id = parseInt(rawId, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
       await promoteItem(user.id, id);
+      return res.json({ ok: true });
+    }
+
+    case "PATCH": {
+      const id = parseInt(rawId, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+      const { list_type } = req.body ?? {};
+      if (list_type !== "favorite" && list_type !== "recommendation") {
+        return res.status(400).json({ error: "list_type must be 'favorite' or 'recommendation'" });
+      }
+      await updateItemListType(user.id, id, list_type);
       return res.json({ ok: true });
     }
 

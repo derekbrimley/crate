@@ -3,6 +3,7 @@ import { Layout } from "../components/Layout";
 import { useDataCache } from "../contexts/DataCache";
 import { updateConfig } from "../services/api";
 import { GenrePicker } from "../components/GenrePicker";
+import { ContextAlbumsModal } from "../components/ContextAlbumsModal";
 import type { RightNowContext } from "../types";
 
 const FALLBACK_GENRES = [
@@ -65,6 +66,7 @@ export function Settings() {
   );
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [previewContext, setPreviewContext] = useState<RightNowContext | null>(null);
   const [dirty, setDirty] = useState(false);
   const [savingContexts, setSavingContexts] = useState(false);
 
@@ -316,7 +318,7 @@ export function Settings() {
                     </div>
 
                     {/* Prompt hints */}
-                    <div className="mb-5">
+                    <div className="mb-4">
                       <label style={labelStyle}>Prompt hint (sent to Claude)</label>
                       <textarea
                         style={{ ...inputStyle, resize: "vertical", minHeight: 60 }}
@@ -324,6 +326,27 @@ export function Settings() {
                         value={ctx.prompt_hints}
                         onChange={(e) => updateContext(ctx.key, { prompt_hints: e.target.value })}
                       />
+                    </div>
+
+                    {/* Preview albums */}
+                    <div className="mb-5">
+                      <button
+                        onClick={() => setPreviewContext(ctx)}
+                        style={{
+                          fontFamily: '"IBM Plex Mono", monospace',
+                          fontSize: 9,
+                          letterSpacing: "0.16em",
+                          textTransform: "uppercase",
+                          color: "#f2e8d2",
+                          border: "1px solid rgba(242,232,210,0.2)",
+                          background: "transparent",
+                          padding: "5px 10px",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Preview matching albums
+                      </button>
                     </div>
 
                     {/* Delete */}
@@ -451,6 +474,14 @@ export function Settings() {
         )}
 
       </div>
+
+      {previewContext && (
+        <ContextAlbumsModal
+          context={previewContext}
+          items={[...favorites, ...recommendations]}
+          onClose={() => setPreviewContext(null)}
+        />
+      )}
     </Layout>
   );
 }

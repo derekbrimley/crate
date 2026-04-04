@@ -202,6 +202,18 @@ export async function promoteItem(userId: number, itemId: number): Promise<void>
     .eq("user_id", userId);
 }
 
+export async function updateItemListType(
+  userId: number,
+  itemId: number,
+  listType: "favorite" | "recommendation"
+): Promise<void> {
+  await supabaseAdmin
+    .from("items")
+    .update({ list_type: listType })
+    .eq("id", itemId)
+    .eq("user_id", userId);
+}
+
 // ── Picks ─────────────────────────────────────────────────────────────────────
 
 export async function recordPick(

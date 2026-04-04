@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Item, RightNowContext } from "./types";
+import type { Item, LastPickInfo, RightNowContext } from "./types";
+
+const SECONDS_PER_DAY = 86400;
+
+function daysAgo(unixTimestamp: number): number {
+  return (Math.floor(Date.now() / 1000) - unixTimestamp) / SECONDS_PER_DAY;
+}
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -75,17 +81,35 @@ function resolveProfile(context: string): { prefer: string[]; avoid: string[] } 
   return null;
 }
 
+function recencyMultiplier(
+  itemId: number,
+  pickMap: Map<number, LastPickInfo>,
+  weightRecentDays: number,
+  weightMediumDays: number
+): number {
+  const info = pickMap.get(itemId);
+  if (!info) return 1.0;
+  const days = daysAgo(info.picked_at);
+  if (days < weightRecentDays) return 0.5;
+  if (days < weightMediumDays) return 0.75;
+  return 1.0;
+}
+
 function preFilterAlbums(
   items: Item[],
   profile: { prefer: string[]; avoid: string[] } | null,
-  maxCandidates: number
+  maxCandidates: number,
+  pickMap: Map<number, LastPickInfo>,
+  weightRecentDays: number,
+  weightMediumDays: number
 ): Item[] {
-  if (!profile) return items.slice(0, maxCandidates);
+  const scored = items.map((item) => {
+    const genreScore = profile ? scoreAlbum(item, profile) : 0.5;
+    const recency = recencyMultiplier(item.id, pickMap, weightRecentDays, weightMediumDays);
+    return { item, score: genreScore * recency };
+  });
 
-  const scored = items
-    .map((item) => ({ item, score: scoreAlbum(item, profile) }))
-    .sort((a, b) => b.score - a.score);
-
+  scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, maxCandidates).map((s) => s.item);
 }
 
@@ -161,20 +185,42 @@ export async function getSurpriseSuggestion(
   return [];
 }
 
+export interface PickFilterConfig {
+  cooldown_days: number;
+  weight_recent_days: number;
+  weight_medium_days: number;
+}
+
 export async function getContextSuggestions(
   context: string,
   items: Item[],
   count: number,
-  contextProfile?: RightNowContext
+  contextProfile?: RightNowContext,
+  recentPicks?: LastPickInfo[],
+  pickFilterConfig?: PickFilterConfig
 ): Promise<Item[]> {
   if (items.length === 0) return [];
+
+  const cooldownDays = pickFilterConfig?.cooldown_days ?? 3;
+  const weightRecentDays = pickFilterConfig?.weight_recent_days ?? 14;
+  const weightMediumDays = pickFilterConfig?.weight_medium_days ?? 30;
+
+  const pickMap = new Map<number, LastPickInfo>();
+  for (const p of recentPicks ?? []) pickMap.set(p.item_id, p);
+
+  // Exclude albums within cooldown before Claude even sees them
+  const eligible = items.filter((item) => {
+    const info = pickMap.get(item.id);
+    if (!info) return true;
+    return daysAgo(info.picked_at) >= cooldownDays;
+  });
 
   const profile = contextProfile
     ? { prefer: contextProfile.prefer_genres, avoid: contextProfile.avoid_genres }
     : resolveProfile(context);
 
-  // Pre-filter to reduce token usage
-  const candidates = preFilterAlbums(items, profile, MAX_CANDIDATES);
+  // Pre-filter by genre fit + recency penalty to reduce token usage
+  const candidates = preFilterAlbums(eligible, profile, MAX_CANDIDATES, pickMap, weightRecentDays, weightMediumDays);
 
   const albumsPayload = candidates.map((item) => ({
     id: item.id,
@@ -217,12 +263,17 @@ export async function getContextSuggestions(
     // Return empty on parse failure
   }
 
-  // Build the pool from Claude's ranked results, then randomly sample `count` from it.
-  // This keeps all picks relevant (Claude filtered them) while varying which ones appear.
+  // Build the pool from Claude's ranked results.
+  // Safety net: re-filter cooldown albums in case Claude returned IDs not in our filtered set.
   const itemMap = new Map(items.map((i) => [i.id, i]));
   const pool = suggestedIds
     .map((id) => itemMap.get(id))
-    .filter((i): i is Item => !!i);
+    .filter((i): i is Item => {
+      if (!i) return false;
+      const info = pickMap.get(i.id);
+      if (!info) return true;
+      return daysAgo(info.picked_at) >= cooldownDays;
+    });
 
   return pool.sort(() => Math.random() - 0.5).slice(0, count);
 }
