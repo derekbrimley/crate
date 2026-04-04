@@ -181,42 +181,6 @@ export function Lists() {
 
   return (
     <Layout title="The Stacks">
-      {/* Poster wall strip */}
-      <div
-        className="relative overflow-hidden"
-        style={{ height: 100, background: "#0f0a0c", borderBottom: "1px solid #3d2815" }}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none opacity-25"
-          style={{ backgroundImage: "repeating-linear-gradient(90deg,transparent 0px,transparent 40px,rgba(0,0,0,0.1) 40px,rgba(0,0,0,0.1) 41px)" }}
-        />
-        <div className="absolute inset-0 flex items-end px-4 pb-3 gap-3 overflow-hidden">
-          {POSTERS.map((p, i) => (
-            <div
-              key={i}
-              className="shrink-0 relative overflow-hidden"
-              style={{ width: 58, height: 76, background: p.bg, transform: `rotate(${p.rot})`, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 4px 10px rgba(0,0,0,0.7)", opacity: 0.8 }}
-            >
-              <div className="p-1.5 flex flex-col h-full justify-between">
-                <div>
-                  <p className="font-display leading-none" style={{ fontSize: 10, color: p.accent, letterSpacing: "0.03em" }}>{p.artist}</p>
-                  <p className="font-display text-[7px] leading-none mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{p.sub}</p>
-                </div>
-                <p className="font-mono text-[6px]" style={{ color: "rgba(255,255,255,0.25)" }}>{p.detail}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Neon sign */}
-          <div
-            className="absolute right-4 top-3 font-display text-[17px] animate-neon-flicker-slow"
-            style={{ color: "#ff0091", textShadow: "0 0 6px #ff0091,0 0 12px #ff0091,0 0 22px #f09", letterSpacing: "0.3em" }}
-          >
-            RECORDS
-          </div>
-        </div>
-      </div>
-
       {/* Tab bar */}
       <div
         className="sticky z-30 flex px-5 gap-0 border-b border-crate-border"

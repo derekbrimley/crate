@@ -123,8 +123,7 @@ function SearchTab() {
       {!query && (
         <div className="mt-16 flex flex-col items-center gap-4">
           <VinylDisc size={72} />
-          <p className="font-display text-3xl text-crate-muted/20 tracking-widest">DIG IN</p>
-          <p className="font-mono text-[10px] text-crate-muted/40 text-center" style={{ letterSpacing: "0.12em" }}>SEARCH YOUR COLLECTION</p>
+          <p className="font-display text-3xl text-crate-muted/20 tracking-widest">Feel free to look around.</p>
         </div>
       )}
     </>
