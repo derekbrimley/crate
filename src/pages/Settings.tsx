@@ -4,7 +4,7 @@ import { useDataCache } from "../contexts/DataCache";
 import { updateConfig } from "../services/api";
 import { GenrePicker } from "../components/GenrePicker";
 import { ContextAlbumsModal } from "../components/ContextAlbumsModal";
-import type { RightNowContext } from "../types";
+import type { RightNowContext, AppConfig } from "../types";
 
 const FALLBACK_GENRES = [
   "acoustic", "alternative", "ambient", "ambient pop", "blues", "bossa nova",
@@ -15,6 +15,22 @@ const FALLBACK_GENRES = [
   "post-rock", "punk", "r&b", "rap", "reggae", "rock", "shoegaze",
   "singer-songwriter", "soul",
 ];
+
+const COOLDOWN_STOPS = [1, 2, 3, 5, 7]; // cooldown_days
+const COOLDOWN_LABELS = ["Short", "Short", "Medium", "Long", "Long"];
+
+const VARIETY_STOPS = [2.0, 1.5, 1.0, 0.7, 0.4]; // randomness_factor — higher = more predictable
+const VARIETY_LABELS = ["Predictable", "Consistent", "Balanced", "Random", "Chaotic"];
+
+const DISCOVERY_STOPS = [0, 1, 2, 3, 5]; // weight_never_picked_bonus
+const DISCOVERY_LABELS = ["Off", "Subtle", "Moderate", "Strong", "Maximum"];
+
+function nearestIdx(value: number, stops: number[]): number {
+  return stops.reduce(
+    (best, v, i) => (Math.abs(v - value) < Math.abs(stops[best] - value) ? i : best),
+    0
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -30,6 +46,42 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Divider() {
   return <div className="h-px my-6" style={{ background: "rgba(61,40,21,0.5)" }} />;
 }
+
+const sliderStyle = `
+  .algo-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(61,40,21,0.8);
+    outline: none;
+    cursor: pointer;
+  }
+  .algo-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff5e00;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(255,94,0,0.5);
+  }
+  .algo-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff5e00;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 6px rgba(255,94,0,0.5);
+  }
+  .algo-slider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
 
 export function Settings() {
   const { dashboardConfig: config, loadConfig, favorites, recommendations, listsLoaded, loadLists } = useDataCache();
@@ -70,6 +122,17 @@ export function Settings() {
   const [dirty, setDirty] = useState(false);
   const [savingContexts, setSavingContexts] = useState(false);
 
+  const [cooldownIdx, setCooldownIdx] = useState(() =>
+    nearestIdx(config?.cooldown_days ?? 3, COOLDOWN_STOPS)
+  );
+  const [varietyIdx, setVarietyIdx] = useState(() =>
+    nearestIdx(config?.randomness_factor ?? 1.0, VARIETY_STOPS)
+  );
+  const [discoveryIdx, setDiscoveryIdx] = useState(() =>
+    nearestIdx(config?.weight_never_picked_bonus ?? 2, DISCOVERY_STOPS)
+  );
+  const [savingAlgorithm, setSavingAlgorithm] = useState(false);
+
   useEffect(() => {
     if (!config) {
       loadConfig();
@@ -81,6 +144,9 @@ export function Settings() {
       setCardsPerMode(config.cards_per_mode);
       setLocalContexts(config.right_now_contexts ?? []);
       setDirty(false);
+      setCooldownIdx(nearestIdx(config.cooldown_days, COOLDOWN_STOPS));
+      setVarietyIdx(nearestIdx(config.randomness_factor, VARIETY_STOPS));
+      setDiscoveryIdx(nearestIdx(config.weight_never_picked_bonus, DISCOVERY_STOPS));
     }
   }, [config]);
 
@@ -92,6 +158,17 @@ export function Settings() {
       await loadConfig();
     } finally {
       setSavingCards(false);
+    }
+  };
+
+  const handleAlgorithmSave = async (patch: Partial<AppConfig>) => {
+    if (savingAlgorithm) return;
+    setSavingAlgorithm(true);
+    try {
+      await updateConfig(patch);
+      await loadConfig();
+    } finally {
+      setSavingAlgorithm(false);
     }
   };
 
@@ -166,6 +243,7 @@ export function Settings() {
 
   return (
     <Layout title="Settings">
+      <style>{sliderStyle}</style>
       <div className="px-5 pt-6">
 
         {/* ── Cards per section ── */}
@@ -202,6 +280,125 @@ export function Settings() {
         <p className="mt-2" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>
           Albums shown per section on the main screen
         </p>
+
+        <Divider />
+
+        {/* ── Selection Tuning ── */}
+        <SectionLabel>Selection Tuning</SectionLabel>
+        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558", marginBottom: 20 }}>
+          Control how albums are picked for your dashboard
+        </p>
+
+        {/* Cooldown */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#f2e8d2" }}>
+              Cooldown
+            </span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "#ff5e00" }}>
+              {COOLDOWN_LABELS[cooldownIdx]} ({COOLDOWN_STOPS[cooldownIdx]}d)
+            </span>
+          </div>
+          <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558", marginBottom: 10 }}>
+            Days before a picked album can reappear
+          </p>
+          <input
+            type="range"
+            className="algo-slider"
+            min={0}
+            max={4}
+            step={1}
+            value={cooldownIdx}
+            disabled={savingAlgorithm}
+            onChange={(e) => setCooldownIdx(Number(e.target.value))}
+            onPointerUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ cooldown_days: COOLDOWN_STOPS[idx] });
+            }}
+            onKeyUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ cooldown_days: COOLDOWN_STOPS[idx] });
+            }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>1 day</span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>7 days</span>
+          </div>
+        </div>
+
+        {/* Variety */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#f2e8d2" }}>
+              Variety
+            </span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "#ff5e00" }}>
+              {VARIETY_LABELS[varietyIdx]}
+            </span>
+          </div>
+          <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558", marginBottom: 10 }}>
+            How random vs. consistent your picks are
+          </p>
+          <input
+            type="range"
+            className="algo-slider"
+            min={0}
+            max={4}
+            step={1}
+            value={varietyIdx}
+            disabled={savingAlgorithm}
+            onChange={(e) => setVarietyIdx(Number(e.target.value))}
+            onPointerUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ randomness_factor: VARIETY_STOPS[idx] });
+            }}
+            onKeyUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ randomness_factor: VARIETY_STOPS[idx] });
+            }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>Predictable</span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>Chaotic</span>
+          </div>
+        </div>
+
+        {/* Discovery Bias */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#f2e8d2" }}>
+              Discovery Bias
+            </span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "#ff5e00" }}>
+              {DISCOVERY_LABELS[discoveryIdx]}
+            </span>
+          </div>
+          <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558", marginBottom: 10 }}>
+            Favor albums you haven't listened to yet
+          </p>
+          <input
+            type="range"
+            className="algo-slider"
+            min={0}
+            max={4}
+            step={1}
+            value={discoveryIdx}
+            disabled={savingAlgorithm}
+            onChange={(e) => setDiscoveryIdx(Number(e.target.value))}
+            onPointerUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ weight_never_picked_bonus: DISCOVERY_STOPS[idx] });
+            }}
+            onKeyUp={(e) => {
+              const idx = Number((e.target as HTMLInputElement).value);
+              handleAlgorithmSave({ weight_never_picked_bonus: DISCOVERY_STOPS[idx] });
+            }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>Off</span>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: "#907558" }}>Maximum</span>
+          </div>
+        </div>
 
         <Divider />
 
