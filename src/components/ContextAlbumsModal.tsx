@@ -7,16 +7,12 @@ interface Props {
   onClose: () => void;
 }
 
-function scoreAlbum(item: Item, prefer: string[], avoid: string[]): number {
+function scoreAlbum(item: Item, prefer: string[]): number {
   const meta = item.metadata as unknown as Record<string, unknown> | null;
   const genres = (meta?.genres as string[] | undefined) ?? [];
   if (genres.length === 0) return 0.5;
 
   const genreStr = genres.join(" ").toLowerCase();
-
-  for (const term of avoid) {
-    if (genreStr.includes(term.toLowerCase())) return 0.1;
-  }
 
   let preferMatches = 0;
   for (const term of prefer) {
@@ -48,19 +44,18 @@ export function ContextAlbumsModal({ context, items, onClose }: Props) {
     });
   }, []);
 
-  const { matching, neutral, avoided } = useMemo(() => {
+  const { matching, neutral } = useMemo(() => {
     const scored = items.map((item) => ({
       item,
-      score: scoreAlbum(item, context.prefer_genres, context.avoid_genres),
+      score: scoreAlbum(item, context.prefer_genres),
     }));
     return {
       matching: scored.filter((s) => s.score > 0.5).sort((a, b) => b.score - a.score),
       neutral: scored.filter((s) => s.score === 0.5),
-      avoided: scored.filter((s) => s.score < 0.5),
     };
-  }, [items, context.prefer_genres, context.avoid_genres]);
+  }, [items, context.prefer_genres]);
 
-  const noGenresConfigured = context.prefer_genres.length === 0 && context.avoid_genres.length === 0;
+  const noGenresConfigured = context.prefer_genres.length === 0;
 
   return (
     <div
@@ -109,43 +104,26 @@ export function ContextAlbumsModal({ context, items, onClose }: Props) {
             </p>
           ) : (
             <>
-              {/* Matching */}
               {matching.length > 0 && (
                 <Section
                   label={`Matching — ${matching.length} album${matching.length !== 1 ? "s" : ""}`}
                   color="#ff5e00"
                   items={matching.map((s) => s.item)}
                   preferGenres={context.prefer_genres}
-                  avoidGenres={context.avoid_genres}
                 />
               )}
 
-              {/* Neutral */}
               {neutral.length > 0 && (
                 <Section
                   label={`Neutral — ${neutral.length} album${neutral.length !== 1 ? "s" : ""}`}
                   color="#907558"
                   items={neutral.map((s) => s.item)}
                   preferGenres={context.prefer_genres}
-                  avoidGenres={context.avoid_genres}
                   defaultCollapsed={matching.length > 0}
                 />
               )}
 
-              {/* Avoided */}
-              {avoided.length > 0 && (
-                <Section
-                  label={`Avoided — ${avoided.length} album${avoided.length !== 1 ? "s" : ""}`}
-                  color="#907558"
-                  items={avoided.map((s) => s.item)}
-                  preferGenres={context.prefer_genres}
-                  avoidGenres={context.avoid_genres}
-                  defaultCollapsed
-                  dimmed
-                />
-              )}
-
-              {matching.length === 0 && neutral.length === 0 && avoided.length === 0 && (
+              {matching.length === 0 && neutral.length === 0 && (
                 <p className="text-[11px] font-mono text-crate-muted/70 italic">No albums in library.</p>
               )}
             </>
@@ -161,12 +139,10 @@ interface SectionProps {
   color: string;
   items: Item[];
   preferGenres: string[];
-  avoidGenres: string[];
   defaultCollapsed?: boolean;
-  dimmed?: boolean;
 }
 
-function Section({ label, color, items, preferGenres, avoidGenres, defaultCollapsed = false, dimmed = false }: SectionProps) {
+function Section({ label, color, items, preferGenres, defaultCollapsed = false }: SectionProps) {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
 
   return (
@@ -191,8 +167,6 @@ function Section({ label, color, items, preferGenres, avoidGenres, defaultCollap
               key={item.id}
               item={item}
               preferGenres={preferGenres}
-              avoidGenres={avoidGenres}
-              dimmed={dimmed}
             />
           ))}
         </div>
@@ -204,26 +178,18 @@ function Section({ label, color, items, preferGenres, avoidGenres, defaultCollap
 interface AlbumRowProps {
   item: Item;
   preferGenres: string[];
-  avoidGenres: string[];
-  dimmed: boolean;
 }
 
-function AlbumRow({ item, preferGenres, avoidGenres, dimmed }: AlbumRowProps) {
+function AlbumRow({ item, preferGenres }: AlbumRowProps) {
   const meta = item.metadata as unknown as Record<string, unknown> | null;
   const genres = (meta?.genres as string[] | undefined) ?? [];
 
   const matchingGenres = genres.filter((g) =>
     preferGenres.some((p) => g.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(g.toLowerCase()))
   );
-  const avoidedGenres = genres.filter((g) =>
-    avoidGenres.some((a) => g.toLowerCase().includes(a.toLowerCase()) || a.toLowerCase().includes(g.toLowerCase()))
-  );
 
   return (
-    <div
-      className="flex items-center gap-3"
-      style={{ opacity: dimmed ? 0.45 : 1 }}
-    >
+    <div className="flex items-center gap-3">
       {/* Thumbnail */}
       <div
         className="shrink-0 overflow-hidden"
@@ -240,15 +206,10 @@ function AlbumRow({ item, preferGenres, avoidGenres, dimmed }: AlbumRowProps) {
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-mono text-crate-text truncate leading-tight">{item.title}</p>
         <p className="text-[9px] font-mono text-crate-muted/60 truncate">{item.creator}</p>
-        {(matchingGenres.length > 0 || avoidedGenres.length > 0) && (
+        {matchingGenres.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-0.5">
             {matchingGenres.map((g) => (
               <span key={g} className="text-[8px] font-mono tracking-wider px-1 py-px" style={{ color: "#ff5e00", background: "rgba(255,94,0,0.1)", border: "1px solid rgba(255,94,0,0.25)" }}>
-                {g}
-              </span>
-            ))}
-            {avoidedGenres.map((g) => (
-              <span key={g} className="text-[8px] font-mono tracking-wider px-1 py-px" style={{ color: "#907558", background: "rgba(144,117,88,0.1)", border: "1px solid rgba(144,117,88,0.25)" }}>
                 {g}
               </span>
             ))}

@@ -99,7 +99,6 @@ export interface RightNowContext {
   label: string;
   emoji: string;
   prefer_genres: string[];
-  avoid_genres: string[];
   prompt_hints: string;
 }
 

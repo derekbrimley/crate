@@ -6,7 +6,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Morning",
     emoji: "☀️",
     prefer_genres: ["indie pop", "folk", "acoustic", "singer-songwriter", "pop", "jazz", "soul"],
-    avoid_genres: ["metal", "punk", "ambient", "sleep"],
     prompt_hints: "",
   },
   {
@@ -14,7 +13,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Gym / Workout",
     emoji: "💪",
     prefer_genres: ["hip hop", "rap", "metal", "rock", "electronic", "edm", "pop", "punk", "hard rock", "drum and bass"],
-    avoid_genres: ["ambient", "classical", "folk", "acoustic", "sleep", "meditation", "jazz"],
     prompt_hints: "",
   },
   {
@@ -22,7 +20,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Driving",
     emoji: "🚗",
     prefer_genres: ["rock", "classic rock", "pop", "hip hop", "country", "alternative", "indie", "electronic"],
-    avoid_genres: ["ambient", "classical", "sleep", "meditation"],
     prompt_hints: "",
   },
   {
@@ -30,7 +27,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Deep Work",
     emoji: "🧠",
     prefer_genres: ["ambient", "electronic", "post-rock", "classical", "instrumental", "jazz", "lo-fi", "neo-classical"],
-    avoid_genres: ["hip hop", "rap", "metal", "pop", "punk", "comedy"],
     prompt_hints: "",
   },
   {
@@ -38,7 +34,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Cooking",
     emoji: "🍳",
     prefer_genres: ["pop", "soul", "r&b", "jazz", "funk", "bossa nova", "latin", "indie pop"],
-    avoid_genres: ["metal", "ambient", "classical", "sleep"],
     prompt_hints: "",
   },
   {
@@ -46,7 +41,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Hosting / Party",
     emoji: "🎉",
     prefer_genres: ["pop", "indie pop", "soul", "r&b", "funk", "jazz", "latin", "dance"],
-    avoid_genres: ["metal", "ambient", "sleep", "meditation"],
     prompt_hints: "",
   },
   {
@@ -54,7 +48,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Walking / Errands",
     emoji: "🚶",
     prefer_genres: ["pop", "indie", "rock", "hip hop", "electronic", "folk", "jazz", "classical"],
-    avoid_genres: ["ambient", "sleep", "meditation"],
     prompt_hints: "",
   },
   {
@@ -62,7 +55,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Chill / Background",
     emoji: "🧘",
     prefer_genres: ["lo-fi", "chillhop", "indie", "soul", "r&b", "jazz", "ambient", "neo-soul", "folk"],
-    avoid_genres: ["metal", "punk", "edm", "drum and bass"],
     prompt_hints: "",
   },
   {
@@ -70,7 +62,6 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
     label: "Winding Down",
     emoji: "🌙",
     prefer_genres: ["ambient", "folk", "acoustic", "indie folk", "classical", "singer-songwriter", "jazz", "lo-fi", "neo-soul"],
-    avoid_genres: ["metal", "punk", "hip hop", "edm", "drum and bass"],
     prompt_hints: "",
   },
 ];

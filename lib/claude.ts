@@ -101,12 +101,15 @@ function preFilterAlbums(
   maxCandidates: number,
   pickMap: Map<number, LastPickInfo>,
   weightRecentDays: number,
-  weightMediumDays: number
+  weightMediumDays: number,
+  randomnessFactor: number = 1.0
 ): Item[] {
   const scored = items.map((item) => {
     const genreScore = profile ? scoreAlbum(item, profile) : 0.5;
     const recency = recencyMultiplier(item.id, pickMap, weightRecentDays, weightMediumDays);
-    return { item, score: genreScore * recency };
+    const base = genreScore * recency;
+    const jittered = base * Math.pow(Math.random(), 1 / randomnessFactor);
+    return { item, score: jittered };
   });
 
   scored.sort((a, b) => b.score - a.score);
@@ -189,6 +192,7 @@ export interface PickFilterConfig {
   cooldown_days: number;
   weight_recent_days: number;
   weight_medium_days: number;
+  randomness_factor: number;
 }
 
 export async function getContextSuggestions(
@@ -204,6 +208,7 @@ export async function getContextSuggestions(
   const cooldownDays = pickFilterConfig?.cooldown_days ?? 3;
   const weightRecentDays = pickFilterConfig?.weight_recent_days ?? 14;
   const weightMediumDays = pickFilterConfig?.weight_medium_days ?? 30;
+  const randomnessFactor = pickFilterConfig?.randomness_factor ?? 1.0;
 
   const pickMap = new Map<number, LastPickInfo>();
   for (const p of recentPicks ?? []) pickMap.set(p.item_id, p);
@@ -216,11 +221,11 @@ export async function getContextSuggestions(
   });
 
   const profile = contextProfile
-    ? { prefer: contextProfile.prefer_genres, avoid: contextProfile.avoid_genres }
+    ? { prefer: contextProfile.prefer_genres, avoid: [] as string[] }
     : resolveProfile(context);
 
   // Pre-filter by genre fit + recency penalty to reduce token usage
-  const candidates = preFilterAlbums(eligible, profile, MAX_CANDIDATES, pickMap, weightRecentDays, weightMediumDays);
+  const candidates = preFilterAlbums(eligible, profile, MAX_CANDIDATES, pickMap, weightRecentDays, weightMediumDays, randomnessFactor);
 
   const albumsPayload = candidates.map((item) => ({
     id: item.id,

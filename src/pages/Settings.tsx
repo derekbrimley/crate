@@ -197,7 +197,6 @@ export function Settings() {
       label: "New Context",
       emoji: "🎵",
       prefer_genres: [],
-      avoid_genres: [],
       prompt_hints: "",
     };
     setLocalContexts((prev) => [...prev, newCtx]);
@@ -501,16 +500,6 @@ export function Settings() {
                         available={availableGenres}
                         selected={ctx.prefer_genres}
                         onChange={(genres) => updateContext(ctx.key, { prefer_genres: genres })}
-                      />
-                    </div>
-
-                    {/* Avoid genres */}
-                    <div className="mb-4">
-                      <label style={labelStyle}>Avoid genres</label>
-                      <GenrePicker
-                        available={availableGenres}
-                        selected={ctx.avoid_genres}
-                        onChange={(genres) => updateContext(ctx.key, { avoid_genres: genres })}
                       />
                     </div>
 
