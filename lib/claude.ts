@@ -53,20 +53,17 @@ const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[]
   },
 };
 
-function scoreAlbum(item: Item, profile: { prefer: string[]; avoid: string[] }): number {
+function scoreAlbum(item: Item, profile: { prefer: string[] }): number {
   const genres = (item.metadata?.genres as string[] | undefined) ?? [];
-  if (genres.length === 0) return 0.5;
+  if (genres.length === 0) return 0.1;
 
-  const genreStr = genres.join(" ").toLowerCase();
+  const normalizedGenres = new Set(genres.map(g => g.toLowerCase()));
 
   let preferMatches = 0;
   for (const term of profile.prefer) {
-    if (genreStr.includes(term)) preferMatches++;
+    if (normalizedGenres.has(term.toLowerCase())) preferMatches++;
   }
-  for (const term of profile.avoid) {
-    if (genreStr.includes(term)) return 0.1;
-  }
-
+  
   if (preferMatches > 0) return 0.5 + Math.min(preferMatches * 0.15, 0.5);
   return 0.5;
 }
