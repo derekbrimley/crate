@@ -91,21 +91,22 @@ export function Settings() {
   }, [listsLoaded, loadLists]);
 
   const availableGenres = useMemo(() => {
-    const genreSet = new Set<string>();
+    const genreCounts = new Map<string, number>();
     [...favorites, ...recommendations].forEach((item) => {
       try {
         const meta = item.metadata as unknown as Record<string, unknown>;
         const genres = meta?.genres;
-        if (Array.isArray(genres)) genres.forEach((g) => genreSet.add(g));
+        if (Array.isArray(genres)) genres.forEach((g) => genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1));
       } catch {
         // ignore
       }
     });
-    const libraryGenres = Array.from(genreSet).sort();
+    const libraryGenres = Array.from(genreCounts.keys())
+      .sort((a, b) => genreCounts.get(b)! - genreCounts.get(a)!)
     // Merge with fallback if library is sparse
     if (libraryGenres.length < 10) {
       const merged = new Set([...libraryGenres, ...FALLBACK_GENRES]);
-      return Array.from(merged).sort();
+      return Array.from(merged).sort((a, b) => (genreCounts.get(b) ?? 0) - (genreCounts.get(a) ?? 0));
     }
     return libraryGenres;
   }, [favorites, recommendations]);
