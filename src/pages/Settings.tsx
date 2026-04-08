@@ -16,8 +16,8 @@ const FALLBACK_GENRES = [
   "singer-songwriter", "soul",
 ];
 
-const COOLDOWN_STOPS = [1, 2, 3, 5, 7]; // cooldown_days
-const COOLDOWN_LABELS = ["Short", "Short", "Medium", "Long", "Long"];
+const COOLDOWN_STOPS = [0, 3, 7, 14, 31]; // cooldown_days
+const COOLDOWN_LABELS = ["None", "A few days", "A week", "Two weeks", "A month"];
 
 const VARIETY_STOPS = [2.0, 1.5, 1.0, 0.7, 0.4]; // randomness_factor — higher = more predictable
 const VARIETY_LABELS = ["Predictable", "Consistent", "Balanced", "Random", "Chaotic"];
