@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import { DataCacheProvider } from "./contexts/DataCache";
 import { Login } from "./pages/Login";
+import { ResetPassword } from "./pages/ResetPassword";
 import { Dashboard } from "./pages/Dashboard";
 import { AddAlbums } from "./pages/AddAlbums";
 import { Lists } from "./pages/Lists";
@@ -10,7 +11,7 @@ import { History } from "./pages/History";
 import { Settings } from "./pages/Settings";
 
 function AppInner() {
-  const { user, loading, login, loginWithEmail, signUpWithEmail, logout } = useAuth();
+  const { user, loading, login, loginWithEmail, signUpWithEmail, logout, needsPasswordReset, resetPasswordForEmail, updatePassword, clearPasswordReset } = useAuth();
 
   if (loading) {
     return (
@@ -20,8 +21,12 @@ function AppInner() {
     );
   }
 
+  if (needsPasswordReset && user) {
+    return <ResetPassword onUpdatePassword={updatePassword} onCancel={clearPasswordReset} />;
+  }
+
   if (!user) {
-    return <Login onEmailLogin={loginWithEmail} onSignUp={signUpWithEmail} />;
+    return <Login onEmailLogin={loginWithEmail} onSignUp={signUpWithEmail} onForgotPassword={resetPasswordForEmail} />;
   }
 
   return (

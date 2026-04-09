@@ -249,33 +249,9 @@ export async function getPickHistory(
 }
 
 export async function getLastPicksForUser(userId: number): Promise<LastPickInfo[]> {
-  const { data } = await supabaseAdmin
-    .from("picks")
-    .select("item_id, picked_at")
-    .eq("user_id", userId);
-
-  if (!data) return [];
-
-  // Group by item_id client-side (no GROUP BY in Supabase PostgREST directly)
-  const map = new Map<number, { picked_at: number; pick_count: number }>();
-  for (const row of data) {
-    const existing = map.get(row.item_id);
-    if (!existing || row.picked_at > existing.picked_at) {
-      map.set(row.item_id, {
-        picked_at: Math.max(row.picked_at, existing?.picked_at ?? 0),
-        pick_count: (existing?.pick_count ?? 0) + 1,
-      });
-    } else {
-      map.set(row.item_id, {
-        picked_at: existing.picked_at,
-        pick_count: existing.pick_count + 1,
-      });
-    }
-  }
-
-  return Array.from(map.entries()).map(([item_id, { picked_at, pick_count }]) => ({
-    item_id,
-    picked_at,
-    pick_count,
-  }));
+  const { data, error } = await supabaseAdmin.rpc("get_last_picks_for_user", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return (data ?? []) as LastPickInfo[];
 }

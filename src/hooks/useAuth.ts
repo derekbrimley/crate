@@ -30,6 +30,7 @@ function mapUser(supabaseUser: NonNullable<Session["user"]>): User {
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
     let initialized = false;
@@ -51,6 +52,10 @@ export function useAuth() {
         if (!initialized && event === "SIGNED_IN") return;
         await syncUser(session);
         setUser(mapUser(session.user));
+      } else if (event === "PASSWORD_RECOVERY" && session) {
+        await syncUser(session);
+        setUser(mapUser(session.user));
+        setNeedsPasswordReset(true);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
       }
@@ -85,5 +90,31 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { user, loading, login, loginWithEmail, signUpWithEmail, logout };
+  const resetPasswordForEmail = async (email: string): Promise<string | null> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    return error?.message ?? null;
+  };
+
+  const updatePassword = async (password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) setNeedsPasswordReset(false);
+    return error?.message ?? null;
+  };
+
+  const clearPasswordReset = () => setNeedsPasswordReset(false);
+
+  return {
+    user,
+    loading,
+    login,
+    loginWithEmail,
+    signUpWithEmail,
+    logout,
+    needsPasswordReset,
+    resetPasswordForEmail,
+    updatePassword,
+    clearPasswordReset,
+  };
 }

@@ -92,6 +92,7 @@ export interface DashboardData {
   discover?: Item[];
   for_right_now?: Item[];
   surprise?: Item[];
+  _config?: AppConfig;
 }
 
 export interface RightNowContext {

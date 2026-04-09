@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { getDashboard, getConfig, getAlbums, getHistory } from "../services/api";
+import { getDashboard, getDashboardMode, getAlbums, getHistory } from "../services/api";
 import type { Item, DashboardData, AppConfig, PickHistoryEntry } from "../types";
 
 interface DataCacheState {
@@ -52,6 +52,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const loadDashboard = useCallback(async (ctx?: string) => {
     try {
       const result = await getDashboard(ctx);
+      if (result._config) setDashboardConfig(result._config);
       setDashboardData(result);
       setDashboardLoaded(true);
     } catch (err) {
@@ -61,7 +62,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
 
   const refreshDashboardMode = useCallback(async (mode: string, ctx: string) => {
     try {
-      const result = await getDashboard(ctx);
+      const result = await getDashboardMode(mode, ctx);
       setDashboardData((prev) => ({ ...prev, [mode]: result[mode as keyof DashboardData] }));
     } catch (err) {
       console.error("Failed to refresh mode:", err);

@@ -3,6 +3,9 @@ import { getUserById, updateTokens } from "./queries";
 const SPOTIFY_API = "https://api.spotify.com/v1";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 
+let cachedCCToken: string | null = null;
+let cachedCCTokenExpiresAt: number = 0;
+
 export interface SpotifyAlbum {
   id: string;
   name: string;
@@ -103,6 +106,11 @@ async function spotifyFetch(
 }
 
 async function getClientCredentialsToken(): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedCCToken && now < cachedCCTokenExpiresAt - 60) {
+    return cachedCCToken;
+  }
+
   const credentials = Buffer.from(
     `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
   ).toString("base64");
@@ -117,7 +125,9 @@ async function getClientCredentialsToken(): Promise<string> {
   });
 
   if (!res.ok) throw new Error(`Spotify CC token fetch failed: ${res.status}`);
-  const data = (await res.json()) as { access_token: string };
+  const data = (await res.json()) as { access_token: string; expires_in: number };
+  cachedCCToken = data.access_token;
+  cachedCCTokenExpiresAt = now + data.expires_in;
   return data.access_token;
 }
 

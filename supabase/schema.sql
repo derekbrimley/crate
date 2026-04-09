@@ -68,6 +68,17 @@ RETURNS TABLE(
   LIMIT p_limit OFFSET p_offset;
 $$ LANGUAGE SQL SECURITY DEFINER;
 
+-- Used by api/picks/dashboard.ts (aggregated per-item pick info)
+CREATE OR REPLACE FUNCTION get_last_picks_for_user(p_user_id INTEGER)
+RETURNS TABLE(item_id INTEGER, picked_at INTEGER, pick_count BIGINT) AS $$
+  SELECT item_id,
+         MAX(picked_at)::INTEGER AS picked_at,
+         COUNT(*) AS pick_count
+  FROM public.picks
+  WHERE user_id = p_user_id
+  GROUP BY item_id;
+$$ LANGUAGE SQL SECURITY DEFINER;
+
 -- Row Level Security
 ALTER TABLE public.users       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.items       ENABLE ROW LEVEL SECURITY;

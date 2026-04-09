@@ -25,7 +25,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
     dashboardLoaded,
     loadDashboard,
     refreshDashboardMode,
-    loadConfig,
   } = useDataCache();
   const [loading, setLoading] = useState(!dashboardLoaded);
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
@@ -41,29 +40,25 @@ export function Dashboard({ onLogout }: DashboardProps) {
       }));
   const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
 
+  // Load dashboard immediately using "auto" context — server resolves the user's first
+  // configured context, and config is bundled in the response to eliminate the waterfall.
   useEffect(() => {
-    if (!config) {
-      loadConfig();
-    }
-  }, [config, loadConfig]);
+    if (dashboardLoaded) return;
+    setLoading(true);
+    loadDashboard("auto").finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Wait for config so we know the correct initial context before loading the dashboard.
-  // Merging the "set context from config" and "initial load" effects prevents a double-call:
-  // without this, context starts as the CONTEXT_LABELS default, fires a load, then config
-  // arrives and updates context, firing a second load while dashboardLoaded is still false.
+  // Once config arrives (from the dashboard response), sync the active context pill
+  // to match what the server used so the UI stays consistent.
   useEffect(() => {
-    if (!config || dashboardLoaded) return;
-
+    if (!config) return;
     const initialCtx =
       config.right_now_contexts?.[0]?.key ??
       config.contexts?.[0] ??
       Object.keys(CONTEXT_LABELS)[0];
-
     setContext(initialCtx);
-    setLoading(true);
-    loadDashboard(initialCtx).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, dashboardLoaded]);
+  }, [config]);
 
   const [pendingPick, setPendingPick] = useState<{ item: Item; mode: string } | null>(null);
 

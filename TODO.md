@@ -1,3 +1,2 @@
-- make it so you can open up an album in spotify from the list of "more albums by this same artist"
 - display a ticker of notable albums that have come out in the last week that you can click and open
 - 

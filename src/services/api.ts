@@ -146,6 +146,11 @@ export async function getDashboard(context?: string): Promise<DashboardData> {
   return request<DashboardData>(`/picks/dashboard${query}`);
 }
 
+export async function getDashboardMode(mode: string, context: string): Promise<DashboardData> {
+  const params = new URLSearchParams({ mode, context });
+  return request<DashboardData>(`/picks/dashboard?${params}`);
+}
+
 export async function recordPick(data: {
   item_id: number;
   mode: string;

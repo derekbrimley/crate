@@ -12,7 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const context = (req.query.context as string) || null;
+  const requestedMode = (req.query.mode as string) || null;
+  const rawContext = (req.query.context as string) || null;
 
   const [config, allItems, recentPicks] = await Promise.all([
     getAllConfig(user.id),
@@ -23,6 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cardsPerMode = config.cards_per_mode as number;
   const dashboardModes = config.dashboard_modes as string[];
   const rightNowContexts = config.right_now_contexts as RightNowContext[] | undefined;
+
+  // Resolve "auto" to the user's first configured context
+  const context = rawContext === "auto"
+    ? (rightNowContexts?.[0]?.key ?? (config.contexts as string[])?.[0] ?? null)
+    : rawContext;
 
   const selectionConfig: SelectionConfig = {
     cooldown_days: config.cooldown_days as number,
@@ -38,8 +44,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const favorites = allItems.filter((i) => i.list_type === "favorite");
   const recommendations = allItems.filter((i) => i.list_type === "recommendation");
 
+  // When a specific mode is requested, only run that mode
+  const modesToRun = requestedMode && dashboardModes.includes(requestedMode)
+    ? [requestedMode]
+    : dashboardModes;
+
   const modeEntries = await Promise.all(
-    dashboardModes.map(async (mode): Promise<[string, Item[]]> => {
+    modesToRun.map(async (mode): Promise<[string, Item[]]> => {
       switch (mode) {
         case "favorites":
           return ["favorites", selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig)];
@@ -71,14 +82,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           try {
             const suggestions = await getSurpriseSuggestion(favorites);
             const existingIds = new Set(allItems.map((i) => i.external_id));
-            let aiPick: Item | null = null;
 
             // Shuffle so each refresh surfaces a different suggestion
             const shuffled = [...suggestions].sort(() => Math.random() - 0.5);
-            for (const { title, artist } of shuffled) {
-              const searchResults = await searchAlbums(`${title} ${artist}`, 5);
-              const match = searchResults.find((r) => !existingIds.has(r.id));
+
+            // Search all suggestions in parallel, then find first match
+            const searchResults = await Promise.all(
+              shuffled.map(({ title, artist }) =>
+                searchAlbums(`${title} ${artist}`, 5).catch(() => [] as typeof searchResults[number])
+              )
+            );
+
+            let aiPick: Item | null = null;
+            for (let i = 0; i < shuffled.length; i++) {
+              const match = searchResults[i].find((r) => !existingIds.has(r.id));
               if (match) {
+                const { artist } = shuffled[i];
                 aiPick = {
                   id: 0,
                   user_id: user.id,
@@ -111,5 +130,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   );
 
-  res.json(Object.fromEntries(modeEntries));
+  res.json({ ...Object.fromEntries(modeEntries), _config: config });
 }
