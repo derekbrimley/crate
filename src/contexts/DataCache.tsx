@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { getDashboard, getDashboardMode, getAlbums, getHistory } from "../services/api";
+import { getDashboard, getDashboardMode, getAlbums, getHistory, getConfig } from "../services/api";
 import type { Item, DashboardData, AppConfig, PickHistoryEntry } from "../types";
 
 interface DataCacheState {
