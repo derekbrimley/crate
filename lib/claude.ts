@@ -54,8 +54,12 @@ const CONTEXT_GENRE_PROFILES: Record<string, { prefer: string[]; avoid: string[]
 };
 
 function scoreAlbum(item: Item, profile: { prefer: string[] }): number {
+  // If no preferences defined, score everything neutrally
+  if (profile.prefer.length === 0) return 0.5;
+
   const genres = (item.metadata?.genres as string[] | undefined) ?? [];
-  if (genres.length === 0) return 0.1;
+  // Unknown genres — don't penalize, leave at neutral
+  if (genres.length === 0) return 0.5;
 
   const normalizedGenres = new Set(genres.map(g => g.toLowerCase()));
 
@@ -63,9 +67,10 @@ function scoreAlbum(item: Item, profile: { prefer: string[] }): number {
   for (const term of profile.prefer) {
     if (normalizedGenres.has(term.toLowerCase())) preferMatches++;
   }
-  
+
   if (preferMatches > 0) return 0.5 + Math.min(preferMatches * 0.15, 0.5);
-  return 0.5;
+  // Known genres that don't match any preference — deprioritize
+  return 0.1;
 }
 
 function resolveProfile(context: string): { prefer: string[]; avoid: string[] } | null {
@@ -235,6 +240,9 @@ export async function getContextSuggestions(
   // Ask for a larger pool so we can randomly sample from it, giving variety on each refresh
   const poolSize = Math.min(count * 4, MAX_CANDIDATES);
   let userMessage = `Context: "${context}"\n\nAlbums:\n${JSON.stringify(albumsPayload)}\n\nReturn the ${poolSize} best album IDs for this context.`;
+  if (contextProfile?.prefer_genres?.length) {
+    userMessage += `\n\nPreferred genres: ${contextProfile.prefer_genres.join(", ")}. Only pick albums that match these genres unless there are no other options.`;
+  }
   if (contextProfile?.prompt_hints?.trim()) {
     userMessage += `\n\nAdditional hint: ${contextProfile.prompt_hints.trim()}`;
   }
