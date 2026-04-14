@@ -12,11 +12,11 @@ function scoreAlbum(item: Item, prefer: string[]): number {
   const genres = (meta?.genres as string[] | undefined) ?? [];
   if (genres.length === 0) return 0.5;
 
-  const genreStr = genres.join(" ").toLowerCase();
+  const normalizedGenres = new Set(genres.map(g => g.toLowerCase()));
 
   let preferMatches = 0;
   for (const term of prefer) {
-    if (genreStr.includes(term.toLowerCase())) preferMatches++;
+    if (normalizedGenres.has(term.toLowerCase())) preferMatches++;
   }
 
   if (preferMatches > 0) return 0.5 + Math.min(preferMatches * 0.15, 0.5);
@@ -184,9 +184,8 @@ function AlbumRow({ item, preferGenres }: AlbumRowProps) {
   const meta = item.metadata as unknown as Record<string, unknown> | null;
   const genres = (meta?.genres as string[] | undefined) ?? [];
 
-  const matchingGenres = genres.filter((g) =>
-    preferGenres.some((p) => g.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(g.toLowerCase()))
-  );
+  const preferSet = new Set(preferGenres.map(p => p.toLowerCase()));
+  const matchingGenres = genres.filter((g) => preferSet.has(g.toLowerCase()));
 
   return (
     <div className="flex items-center gap-3">
