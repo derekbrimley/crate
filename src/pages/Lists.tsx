@@ -1,128 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
+import { LibraryShelf } from "../components/library/LibraryShelf";
+import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
-import { NowPlayingModal } from "../components/NowPlayingModal";
-import { deleteAlbum, promoteAlbum, moveAlbum } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 
-type Tab = "favorites" | "recommendations";
+const SPINES_PER_ROW = 14;
 
-function getRotation(id: number, index: number): number {
-  return (((id * 13 + index * 7) % 11) - 5) * 0.9;
-}
+type SortKey = "title" | "artist" | "plays" | "recent" | "added";
+type GroupKey = "none" | "artist" | "genre";
 
-const POSTERS = [
-  { artist: "THE ROLLING STONES", sub: "EXILE ON MAIN ST.",  detail: "N. AMERICA · 1972", bg: "linear-gradient(150deg,#1a0000,#3d0a00,#1a0400)", accent: "#ff3d00", rot: "-2.5deg" },
-  { artist: "NIRVANA",            sub: "NEVERMIND",          detail: "WORLD TOUR · 1991", bg: "linear-gradient(150deg,#001020,#002040,#001a30)", accent: "#40c4ff", rot:  "1.5deg"  },
-  { artist: "PINK FLOYD",         sub: "THE WALL",           detail: "EARLS COURT · 1980", bg: "linear-gradient(150deg,#0a0a1a,#0a1040,#050515)", accent: "#e040fb", rot: "-1deg"   },
-  { artist: "TALKING HEADS",      sub: "STOP MAKING SENSE",  detail: "PANTAGES · 1983",   bg: "linear-gradient(150deg,#101000,#2d2800,#101000)", accent: "#ffe400", rot:  "3deg"    },
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "title", label: "TITLE" },
+  { key: "artist", label: "ARTIST" },
+  { key: "plays", label: "PLAYS" },
+  { key: "recent", label: "RECENT" },
+  { key: "added", label: "ADDED" },
 ];
 
-function WallRecord({
-  item, rotation, index, onDelete, onPromote, onOpen, actionId, isRec,
-}: {
-  item: Item; rotation: number; index: number;
-  onDelete: (item: Item) => void; onPromote?: (item: Item) => void;
-  onOpen: (item: Item) => void;
-  actionId: number | null; isRec: boolean;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const busy = actionId === item.id;
+const GROUP_OPTIONS: { key: GroupKey; label: string }[] = [
+  { key: "none", label: "NONE" },
+  { key: "artist", label: "ARTIST" },
+  { key: "genre", label: "GENRE" },
+];
 
-  return (
-    <div
-      className="relative flex flex-col items-center animate-pin-drop"
-      style={{
-        animationDelay: `${index * 45}ms`,
-        animationFillMode: "both",
-        transform: hovered ? "rotate(0deg) scale(1.07) translateY(-5px)" : `rotate(${rotation}deg)`,
-        transformOrigin: "top center",
-        transition: "transform 0.25s cubic-bezier(0.2,0.8,0.2,1)",
-        zIndex: hovered ? 10 : 1,
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Thumbtack */}
-      <div
-        className="absolute -top-1.5 left-1/2 -translate-x-1/2 z-20 rounded-full"
-        style={{
-          width: 10, height: 10,
-          background: "radial-gradient(circle at 35% 35%, #d0c0a0, #8a7050)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.8), inset 0 0 2px rgba(255,255,255,0.2)",
-        }}
-      />
-
-      {/* Polaroid */}
-      <div
-        className="relative"
-        style={{
-          background: "#e4d8c4",
-          padding: "4px 4px 20px",
-          boxShadow: hovered
-            ? "0 14px 36px rgba(0,0,0,0.85), 0 0 0 1px rgba(0,0,0,0.2)"
-            : "0 4px 14px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.15)",
-          transition: "box-shadow 0.25s ease",
-        }}
-      >
-        <div
-          className="cursor-pointer"
-          onClick={() => onOpen(item)}
-          title="View album details"
-        >
-          {item.image_url ? (
-            <img src={item.image_url} alt={item.title} className="object-cover block" style={{ width: 88, height: 88 }} loading="lazy" />
-          ) : (
-            <div className="flex items-center justify-center bg-crate-elevated" style={{ width: 88, height: 88 }}>
-              <VinylDisc size={62} />
-            </div>
-          )}
-        </div>
-        <div className="pt-1.5 px-0.5">
-          <p className="font-type truncate text-center leading-tight" style={{ fontSize: 9, color: "#3a2a1a", maxWidth: 88 }}>
-            {item.title}
-          </p>
-        </div>
-      </div>
-
-      {/* Action buttons on hover */}
-      {hovered && (
-        <div className="absolute -bottom-8 flex gap-1 z-20">
-          {isRec && onPromote && (
-            <button
-              onClick={() => onPromote(item)}
-              disabled={busy}
-              className="font-mono text-[8px] px-2 py-1 transition-all duration-150 disabled:opacity-50"
-              style={{ background: "rgba(255,94,0,0.15)", border: "1px solid rgba(255,94,0,0.5)", color: "#ff5e00", letterSpacing: "0.1em" }}
-            >
-              {busy ? "…" : "★"}
-            </button>
-          )}
-          <button
-            onClick={() => onDelete(item)}
-            disabled={busy}
-            className="font-mono text-[8px] px-2 py-1 transition-all duration-150 disabled:opacity-50"
-            style={{ background: "rgba(180,0,0,0.1)", border: "1px solid rgba(180,0,0,0.3)", color: "#ff5555", letterSpacing: "0.1em" }}
-          >
-            {busy ? "…" : "✕"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+interface ListsProps {
+  onLogout: () => void;
 }
 
-export function Lists() {
-  const [tab, setTab] = useState<Tab>("favorites");
+export function Lists({ onLogout }: ListsProps) {
   const {
     favorites, setFavorites,
-    recommendations, setRecommendations,
     listsLoaded, loadLists,
+    history, historyLoaded, loadHistory,
   } = useDataCache();
+
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(!listsLoaded);
-  const [actionId, setActionId] = useState<number | null>(null);
-  const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
+  const [sort, setSort] = useState<SortKey>("artist");
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [group, setGroup] = useState<GroupKey>("none");
+  const [search, setSearch] = useState("");
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     if (!listsLoaded) {
@@ -131,148 +53,260 @@ export function Lists() {
     }
   }, [listsLoaded, loadLists]);
 
-  const handleDelete = async (item: Item) => {
-    setActionId(item.id);
-    try {
-      await deleteAlbum(item.id);
-      if (item.list_type === "favorite") {
-        setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+  useEffect(() => {
+    if (!historyLoaded) loadHistory();
+  }, [historyLoaded, loadHistory]);
+
+  const pickStats = useMemo(() => {
+    const map = new Map<number, { pickCount: number; lastPickedTs: number | null }>();
+    for (const entry of history) {
+      const existing = map.get(entry.item_id);
+      if (existing) {
+        existing.pickCount += 1;
+        if (entry.picked_at_ts > (existing.lastPickedTs ?? 0)) {
+          existing.lastPickedTs = entry.picked_at_ts;
+        }
       } else {
-        setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+        map.set(entry.item_id, { pickCount: 1, lastPickedTs: entry.picked_at_ts });
       }
-    } finally {
-      setActionId(null);
     }
-  };
+    return map;
+  }, [history]);
 
-  const handlePromote = async (item: Item) => {
-    setActionId(item.id);
-    try {
-      await promoteAlbum(item.id);
-      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
-      setFavorites((prev) => [{ ...item, list_type: "favorite" }, ...prev]);
-    } finally {
-      setActionId(null);
+  const filtered = useMemo(() => {
+    if (!search) return favorites;
+    const q = search.toLowerCase();
+    return favorites.filter(
+      (a) => a.title.toLowerCase().includes(q) || a.creator.toLowerCase().includes(q)
+    );
+  }, [favorites, search]);
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      let v = 0;
+      if (sort === "title") v = a.title.localeCompare(b.title);
+      if (sort === "artist") v = a.creator.localeCompare(b.creator) || a.title.localeCompare(b.title);
+      if (sort === "plays") {
+        v = (pickStats.get(b.id)?.pickCount ?? 0) - (pickStats.get(a.id)?.pickCount ?? 0);
+      }
+      if (sort === "recent") {
+        v = (pickStats.get(b.id)?.lastPickedTs ?? 0) - (pickStats.get(a.id)?.lastPickedTs ?? 0);
+      }
+      if (sort === "added") v = (b.added_at ?? 0) - (a.added_at ?? 0);
+      return v * sortDir;
+    });
+  }, [filtered, sort, sortDir, pickStats]);
+
+  function getGroupKey(item: Item): string {
+    if (group === "artist") return item.creator;
+    if (group === "genre") {
+      try {
+        const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
+        const genres = meta?.genres as string[] | undefined;
+        if (genres && genres.length > 0) return genres[0];
+      } catch {}
+      return "Unknown";
     }
-  };
+    return "All";
+  }
 
-  const handleModalRemove = (item: Item) => {
-    if (item.list_type === "favorite") {
-      setFavorites((prev) => prev.filter((i) => i.id !== item.id));
-    } else {
-      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+  const grouped = useMemo(() => {
+    const map: Record<string, Item[]> = {};
+    for (const item of sorted) {
+      const key = getGroupKey(item);
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
     }
-    setNowPlaying(null);
-  };
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, albums]) => ({ key, albums }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sorted, group]);
 
-  const handleModalListTypeChange = (item: Item, newListType: "favorite" | "recommendation") => {
-    const updated = { ...item, list_type: newListType };
-    if (newListType === "favorite") {
-      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
-      setFavorites((prev) => [updated, ...prev]);
-    } else {
-      setFavorites((prev) => prev.filter((i) => i.id !== item.id));
-      setRecommendations((prev) => [updated, ...prev]);
+  function handleSort(key: SortKey) {
+    if (sort === key) setSortDir((d) => (d === 1 ? -1 : 1));
+    else {
+      setSort(key);
+      setSortDir(1);
     }
-    setNowPlaying(updated);
-  };
+  }
 
-  const items = tab === "favorites" ? favorites : recommendations;
+  const handleRemove = (item: Item) => {
+    setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedAlbumId(null);
+  };
 
   return (
-    <Layout title="The Stacks">
-      {/* Tab bar */}
+    <Layout>
+      {/* Custom header */}
       <div
-        className="sticky z-30 flex px-5 gap-0 border-b border-crate-border"
-        style={{ top: 56, background: "rgba(9,7,10,0.97)", backdropFilter: "blur(12px)" }}
+        className="sticky top-0 z-40 relative"
+        style={{
+          background: "rgba(15,10,12,0.97)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid #3d2815",
+        }}
       >
-        {(["favorites", "recommendations"] as Tab[]).map((t) => {
-          const isActive = tab === t;
-          const count = t === "favorites" ? favorites.length : recommendations.length;
-          const label = t === "favorites" ? "FAVORITES" : "RECS";
-          return (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="py-3 mr-6 font-display text-sm transition-all duration-150 flex items-center gap-2"
+        <div className="max-w-xl mx-auto" style={{ padding: "10px 12px 9px" }}>
+          {/* Title row */}
+          <div className="flex items-center mb-2">
+            <h1
+              className="font-display flex-1 leading-none"
+              style={{ fontSize: 22, color: "#f2e8d2", letterSpacing: "0.4em" }}
+            >
+              LIBRARY
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate("/add")}
+                className="flex items-center justify-center cursor-pointer"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "#ff5e00",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 18,
+                  fontWeight: 300,
+                  lineHeight: 1,
+                  boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
+                }}
+                title="Add albums"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setShowProfile((v) => !v)}
+                className="flex items-center justify-center cursor-pointer"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3a2010, #261406)",
+                  border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
+                  color: showProfile ? "#ff5e00" : "#907558",
+                  fontSize: 12,
+                  boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+                }}
+              >
+                ✦
+              </button>
+            </div>
+          </div>
+
+          {/* Search bar */}
+          <div
+            className="flex items-center gap-1.5 mb-2"
+            style={{
+              border: "1px solid #3d2815",
+              padding: "4px 8px",
+              background: "#1a1210",
+            }}
+          >
+            <span style={{ color: "#907558", fontSize: 11 }}>⌕</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="search albums or artists…"
+              className="flex-1 bg-transparent border-none outline-none font-mono text-crate-text"
+              style={{ fontSize: 11 }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="bg-transparent border-none cursor-pointer"
+                style={{ color: "#907558", fontSize: 10 }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Sort + Group controls */}
+          <div className="flex gap-1 items-center flex-wrap">
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              SORT
+            </span>
+            {SORT_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => handleSort(key)}
+                className="font-mono shrink-0 cursor-pointer"
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  letterSpacing: "0.08em",
+                  border: sort === key ? "1px solid #ff5e00" : "1px solid #3d2815",
+                  background: sort === key ? "rgba(255,94,0,0.1)" : "transparent",
+                  color: sort === key ? "#ff5e00" : "#907558",
+                }}
+              >
+                {label}{sort === key ? (sortDir === 1 ? " ↑" : " ↓") : ""}
+              </button>
+            ))}
+
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              GROUP
+            </span>
+            <select
+              value={group}
+              onChange={(e) => { setGroup(e.target.value as GroupKey); setSelectedAlbumId(null); }}
+              className="font-mono cursor-pointer outline-none"
               style={{
-                borderBottom: isActive ? "2px solid #ff5e00" : "2px solid transparent",
-                color: isActive ? "#ff5e00" : "#907558",
-                letterSpacing: "0.18em",
-                textShadow: isActive ? "0 0 8px rgba(255,94,0,0.4)" : "none",
+                fontSize: 10,
+                padding: "2px 4px",
+                border: group !== "none" ? "1px solid #ff5e00" : "1px solid #3d2815",
+                background: "#1a1210",
+                color: group !== "none" ? "#ff5e00" : "#907558",
               }}
             >
-              {label}
-              {count > 0 && (
-                <span
-                  className="font-mono text-[9px] px-1.5 py-0.5"
-                  style={{
-                    background: isActive ? "rgba(255,94,0,0.12)" : "rgba(61,40,21,0.5)",
-                    color: isActive ? "#ff5e00" : "#907558",
-                    border: `1px solid ${isActive ? "rgba(255,94,0,0.4)" : "rgba(61,40,21,0.8)"}`,
-                  }}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              {GROUP_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
       </div>
 
-      {/* Wall of records */}
-      <div
-        className="relative min-h-[300px] px-5 pt-8 pb-6"
-        style={{ background: "linear-gradient(180deg,#0d0a0e 0%,#09070a 100%)" }}
-      >
-        {/* Wall paneling texture */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-15"
-          style={{ backgroundImage: "repeating-linear-gradient(90deg,transparent 0px,transparent 55px,rgba(0,0,0,0.12) 55px,rgba(0,0,0,0.12) 56px)" }}
-        />
-
+      {/* Shelf content */}
+      <div style={{ paddingTop: 18, paddingBottom: 20 }}>
         {loading ? (
-          <div className="grid grid-cols-3 gap-8 pt-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <div className="animate-pulse" style={{ width: 96, height: 116, background: "#e4d8c4", opacity: 0.15 }} />
+          <div style={{ padding: "0 12px" }}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "#2e1c0a" }} />
+                <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "#0e0609" }} />
+                <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "#221008" }} />
               </div>
             ))}
           </div>
-        ) : items.length === 0 ? (
+        ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <VinylDisc size={56} />
-            <p className="font-display text-3xl text-crate-muted/25 tracking-widest">EMPTY</p>
-            <p className="font-mono text-[10px] text-crate-muted/40 text-center" style={{ letterSpacing: "0.1em" }}>
-              {tab === "favorites" ? "No favorites — dig for records first" : "No recs — add some to discover"}
+            <p className="font-mono text-center" style={{ fontSize: 11, color: "#907558", opacity: 0.5 }}>
+              {search ? "no albums match" : "no favorites yet — add some records"}
             </p>
           </div>
         ) : (
-          <div className="relative grid grid-cols-3 gap-x-4 gap-y-10">
-            {items.map((item, i) => (
-              <WallRecord
-                key={item.id}
-                item={item}
-                rotation={getRotation(item.id, i)}
-                index={i}
-                onDelete={handleDelete}
-                onPromote={handlePromote}
-                onOpen={setNowPlaying}
-                actionId={actionId}
-                isRec={tab === "recommendations"}
-              />
-            ))}
-          </div>
+          grouped.map(({ key, albums }) => (
+            <LibraryShelf
+              key={key}
+              albums={albums}
+              spinesPerRow={SPINES_PER_ROW}
+              groupLabel={group !== "none" ? key : undefined}
+              selectedAlbumId={selectedAlbumId}
+              onSelectAlbum={setSelectedAlbumId}
+              onRemoveAlbum={handleRemove}
+              pickStats={pickStats}
+              sortKey={sort}
+            />
+          ))
         )}
       </div>
-      {nowPlaying && (
-        <NowPlayingModal
-          item={nowPlaying}
-          onClose={() => setNowPlaying(null)}
-          onRemove={handleModalRemove}
-          onListTypeChange={handleModalListTypeChange}
-        />
-      )}
     </Layout>
   );
 }

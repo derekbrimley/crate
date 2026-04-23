@@ -68,6 +68,10 @@ export default {
           "20%":  { opacity: "1" },
           "100%": { opacity: "1" },
         },
+        panelOpen: {
+          from: { opacity: "0", transform: "translateY(-8px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "neon-flicker":      "neonFlicker 3.5s ease-in-out infinite",
@@ -78,6 +82,7 @@ export default {
         "slot-in":           "slotIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "pin-drop":          "pinDrop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "flicker-on":        "flickerOn 0.6s ease-out forwards",
+        "panel-open":        "panelOpen 0.2s cubic-bezier(0.15,0.85,0.25,1) forwards",
       },
     },
   },

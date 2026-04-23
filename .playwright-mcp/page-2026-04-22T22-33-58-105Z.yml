@@ -1,0 +1,81 @@
+- generic [ref=e3]:
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: DAVID BOWIE
+          - paragraph: ZIGGY STARDUST
+        - paragraph: EARLS COURT · 1973
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: LED ZEPPELIN
+          - paragraph: PHYSICAL GRAFFITI
+        - paragraph: N. AMERICA · 1975
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: FLEETWOOD MAC
+          - paragraph: RUMOURS TOUR
+        - paragraph: WORLD TOUR · 1977
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: NEIL YOUNG
+          - paragraph: HARVEST MOON
+        - paragraph: AMERICA · 1993
+  - generic [ref=e4]:
+    - generic [ref=e5]: OPEN
+    - heading "CRATES" [level=1] [ref=e6]
+    - generic [ref=e7]: RECORDS
+    - generic [ref=e10]: INTENTIONAL ALBUM PICKING
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: ▶
+        - generic [ref=e15]: REVISIT YOUR FAVORITES
+      - generic [ref=e16]:
+        - generic [ref=e17]: ◈
+        - generic [ref=e18]: REDISCOVER DEEP CUTS
+      - generic [ref=e19]:
+        - generic [ref=e20]: ◉
+        - generic [ref=e21]: FIND THE RIGHT VIBE
+    - generic [ref=e22]:
+      - button "SIGN IN" [ref=e23] [cursor=pointer]
+      - button "CREATE ACCOUNT" [ref=e24] [cursor=pointer]
+    - generic [ref=e25]:
+      - textbox "EMAIL" [ref=e26]
+      - textbox "PASSWORD" [ref=e27]
+      - button "ENTER" [ref=e28] [cursor=pointer]
+      - button "FORGOT PASSWORD?" [ref=e29] [cursor=pointer]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: FLEETWOOD MAC
+          - paragraph: RUMOURS TOUR
+        - paragraph: WORLD TOUR · 1977
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: NEIL YOUNG
+          - paragraph: HARVEST MOON
+        - paragraph: AMERICA · 1993
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: LIVE IN CONCERT
+          - paragraph: THE CLASH
+          - paragraph: LONDON CALLING
+        - paragraph: UK TOUR · 1979

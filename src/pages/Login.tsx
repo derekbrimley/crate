@@ -259,11 +259,6 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword }: LoginProps) 
           </form>
         )}
       </div>
-
-      {/* Bottom poster strip */}
-      <div className="absolute bottom-0 left-0 right-0 h-[110px] flex items-end pb-2 px-3 gap-2 overflow-hidden pointer-events-none">
-        {POSTERS.slice(2).map((p, i) => <Poster key={i} p={p} w={76} h={96} opacity={0.55} />)}
-      </div>
     </div>
   );
 }

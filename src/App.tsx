@@ -4,9 +4,9 @@ import { useAuth } from "./hooks/useAuth";
 import { DataCacheProvider } from "./contexts/DataCache";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
-import { Dashboard } from "./pages/Dashboard";
-import { AddAlbums } from "./pages/AddAlbums";
+import { Crates } from "./pages/Crates";
 import { Lists } from "./pages/Lists";
+import { AddAlbums } from "./pages/AddAlbums";
 import { History } from "./pages/History";
 import { Settings } from "./pages/Settings";
 
@@ -32,12 +32,12 @@ function AppInner() {
   return (
     <DataCacheProvider>
       <Routes>
-        <Route path="/" element={<Dashboard onLogout={logout} />} />
+        <Route path="/" element={<Crates onLogout={logout} />} />
+        <Route path="/library" element={<Lists onLogout={logout} />} />
         <Route path="/add" element={<AddAlbums />} />
-        <Route path="/lists" element={<Lists />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/callback" element={<Dashboard onLogout={logout} />} />
+        <Route path="/callback" element={<Crates onLogout={logout} />} />
       </Routes>
     </DataCacheProvider>
   );
