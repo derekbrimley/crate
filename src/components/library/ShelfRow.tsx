@@ -1,5 +1,5 @@
 import React, { useRef, useState, useLayoutEffect } from "react";
-import { SpineItem, SPINE_WIDTH, SPINE_HEIGHT } from "./SpineItem";
+import { SpineItem, SPINE_WIDTH, SPINE_HEIGHT, SPINE_HEIGHT_DESKTOP } from "./SpineItem";
 import type { Item } from "../../types";
 
 interface ShelfRowProps {
@@ -13,6 +13,7 @@ interface ShelfRowProps {
   statLabels?: Map<number, string>;
   centerItems?: boolean;
   autoFit?: boolean;
+  onFavorite?: (item: Item) => void;
 }
 
 export function ShelfRow({
@@ -26,6 +27,7 @@ export function ShelfRow({
   statLabels,
   centerItems,
   autoFit,
+  onFavorite,
 }: ShelfRowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
@@ -47,6 +49,8 @@ export function ShelfRow({
     const padding = 16;
     effectiveWidth = Math.floor((measuredWidth - padding) / items.length);
   }
+
+  const effectiveHeight = measuredWidth && measuredWidth >= 600 ? SPINE_HEIGHT_DESKTOP : SPINE_HEIGHT;
 
   const fillerCount = centerItems ? 0 : Math.max(0, spinesPerRow - items.length);
 
@@ -86,7 +90,9 @@ export function ShelfRow({
               onClick={() => onSelectAlbum(selectedAlbumId === item.id ? null : item.id)}
               overlap={i === 0 ? 0 : overlap}
               spineWidth={effectiveWidth}
+              spineHeight={effectiveHeight}
               statLabel={statLabels?.get(item.id)}
+              onFavorite={onFavorite}
             />
           ))}
           {Array.from({ length: fillerCount }).map((_, i) => (
@@ -95,7 +101,7 @@ export function ShelfRow({
               className="shrink-0"
               style={{
                 width: effectiveWidth,
-                height: SPINE_HEIGHT,
+                height: effectiveHeight,
                 marginLeft: (i === 0 && items.length > 0) || i > 0 ? -overlap : undefined,
                 opacity: 0.06,
                 background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)",

@@ -5,7 +5,7 @@ import { ShelfRow } from "../components/library/ShelfRow";
 import { DetailPanel } from "../components/library/DetailPanel";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
-import { recordPick } from "../services/api";
+import { recordPick, promoteAlbum } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 import { CONTEXT_LABELS } from "../types";
@@ -19,7 +19,7 @@ interface CratesProps {
 
 const CRATE_META: Record<string, { name: string; desc: string }> = {
   favorites:     { name: "Favorites",    desc: "From the albums you love" },
-  discover:      { name: "Discover",     desc: "Fresh from your recommendation list" },
+  discover:      { name: "Discover",     desc: "From your recommendation list" },
   for_right_now: { name: "Right Now",    desc: "Matched to the moment" },
   surprise:      { name: "Surprise Me",  desc: "A random pull from the full collection" },
 };
@@ -112,6 +112,14 @@ export function Crates({ onLogout }: CratesProps) {
     }
   };
 
+  const handlePromote = async (item: Item) => {
+    try {
+      await promoteAlbum(item.id);
+    } catch (err) {
+      console.error("Failed to promote album:", err);
+    }
+  };
+
   const handlePick = async (item: Item, mode: string) => {
     try {
       await recordPick({
@@ -137,7 +145,7 @@ export function Crates({ onLogout }: CratesProps) {
           borderBottom: "1px solid #3d2815",
         }}
       >
-        <div className="max-w-xl mx-auto flex items-center" style={{ padding: "10px 12px 9px" }}>
+        <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center" style={{ padding: "10px 12px 9px" }}>
           <h1
             className="font-display flex-1 leading-none"
             style={{
@@ -179,11 +187,13 @@ export function Crates({ onLogout }: CratesProps) {
                 background: "linear-gradient(135deg, #3a2010, #261406)",
                 border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
                 color: showProfile ? "#ff5e00" : "#907558",
-                fontSize: 12,
                 boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
               }}
+              title="Profile"
             >
-              ✦
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -213,6 +223,7 @@ export function Crates({ onLogout }: CratesProps) {
               contextPills={mode === "for_right_now" ? contextPills : undefined}
               activeContext={context}
               onContextChange={handleContextChange}
+              onFavorite={mode === "discover" ? handlePromote : undefined}
             />
           );
         })}
@@ -237,6 +248,7 @@ interface CrateSectionProps {
   contextPills?: { key: string; label: string; emoji: string }[];
   activeContext?: string;
   onContextChange?: (ctx: string) => void;
+  onFavorite?: (item: Item) => void;
 }
 
 function CrateSection({
@@ -253,6 +265,7 @@ function CrateSection({
   contextPills,
   activeContext,
   onContextChange,
+  onFavorite,
 }: CrateSectionProps) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -372,6 +385,7 @@ function CrateSection({
           onSelectAlbum={(id) => {
             onSelectAlbum(id);
           }}
+          onFavorite={onFavorite}
           detailPanel={
             selectedItem ? (
               <DetailPanel
@@ -381,6 +395,7 @@ function CrateSection({
                 onClose={() => onSelectAlbum(null)}
                 onRemove={handleRemove}
                 onPlay={() => onPick(selectedItem, mode)}
+                onPromote={onFavorite ? () => onFavorite(selectedItem) : undefined}
               />
             ) : undefined
           }

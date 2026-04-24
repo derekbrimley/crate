@@ -36,7 +36,7 @@ export function BottomNav() {
         boxShadow: "0 -4px 24px rgba(0,0,0,0.6)",
       }}
     >
-      <div className="flex max-w-xl mx-auto">
+      <div className="flex max-w-xl lg:max-w-4xl mx-auto">
         {NAV_ITEMS.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === "/"} className="flex-1">
             {({ isActive }) => (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "../VinylDisc";
-import { getAlbumDetails, deleteAlbum, addAlbum } from "../../services/api";
+import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum } from "../../services/api";
 import type { Item, AlbumTrack, ArtistAlbum } from "../../types";
 
 interface DetailPanelProps {
@@ -10,6 +10,7 @@ interface DetailPanelProps {
   onClose: () => void;
   onRemove: (item: Item) => void;
   onPlay?: () => void;
+  onPromote?: (item: Item) => void;
 }
 
 function formatLastPlayed(ts: number | null): string {
@@ -35,7 +36,7 @@ function daysAgo(ts: number | null): number {
 
 const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[] }>();
 
-export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay }: DetailPanelProps) {
+export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote }: DetailPanelProps) {
   const cached = detailsCache.get(item.external_id);
   const [genres, setGenres] = useState<string[]>(cached?.genres || []);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>(cached?.artistAlbums || []);
@@ -53,6 +54,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   });
   const [removeConfirm, setRemoveConfirm] = useState(false);
   const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [promoting, setPromoting] = useState(false);
+  const [promoted, setPromoted] = useState(false);
 
   useEffect(() => {
     if (detailsCache.has(item.external_id)) {
@@ -128,6 +131,17 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         setRemoveConfirm(false);
       }
     }
+  };
+
+  const handlePromote = async () => {
+    if (promoting || promoted) return;
+    setPromoting(true);
+    try {
+      await promoteAlbum(item.id);
+      setPromoted(true);
+      onPromote?.(item);
+    } catch {}
+    setPromoting(false);
   };
 
   const lastPlayedDays = daysAgo(lastPickedTs);
@@ -219,7 +233,60 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           ✕
         </button>
       </div>
-
+      
+      {/* Actions */}
+      <div className="flex gap-1.5" style={{ marginBottom: 10 }}>
+        <a
+          href={item.external_uri || item.external_url || "#"}
+          onClick={(e) => { if (!item.external_uri && !item.external_url) e.preventDefault(); else onPlay?.(); }}
+          className="flex-1 flex items-center justify-center gap-1 no-underline text-center font-mono"
+          style={{
+            fontSize: 10,
+            padding: "6px 0",
+            border: "1px solid rgba(29,185,84,0.3)",
+            color: "#1DB954",
+            background: "rgba(29,185,84,0.07)",
+            letterSpacing: "0.1em",
+            textDecoration: "none",
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+          </svg>
+          PLAY ON SPOTIFY
+        </a>
+        {onPromote && (
+          <button
+            onClick={handlePromote}
+            disabled={promoting || promoted}
+            className="font-mono cursor-pointer disabled:opacity-60"
+            style={{
+              fontSize: 10,
+              padding: "6px 10px",
+              border: promoted ? "1px solid rgba(255,94,0,0.6)" : "1px solid rgba(255,94,0,0.35)",
+              color: "#ff5e00",
+              background: promoted ? "rgba(255,94,0,0.15)" : "transparent",
+              letterSpacing: "0.08em",
+            }}
+            title="Move to favorites"
+          >
+            {promoting ? "★ …" : promoted ? "★ FAVED" : "★ FAVORITE"}
+          </button>
+        )}
+        <button
+          onClick={handleRemoveClick}
+          className="font-mono cursor-pointer"
+          style={{
+            fontSize: 10,
+            padding: "6px 10px",
+            border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
+            color: "#ff5555",
+            background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
+          }}
+        >
+          {removeConfirm ? "REMOVE?" : "REMOVE"}
+        </button>
+      </div>
       {/* Genres */}
       <div style={{ minHeight: 28, marginBottom: 10 }}>
         {loadingDetails ? (
@@ -425,41 +492,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         ) : null}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-1.5">
-        <a
-          href={item.external_uri || item.external_url || "#"}
-          onClick={(e) => { if (!item.external_uri && !item.external_url) e.preventDefault(); else onPlay?.(); }}
-          className="flex-1 flex items-center justify-center gap-1 no-underline text-center font-mono"
-          style={{
-            fontSize: 10,
-            padding: "6px 0",
-            border: "1px solid rgba(29,185,84,0.3)",
-            color: "#1DB954",
-            background: "rgba(29,185,84,0.07)",
-            letterSpacing: "0.1em",
-            textDecoration: "none",
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-          </svg>
-          PLAY ON SPOTIFY
-        </a>
-        <button
-          onClick={handleRemoveClick}
-          className="font-mono cursor-pointer"
-          style={{
-            fontSize: 10,
-            padding: "6px 10px",
-            border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
-            color: "#ff5555",
-            background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
-          }}
-        >
-          {removeConfirm ? "REMOVE?" : "REMOVE"}
-        </button>
-      </div>
+      
     </div>
   );
 }

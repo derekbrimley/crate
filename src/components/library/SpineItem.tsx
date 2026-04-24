@@ -3,6 +3,7 @@ import type { Item } from "../../types";
 
 export const SPINE_WIDTH = 46;
 export const SPINE_HEIGHT = 170;
+export const SPINE_HEIGHT_DESKTOP = 212;
 
 interface SpineItemProps {
   item: Item;
@@ -10,7 +11,9 @@ interface SpineItemProps {
   onClick: () => void;
   overlap?: number;
   spineWidth?: number;
+  spineHeight?: number;
   statLabel?: string;
+  onFavorite?: (item: Item) => void;
 }
 
 export function getSpineColor(id: number): string {
@@ -20,13 +23,15 @@ export function getSpineColor(id: number): string {
   return `hsl(${hue}, ${sat}%, ${lit}%)`;
 }
 
-export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth = SPINE_WIDTH, statLabel }: SpineItemProps) {
+export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth = SPINE_WIDTH, spineHeight = SPINE_HEIGHT, statLabel, onFavorite }: SpineItemProps) {
   const [hovered, setHovered] = useState(false);
+  const [favoriting, setFavoriting] = useState(false);
+  const [favorited, setFavorited] = useState(false);
   const color = getSpineColor(item.id);
 
   const isWide = spineWidth >= 90;
   const expanded = !isWide && hovered && !isSelected;
-  const expandedWidth = Math.min(SPINE_HEIGHT, Math.max(spineWidth * 2.5, 120));
+  const expandedWidth = Math.min(spineHeight, Math.max(spineWidth * 2.5, 120));
   const currentWidth = expanded ? expandedWidth : spineWidth;
 
   return (
@@ -38,7 +43,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
       className="shrink-0 cursor-pointer relative overflow-hidden"
       style={{
         width: currentWidth,
-        height: SPINE_HEIGHT,
+        height: spineHeight,
         marginLeft: overlap ? -overlap : undefined,
         transition: "width 0.2s cubic-bezier(0.25,0.85,0.25,1), transform 0.2s cubic-bezier(0.15,0.85,0.25,1), box-shadow 0.2s ease",
         transform: isSelected
@@ -91,6 +96,53 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
         />
       )}
 
+      {onFavorite && !favorited && hovered && !isSelected && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (favoriting) return;
+            setFavoriting(true);
+            onFavorite(item);
+            setFavorited(true);
+          }}
+          className="absolute flex items-center justify-center cursor-pointer"
+          style={{
+            top: 4,
+            right: 4,
+            width: 20,
+            height: 20,
+            background: "rgba(0,0,0,0.7)",
+            border: "1px solid rgba(255,94,0,0.6)",
+            color: "#ff5e00",
+            fontSize: 11,
+            zIndex: 30,
+            lineHeight: 1,
+          }}
+          title="Add to favorites"
+        >
+          ★
+        </button>
+      )}
+
+      {onFavorite && favorited && (
+        <div
+          className="absolute flex items-center justify-center pointer-events-none"
+          style={{
+            top: 4,
+            right: 4,
+            width: 20,
+            height: 20,
+            background: "rgba(0,0,0,0.7)",
+            border: "1px solid rgba(255,94,0,0.6)",
+            color: "#ff5e00",
+            fontSize: 11,
+            zIndex: 30,
+          }}
+        >
+          ★
+        </div>
+      )}
+
       {isWide ? (
         <div
           className="absolute bottom-0 left-0 right-0 pointer-events-none"
@@ -104,9 +156,9 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             className="truncate font-mono"
             style={{
               fontSize: 12,
-              color: isSelected ? "#ff5e00" : "#f2e8d2",
+              color: isSelected ? "#ff5e00" : "rgb(68, 253, 33)",
               letterSpacing: "0.04em",
-              textShadow: isSelected ? "0 0 8px rgba(255,94,0,0.9)" : "0 1px 2px rgba(0,0,0,0.8)",
+              textShadow: isSelected ? "0 0 8px rgba(255,94,0,0.9)" : "0 0 8px rgba(68,253,33,0.6), 0 1px 2px rgba(0,0,0,0.9)",
               fontWeight: 700,
             }}
           >
@@ -139,7 +191,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
               zIndex: 1,
               top: "50%",
               left: "50%",
-              width: SPINE_HEIGHT,
+              width: spineHeight,
               transform: "translate(-50%, -50%) rotate(-90deg)",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -147,13 +199,13 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
               textAlign: "left",
               paddingLeft: 6,
               paddingRight: 6,
-              fontSize: 13,
+              fontSize: 11,
               fontFamily: '"IBM Plex Mono", monospace',
-              color: isSelected ? "#ff5e00" : "#fff",
+              color: isSelected ? "#ff5e00" : "rgb(68, 253, 33)",
               letterSpacing: "0.05em",
               textShadow: isSelected
                 ? "0 0 8px rgba(255,94,0,0.9)"
-                : "0 0 6px rgba(0,0,0,1), 0 0 12px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,1)",
+                : "0 0 8px rgba(68,253,33,0.7), 0 0 16px rgba(68,253,33,0.3), 0 1px 3px rgba(0,0,0,1)",
               fontWeight: 700,
               WebkitTextStroke: "0.3px rgba(0,0,0,0.4)",
             }}
@@ -192,9 +244,9 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             style={{
               fontSize: 12,
               fontFamily: '"IBM Plex Mono", monospace',
-              color: "#f2e8d2",
+              color: "rgb(68, 253, 33)",
               letterSpacing: "0.04em",
-              textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+              textShadow: "0 0 8px rgba(68,253,33,0.6), 0 1px 2px rgba(0,0,0,0.9)",
               fontWeight: 700,
             }}
           >

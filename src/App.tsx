@@ -35,8 +35,8 @@ function AppInner() {
         <Route path="/" element={<Crates onLogout={logout} />} />
         <Route path="/library" element={<Lists onLogout={logout} />} />
         <Route path="/add" element={<AddAlbums />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/history" element={<History onLogout={logout} />} />
+        <Route path="/settings" element={<Settings onLogout={logout} />} />
         <Route path="/callback" element={<Crates onLogout={logout} />} />
       </Routes>
     </DataCacheProvider>

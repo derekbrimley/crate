@@ -18,7 +18,7 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
             backdropFilter: "blur(12px)",
           }}
         >
-          <div className="max-w-xl mx-auto px-5 h-14 flex items-center justify-between">
+          <div className="max-w-xl lg:max-w-4xl mx-auto px-5 h-14 flex items-center justify-between">
             <h1
               className="font-display text-[22px] leading-none text-crate-text tracking-widest"
               style={{ letterSpacing: "0.18em" }}
@@ -29,7 +29,7 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
           </div>
         </header>
       )}
-      <main className="flex-1 max-w-xl mx-auto w-full pb-24">{children}</main>
+      <main className="flex-1 max-w-xl lg:max-w-4xl mx-auto w-full pb-24">{children}</main>
       <BottomNav />
     </div>
   );
