@@ -96,6 +96,13 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
         />
       )}
 
+      {(item.metadata as Record<string, unknown> | null)?._ai_suggested === true && (
+        <div
+          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          style={{ height: 2, background: "#00d4ff", boxShadow: "0 0 8px #00d4ff", zIndex: 2 }}
+        />
+      )}
+
       {onFavorite && !favorited && hovered && !isSelected && (
         <button
           onClick={(e) => {
