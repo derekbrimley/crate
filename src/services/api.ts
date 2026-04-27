@@ -141,9 +141,12 @@ export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> 
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
 
-export async function getDashboard(context?: string): Promise<DashboardData> {
-  const query = context ? `?context=${encodeURIComponent(context)}` : "";
-  return request<DashboardData>(`/picks/dashboard${query}`);
+export async function getDashboard(context?: string, exclude?: string[]): Promise<DashboardData> {
+  const params = new URLSearchParams();
+  if (context) params.set("context", context);
+  if (exclude?.length) params.set("exclude", exclude.join(","));
+  const query = params.toString();
+  return request<DashboardData>(`/picks/dashboard${query ? `?${query}` : ""}`);
 }
 
 export async function getDashboardMode(mode: string, context: string): Promise<DashboardData> {

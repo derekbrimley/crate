@@ -14,6 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const requestedMode = (req.query.mode as string) || null;
   const rawContext = (req.query.context as string) || null;
+  const excludeModes = (req.query.exclude as string)?.split(",").map(s => s.trim()) || [];
 
   const [config, allItems, recentPicks] = await Promise.all([
     getAllConfig(user.id),
@@ -47,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // When a specific mode is requested, only run that mode
   const modesToRun = requestedMode && dashboardModes.includes(requestedMode)
     ? [requestedMode]
-    : dashboardModes;
+    : dashboardModes.filter(m => !excludeModes.includes(m));
 
   const modeEntries = await Promise.all(
     modesToRun.map(async (mode): Promise<[string, Item[]]> => {

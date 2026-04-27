@@ -51,10 +51,21 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
 
   const loadDashboard = useCallback(async (ctx?: string) => {
     try {
-      const result = await getDashboard(ctx);
+      const result = await getDashboard(ctx, ["surprise"]);
       if (result._config) setDashboardConfig(result._config);
       setDashboardData(result);
       setDashboardLoaded(true);
+
+      const modes = result._config?.dashboard_modes as string[] | undefined;
+      if (modes?.includes("surprise")) {
+        getDashboardMode("surprise", ctx || "auto")
+          .then((surpriseResult) => {
+            setDashboardData((prev) => ({ ...prev, surprise: surpriseResult.surprise }));
+          })
+          .catch(() => {
+            setDashboardData((prev) => ({ ...prev, surprise: [] }));
+          });
+      }
     } catch (err) {
       console.error("Failed to load dashboard:", err);
     }

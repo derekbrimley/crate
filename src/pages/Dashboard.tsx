@@ -216,7 +216,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
         <ModeSection
           title={MODE_CONFIG.surprise.title}
           items={data.surprise || []}
-          loading={loading || loadingModes.has("surprise")}
+          loading={loading || loadingModes.has("surprise") || (dashboardLoaded && data.surprise === undefined)}
           mode="surprise"
           onPick={handlePick}
           onRefresh={() => refreshMode("surprise")}
