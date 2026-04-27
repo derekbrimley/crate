@@ -100,7 +100,6 @@ export interface RightNowContext {
   label: string;
   emoji: string;
   prefer_genres: string[];
-  prompt_hints: string;
 }
 
 export interface AppConfig {

@@ -204,7 +204,6 @@ export function Settings({ onLogout }: SettingsProps) {
       label: "New Context",
       emoji: "🎵",
       prefer_genres: [],
-      prompt_hints: "",
     };
     setLocalContexts((prev) => [...prev, newCtx]);
     setExpandedKey(newCtx.key);
@@ -531,17 +530,6 @@ export function Settings({ onLogout }: SettingsProps) {
                         available={availableGenres}
                         selected={ctx.prefer_genres}
                         onChange={(genres) => updateContext(ctx.key, { prefer_genres: genres })}
-                      />
-                    </div>
-
-                    {/* Prompt hints */}
-                    <div className="mb-4">
-                      <label style={labelStyle}>Prompt hint (sent to Claude)</label>
-                      <textarea
-                        style={{ ...inputStyle, resize: "vertical", minHeight: 60 }}
-                        placeholder="e.g. long highway driving, upbeat energy..."
-                        value={ctx.prompt_hints}
-                        onChange={(e) => updateContext(ctx.key, { prompt_hints: e.target.value })}
                       />
                     </div>
 
