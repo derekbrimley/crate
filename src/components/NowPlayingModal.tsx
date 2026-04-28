@@ -273,8 +273,8 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                 </button>
               </div>
 
-              {/* Remove button */}
-              {onRemove && (
+              {/* Remove button — hidden once moved to a different list, since the move already removed it from the original list */}
+              {onRemove && listType === item.list_type && (
                 <button
                   onClick={handleRemoveClick}
                   className="px-2.5 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150"

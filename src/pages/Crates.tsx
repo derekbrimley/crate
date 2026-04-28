@@ -115,6 +115,7 @@ export function Crates({ onLogout }: CratesProps) {
   const handlePromote = async (item: Item) => {
     try {
       await promoteAlbum(item.id);
+      refreshMode("discover");
     } catch (err) {
       console.error("Failed to promote album:", err);
     }
@@ -224,6 +225,7 @@ export function Crates({ onLogout }: CratesProps) {
               activeContext={context}
               onContextChange={handleContextChange}
               onFavorite={mode === "discover" ? handlePromote : undefined}
+              onRemoveAlbum={mode === "discover" ? () => refreshMode("discover") : undefined}
             />
           );
         })}
@@ -249,6 +251,7 @@ interface CrateSectionProps {
   activeContext?: string;
   onContextChange?: (ctx: string) => void;
   onFavorite?: (item: Item) => void;
+  onRemoveAlbum?: () => void;
 }
 
 function CrateSection({
@@ -266,6 +269,7 @@ function CrateSection({
   activeContext,
   onContextChange,
   onFavorite,
+  onRemoveAlbum,
 }: CrateSectionProps) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -283,6 +287,7 @@ function CrateSection({
 
   const handleRemove = () => {
     onSelectAlbum(null);
+    onRemoveAlbum?.();
   };
 
   return (

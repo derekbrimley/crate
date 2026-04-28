@@ -273,19 +273,21 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             {promoting ? "★ …" : promoted ? "★ FAVED" : "★ FAVORITE"}
           </button>
         )}
-        <button
-          onClick={handleRemoveClick}
-          className="font-mono cursor-pointer"
-          style={{
-            fontSize: 10,
-            padding: "6px 10px",
-            border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
-            color: "#ff5555",
-            background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
-          }}
-        >
-          {removeConfirm ? "REMOVE?" : "REMOVE"}
-        </button>
+        {!promoted && (
+          <button
+            onClick={handleRemoveClick}
+            className="font-mono cursor-pointer"
+            style={{
+              fontSize: 10,
+              padding: "6px 10px",
+              border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
+              color: "#ff5555",
+              background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
+            }}
+          >
+            {removeConfirm ? "REMOVE?" : "REMOVE"}
+          </button>
+        )}
       </div>
       {/* Genres */}
       <div style={{ minHeight: 28, marginBottom: 10 }}>
