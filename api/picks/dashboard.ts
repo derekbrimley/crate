@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getAllConfig, getItems, getLastPicksForUser } from "../../lib/queries";
+import { getAllConfig, getItems, getLastPicksForUser, getPendingFriendRecommendations } from "../../lib/queries";
 import { selectAlbums, type SelectionConfig } from "../../lib/selection";
 import { getContextSuggestions, getSurpriseSuggestion } from "../../lib/claude";
 import { searchAlbums, getBestImageUrl } from "../../lib/spotify";
@@ -116,6 +116,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           } catch {
             return ["surprise", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
           }
+        }
+
+        case "from_friends": {
+          const recs = await getPendingFriendRecommendations(user.id, cardsPerMode);
+          const items: Item[] = recs.map((rec) => ({
+            id: rec.id,
+            user_id: user.id,
+            media_type: "album",
+            list_type: "recommendation" as const,
+            title: rec.title,
+            creator: rec.creator,
+            image_url: rec.image_url,
+            external_id: rec.external_id,
+            external_uri: rec.external_uri,
+            external_url: rec.external_url,
+            added_at: rec.sent_at,
+            metadata: {
+              _friend_rec: true,
+              _rec_id: rec.id,
+              _sender_name: rec.sender_display_name,
+            },
+          }));
+          return ["from_friends", items];
         }
 
         default:

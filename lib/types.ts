@@ -47,3 +47,21 @@ export interface RightNowContext {
   prefer_genres: string[];
   prompt_hints: string;
 }
+
+export interface FriendRecommendation {
+  id: number;
+  sender_id: number;
+  recipient_id: number;
+  title: string;
+  creator: string;
+  image_url: string | null;
+  external_id: string;
+  external_uri: string | null;
+  external_url: string | null;
+  metadata: Record<string, unknown> | null;
+  status: "pending" | "accepted" | "dismissed";
+  sent_at: number;
+  acted_at: number | null;
+  sender_display_name: string | null;
+  sender_email: string | null;
+}

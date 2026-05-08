@@ -5,7 +5,7 @@ import { ShelfRow } from "../components/library/ShelfRow";
 import { DetailPanel } from "../components/library/DetailPanel";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
-import { recordPick, promoteAlbum } from "../services/api";
+import { recordPick, promoteAlbum, actOnRecommendation } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 import { CONTEXT_LABELS } from "../types";
@@ -22,6 +22,7 @@ const CRATE_META: Record<string, { name: string; desc: string }> = {
   discover:      { name: "Discover",     desc: "From your recommendation list" },
   for_right_now: { name: "Right Now",    desc: "Matched to the moment" },
   surprise:      { name: "Surprise Me",  desc: "A random pull from the full collection" },
+  from_friends:  { name: "From Friends", desc: "Albums friends sent you" },
 };
 
 export function Crates({ onLogout }: CratesProps) {
@@ -118,6 +119,30 @@ export function Crates({ onLogout }: CratesProps) {
       refreshMode("discover");
     } catch (err) {
       console.error("Failed to promote album:", err);
+    }
+  };
+
+  const handleAcceptFriendRec = async (item: Item) => {
+    const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
+    const recId = meta?._rec_id;
+    if (!recId) return;
+    try {
+      await actOnRecommendation(recId, "accept");
+      refreshMode("from_friends");
+    } catch (err) {
+      console.error("Failed to accept recommendation:", err);
+    }
+  };
+
+  const handleDismissFriendRec = async (item: Item) => {
+    const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
+    const recId = meta?._rec_id;
+    if (!recId) return;
+    try {
+      await actOnRecommendation(recId, "dismiss");
+      refreshMode("from_friends");
+    } catch (err) {
+      console.error("Failed to dismiss recommendation:", err);
     }
   };
 
@@ -224,8 +249,8 @@ export function Crates({ onLogout }: CratesProps) {
               contextPills={mode === "for_right_now" ? contextPills : undefined}
               activeContext={context}
               onContextChange={handleContextChange}
-              onFavorite={mode === "discover" ? handlePromote : undefined}
-              onRemoveAlbum={mode === "discover" ? () => refreshMode("discover") : undefined}
+              onFavorite={mode === "discover" ? handlePromote : mode === "from_friends" ? handleAcceptFriendRec : undefined}
+              onRemoveAlbum={mode === "discover" ? () => refreshMode("discover") : mode === "from_friends" ? (item) => handleDismissFriendRec(item) : undefined}
             />
           );
         })}
@@ -251,7 +276,7 @@ interface CrateSectionProps {
   activeContext?: string;
   onContextChange?: (ctx: string) => void;
   onFavorite?: (item: Item) => void;
-  onRemoveAlbum?: () => void;
+  onRemoveAlbum?: (item: Item) => void;
 }
 
 function CrateSection({
@@ -286,8 +311,8 @@ function CrateSection({
   const stats = selectedItem ? pickStats.get(selectedItem.id) : undefined;
 
   const handleRemove = () => {
+    if (selectedItem && onRemoveAlbum) onRemoveAlbum(selectedItem);
     onSelectAlbum(null);
-    onRemoveAlbum?.();
   };
 
   return (

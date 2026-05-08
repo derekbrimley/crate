@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "../VinylDisc";
-import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum } from "../../services/api";
+import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation } from "../../services/api";
 import type { Item, AlbumTrack, ArtistAlbum } from "../../types";
 
 interface DetailPanelProps {
@@ -56,6 +56,58 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [promoted, setPromoted] = useState(false);
+  const [addingToList, setAddingToList] = useState<"favorite" | "recommendation" | null>(null);
+  const [addedToList, setAddedToList] = useState<"favorite" | "recommendation" | null>(null);
+
+  const isAiSuggested = item.id === 0 && (() => {
+    const m = item.metadata;
+    if (!m) return false;
+    if (typeof m === "object") return (m as Record<string, unknown>)._ai_suggested === true;
+    try { return (JSON.parse(m) as Record<string, unknown>)._ai_suggested === true; } catch { return false; }
+  })();
+
+  const parsedMeta = (() => {
+    const m = item.metadata;
+    if (!m) return null;
+    if (typeof m === "object") return m as Record<string, unknown>;
+    try { return JSON.parse(m) as Record<string, unknown>; } catch { return null; }
+  })();
+  const isFriendRec = parsedMeta?._friend_rec === true;
+  const friendSenderName = isFriendRec ? (parsedMeta?._sender_name as string | null) : null;
+
+  const [sendFormOpen, setSendFormOpen] = useState(false);
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [sendError, setSendError] = useState("");
+
+  const handleSend = async () => {
+    if (!sendEmail.trim()) return;
+    setSendStatus("sending");
+    setSendError("");
+    try {
+      await sendRecommendation({
+        email: sendEmail.trim(),
+        album: {
+          title: item.title,
+          creator: item.creator,
+          image_url: item.image_url,
+          external_id: item.external_id,
+          external_uri: item.external_uri,
+          external_url: item.external_url,
+        },
+      });
+      setSendStatus("sent");
+      setTimeout(() => {
+        setSendFormOpen(false);
+        setSendStatus("idle");
+        setSendEmail("");
+      }, 1500);
+    } catch (err: unknown) {
+      setSendStatus("error");
+      const msg = err instanceof Error ? err.message : "Failed to send";
+      setSendError(msg.includes("404") ? "No user found with that email" : msg.includes("yourself") ? "Can't send to yourself" : "Failed to send");
+    }
+  };
 
   useEffect(() => {
     if (detailsCache.has(item.external_id)) {
@@ -119,6 +171,10 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   }, []);
 
   const handleRemoveClick = async () => {
+    if (isFriendRec) {
+      onRemove(item);
+      return;
+    }
     if (!removeConfirm) {
       setRemoveConfirm(true);
       removeTimerRef.current = setTimeout(() => setRemoveConfirm(false), 2000);
@@ -137,11 +193,28 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
     if (promoting || promoted) return;
     setPromoting(true);
     try {
-      await promoteAlbum(item.id);
+      if (!isFriendRec) await promoteAlbum(item.id);
       setPromoted(true);
       onPromote?.(item);
     } catch {}
     setPromoting(false);
+  };
+
+  const handleAddToLibrary = async (targetList: "favorite" | "recommendation") => {
+    setAddingToList(targetList);
+    try {
+      await addAlbum({
+        spotify_id: item.external_id,
+        title: item.title,
+        artist: item.creator,
+        image_url: item.image_url || undefined,
+        spotify_uri: item.external_uri ?? undefined,
+        spotify_url: item.external_url ?? undefined,
+        list_type: targetList,
+      });
+      setAddedToList(targetList);
+    } catch {}
+    setAddingToList(null);
   };
 
   const lastPlayedDays = daysAgo(lastPickedTs);
@@ -186,11 +259,21 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             {item.title.toUpperCase()}
           </div>
           <div
-            className="font-mono uppercase mb-2"
+            className="font-mono uppercase mb-1"
             style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em" }}
           >
             {item.creator}
           </div>
+          {item.list_type === "recommendation" && !isFriendRec && (
+            <div className="font-mono mb-1" style={{ fontSize: 10, color: "#00b4c8", letterSpacing: "0.08em" }}>
+              ◈ RECOMMENDATION
+            </div>
+          )}
+          {isFriendRec && friendSenderName && (
+            <div className="font-mono mb-1" style={{ fontSize: 10, color: "#a855f7", letterSpacing: "0.05em" }}>
+              From {friendSenderName}
+            </div>
+          )}
 
           <div className="flex gap-1">
             <div
@@ -255,40 +338,129 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           </svg>
           PLAY ON SPOTIFY
         </a>
-        {onPromote && (
-          <button
-            onClick={handlePromote}
-            disabled={promoting || promoted}
-            className="font-mono cursor-pointer disabled:opacity-60"
-            style={{
-              fontSize: 10,
-              padding: "6px 10px",
-              border: promoted ? "1px solid rgba(255,94,0,0.6)" : "1px solid rgba(255,94,0,0.35)",
-              color: "#ff5e00",
-              background: promoted ? "rgba(255,94,0,0.15)" : "transparent",
-              letterSpacing: "0.08em",
-            }}
-            title="Move to favorites"
-          >
-            {promoting ? "★ …" : promoted ? "★ FAVED" : "★ FAVORITE"}
-          </button>
-        )}
-        {!promoted && (
-          <button
-            onClick={handleRemoveClick}
-            className="font-mono cursor-pointer"
-            style={{
-              fontSize: 10,
-              padding: "6px 10px",
-              border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
-              color: "#ff5555",
-              background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
-            }}
-          >
-            {removeConfirm ? "REMOVE?" : "REMOVE"}
-          </button>
+        {isAiSuggested ? (
+          addedToList ? (
+            <span
+              className="font-mono flex items-center px-2"
+              style={{ fontSize: 10, color: addedToList === "favorite" ? "#ff5e00" : "#00b4c8", border: "1px solid currentColor", background: addedToList === "favorite" ? "rgba(255,94,0,0.1)" : "rgba(0,180,200,0.1)" }}
+            >
+              {addedToList === "favorite" ? "★ ADDED" : "◈ ADDED"}
+            </span>
+          ) : (
+            <>
+              <button
+                onClick={() => handleAddToLibrary("favorite")}
+                disabled={addingToList !== null}
+                className="font-mono cursor-pointer disabled:opacity-50"
+                style={{ fontSize: 10, padding: "6px 10px", border: "1px solid rgba(255,94,0,0.5)", color: "#ff5e00", background: "rgba(255,94,0,0.1)", letterSpacing: "0.08em" }}
+              >
+                {addingToList === "favorite" ? "…" : "★ FAV"}
+              </button>
+              <button
+                onClick={() => handleAddToLibrary("recommendation")}
+                disabled={addingToList !== null}
+                className="font-mono cursor-pointer disabled:opacity-50"
+                style={{ fontSize: 10, padding: "6px 10px", border: "1px solid rgba(0,180,200,0.4)", color: "#00b4c8", background: "rgba(0,180,200,0.1)", letterSpacing: "0.08em" }}
+              >
+                {addingToList === "recommendation" ? "…" : "◈ REC"}
+              </button>
+            </>
+          )
+        ) : (
+          <>
+            {onPromote && (
+              <button
+                onClick={handlePromote}
+                disabled={promoting || promoted}
+                className="font-mono cursor-pointer disabled:opacity-60"
+                style={{
+                  fontSize: 10,
+                  padding: "6px 10px",
+                  border: promoted ? "1px solid rgba(255,94,0,0.6)" : "1px solid rgba(255,94,0,0.35)",
+                  color: "#ff5e00",
+                  background: promoted ? "rgba(255,94,0,0.15)" : "transparent",
+                  letterSpacing: "0.08em",
+                }}
+                title="Move to favorites"
+              >
+                {promoting ? "★ …" : promoted ? "★ FAVED" : isFriendRec ? "★ ADD TO FAVORITES" : "★ FAVORITE"}
+              </button>
+            )}
+            {!promoted && (
+              <button
+                onClick={handleRemoveClick}
+                className="font-mono cursor-pointer"
+                style={{
+                  fontSize: 10,
+                  padding: "6px 10px",
+                  border: removeConfirm ? "1px solid rgba(255,85,85,0.5)" : "1px solid rgba(180,0,0,0.35)",
+                  color: "#ff5555",
+                  background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
+                }}
+              >
+                {isFriendRec ? "DISMISS" : removeConfirm ? "REMOVE?" : "REMOVE"}
+              </button>
+            )}
+          </>
         )}
       </div>
+      {/* Send to Friend */}
+      {!isFriendRec && !isAiSuggested && (
+        <div style={{ marginBottom: 10 }}>
+          {!sendFormOpen ? (
+            <button
+              onClick={() => setSendFormOpen(true)}
+              className="font-mono cursor-pointer w-full"
+              style={{
+                fontSize: 10,
+                padding: "5px 0",
+                border: "1px solid rgba(168,85,247,0.35)",
+                color: "#a855f7",
+                background: "transparent",
+                letterSpacing: "0.1em",
+              }}
+            >
+              SEND TO FRIEND
+            </button>
+          ) : (
+            <div style={{ border: "1px solid rgba(168,85,247,0.35)", padding: "8px" }}>
+              <div className="flex gap-1.5">
+                <input
+                  type="email"
+                  value={sendEmail}
+                  onChange={(e) => { setSendEmail(e.target.value); if (sendStatus === "error") setSendStatus("idle"); }}
+                  placeholder="friend@email.com"
+                  className="flex-1 bg-transparent outline-none font-mono"
+                  style={{ fontSize: 10, color: "#f2e8d2", border: "1px solid #3d2815", padding: "4px 6px" }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+                  disabled={sendStatus === "sending" || sendStatus === "sent"}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={sendStatus === "sending" || sendStatus === "sent" || !sendEmail.trim()}
+                  className="font-mono cursor-pointer disabled:opacity-50"
+                  style={{ fontSize: 10, padding: "4px 8px", border: "1px solid rgba(168,85,247,0.5)", color: "#a855f7", background: "rgba(168,85,247,0.1)", letterSpacing: "0.08em" }}
+                >
+                  {sendStatus === "sending" ? "…" : sendStatus === "sent" ? "SENT!" : "SEND"}
+                </button>
+                <button
+                  onClick={() => { setSendFormOpen(false); setSendEmail(""); setSendStatus("idle"); setSendError(""); }}
+                  className="font-mono cursor-pointer"
+                  style={{ fontSize: 10, padding: "4px 6px", border: "1px solid #3d2815", color: "#907558", background: "transparent" }}
+                >
+                  ✕
+                </button>
+              </div>
+              {sendStatus === "error" && sendError && (
+                <div className="font-mono mt-1" style={{ fontSize: 10, color: "#ff5555" }}>
+                  {sendError}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Genres */}
       <div style={{ minHeight: 28, marginBottom: 10 }}>
         {loadingDetails ? (

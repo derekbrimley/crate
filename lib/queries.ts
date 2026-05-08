@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { DEFAULT_CONFIG } from "./defaults";
-import type { User, Item, Pick, LastPickInfo } from "./types";
+import type { User, Item, Pick, LastPickInfo, FriendRecommendation } from "./types";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -254,4 +254,82 @@ export async function getLastPicksForUser(userId: number): Promise<LastPickInfo[
   });
   if (error) throw error;
   return (data ?? []) as LastPickInfo[];
+}
+
+// ── Friend Recommendations ───────────────────────────────────────────────────
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const { data } = await supabaseAdmin
+    .from("users")
+    .select("*")
+    .eq("email", email.toLowerCase().trim())
+    .single();
+  return (data as User) ?? null;
+}
+
+export async function sendFriendRecommendation(
+  senderId: number,
+  senderDisplayName: string | null,
+  senderEmail: string | null,
+  recipientId: number,
+  album: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+    metadata?: Record<string, unknown> | null;
+  }
+): Promise<FriendRecommendation> {
+  const now = Math.floor(Date.now() / 1000);
+  const { data, error } = await supabaseAdmin
+    .from("friend_recommendations")
+    .insert({
+      sender_id: senderId,
+      recipient_id: recipientId,
+      title: album.title,
+      creator: album.creator,
+      image_url: album.image_url,
+      external_id: album.external_id,
+      external_uri: album.external_uri,
+      external_url: album.external_url,
+      metadata: album.metadata ?? null,
+      status: "pending",
+      sent_at: now,
+      sender_display_name: senderDisplayName,
+      sender_email: senderEmail,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as FriendRecommendation;
+}
+
+export async function getPendingFriendRecommendations(
+  recipientId: number,
+  limit = 4
+): Promise<FriendRecommendation[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("*")
+    .eq("recipient_id", recipientId)
+    .eq("status", "pending")
+    .order("sent_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as FriendRecommendation[];
+}
+
+export async function updateFriendRecommendationStatus(
+  recipientId: number,
+  recId: number,
+  status: "accepted" | "dismissed"
+): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  await supabaseAdmin
+    .from("friend_recommendations")
+    .update({ status, acted_at: now })
+    .eq("id", recId)
+    .eq("recipient_id", recipientId);
 }

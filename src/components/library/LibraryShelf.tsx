@@ -15,6 +15,7 @@ interface LibraryShelfProps {
   selectedAlbumId: number | null;
   onSelectAlbum: (id: number | null) => void;
   onRemoveAlbum: (item: Item) => void;
+  onPromoteAlbum?: (item: Item) => void;
   pickStats: Map<number, PickStats>;
   sortKey?: string;
 }
@@ -49,6 +50,7 @@ export function LibraryShelf({
   selectedAlbumId,
   onSelectAlbum,
   onRemoveAlbum,
+  onPromoteAlbum,
   pickStats,
   sortKey,
 }: LibraryShelfProps) {
@@ -110,6 +112,7 @@ export function LibraryShelf({
                     lastPickedTs={stats?.lastPickedTs ?? null}
                     onClose={() => onSelectAlbum(null)}
                     onRemove={onRemoveAlbum}
+                    onPromote={selectedItem.list_type === "recommendation" ? onPromoteAlbum : undefined}
                   />
                 ) : undefined
               }

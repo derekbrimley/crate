@@ -29,9 +29,18 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
   const [listType, setListType] = useState<"favorite" | "recommendation">(item.list_type);
   const [moving, setMoving] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState(false);
+  const [addingToList, setAddingToList] = useState<"favorite" | "recommendation" | null>(null);
+  const [addedToList, setAddedToList] = useState<"favorite" | "recommendation" | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isAiSuggested = item.id === 0 && (() => {
+    const m = item.metadata;
+    if (!m) return false;
+    if (typeof m === "object") return m._ai_suggested === true;
+    try { return (JSON.parse(m) as Record<string, unknown>)._ai_suggested === true; } catch { return false; }
+  })();
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +150,26 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
     }
   };
 
+  const handleAddToLibrary = async (targetList: "favorite" | "recommendation") => {
+    setAddingToList(targetList);
+    try {
+      await addAlbum({
+        spotify_id: item.external_id,
+        title: item.title,
+        artist: item.creator,
+        image_url: item.image_url ?? undefined,
+        spotify_uri: item.external_uri ?? undefined,
+        spotify_url: item.external_url ?? undefined,
+        list_type: targetList,
+      });
+      setAddedToList(targetList);
+    } catch (err) {
+      console.error("Failed to add album:", err);
+    } finally {
+      setAddingToList(null);
+    }
+  };
+
   const multiDisc = tracks.some((t) => t.disc > 1);
 
   const sortedArtistAlbums = [...artistAlbums].sort((a, b) => {
@@ -238,8 +267,39 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
             {item.creator}
           </p>
 
-          {/* List management: segmented toggle + remove */}
-          {(onRemove || onListTypeChange) && (
+          {/* List management */}
+          {isAiSuggested ? (
+            <div className="flex items-center gap-3 mt-4">
+              {addedToList ? (
+                <span className="text-[10px] font-mono tracking-wider uppercase" style={{ color: addedToList === "favorite" ? "#ff5e00" : "#00b4c8" }}>
+                  {addedToList === "favorite" ? "★ Added to Favorites" : "◈ Added to Recommendations"}
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleAddToLibrary("favorite")}
+                    disabled={addingToList !== null}
+                    className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150 disabled:opacity-50"
+                    style={{ color: "#ff5e00", borderColor: "rgba(255,94,0,0.5)", background: "rgba(255,94,0,0.1)" }}
+                  >
+                    {addingToList === "favorite" ? (
+                      <span className="inline-block w-3 h-3 border border-[#ff5e00] border-t-transparent rounded-full animate-spin" />
+                    ) : "★ FAV"}
+                  </button>
+                  <button
+                    onClick={() => handleAddToLibrary("recommendation")}
+                    disabled={addingToList !== null}
+                    className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150 disabled:opacity-50"
+                    style={{ color: "#00b4c8", borderColor: "rgba(0,180,200,0.4)", background: "rgba(0,180,200,0.1)" }}
+                  >
+                    {addingToList === "recommendation" ? (
+                      <span className="inline-block w-3 h-3 border border-[#00b4c8] border-t-transparent rounded-full animate-spin" />
+                    ) : "◈ REC"}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (onRemove || onListTypeChange) && (
             <div className="flex items-center gap-3 mt-4">
               {/* Segmented toggle */}
               <div className="flex border border-[#3d2815] overflow-hidden">

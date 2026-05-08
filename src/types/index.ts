@@ -17,7 +17,7 @@ export interface Item {
   external_uri: string | null;
   external_url: string | null;
   added_at: number;
-  metadata: string | null;
+  metadata: Record<string, unknown> | string | null;
 }
 
 export interface SpotifySearchResult {
@@ -85,14 +85,33 @@ export interface AlbumDetails {
   genres: string[];
 }
 
-export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise";
+export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";
 
 export interface DashboardData {
   favorites?: Item[];
   discover?: Item[];
   for_right_now?: Item[];
   surprise?: Item[];
+  from_friends?: Item[];
   _config?: AppConfig;
+}
+
+export interface FriendRecommendation {
+  id: number;
+  sender_id: number;
+  recipient_id: number;
+  title: string;
+  creator: string;
+  image_url: string | null;
+  external_id: string;
+  external_uri: string | null;
+  external_url: string | null;
+  metadata: Record<string, unknown> | null;
+  status: "pending" | "accepted" | "dismissed";
+  sent_at: number;
+  acted_at: number | null;
+  sender_display_name: string | null;
+  sender_email: string | null;
 }
 
 export interface RightNowContext {

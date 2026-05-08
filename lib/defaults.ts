@@ -67,7 +67,7 @@ const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
 ];
 
 export const DEFAULT_CONFIG: Record<string, unknown> = {
-  dashboard_modes: ["favorites", "discover", "for_right_now", "surprise"],
+  dashboard_modes: ["favorites", "discover", "for_right_now", "surprise", "from_friends"],
   cards_per_mode: 2,
   cooldown_days: 3,
   weight_recent_days: 14,

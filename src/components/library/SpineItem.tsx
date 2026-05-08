@@ -103,6 +103,15 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
         />
       )}
 
+      {item.list_type === "recommendation" && (
+        <div
+          className="absolute top-1 left-1 pointer-events-none font-mono"
+          style={{ fontSize: 9, color: "#00b4c8", zIndex: 3, textShadow: "0 0 4px rgba(0,180,200,0.8), 0 1px 2px rgba(0,0,0,0.9)" }}
+        >
+          ◈
+        </div>
+      )}
+
       {onFavorite && !favorited && hovered && !isSelected && (
         <button
           onClick={(e) => {

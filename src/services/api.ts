@@ -171,6 +171,35 @@ export async function getHistory(
   );
 }
 
+// ── Friend Recommendations ───────────────────────────────────────────────────
+
+export async function sendRecommendation(data: {
+  email: string;
+  album: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+  };
+}): Promise<{ recommendation: unknown }> {
+  return request<{ recommendation: unknown }>("/recommendations/send", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function actOnRecommendation(
+  recId: number,
+  action: "accept" | "dismiss"
+): Promise<{ ok: true }> {
+  return request<{ ok: true }>(`/recommendations/${recId}`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 export async function getConfig(): Promise<{ config: AppConfig }> {

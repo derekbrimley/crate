@@ -11,6 +11,7 @@ const SPINES_PER_ROW = 14;
 
 type SortKey = "title" | "artist" | "plays" | "recent" | "added";
 type GroupKey = "none" | "artist" | "genre";
+type ListFilter = "all" | "favorite" | "recommendation";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "title", label: "TITLE" },
@@ -33,6 +34,7 @@ interface ListsProps {
 export function Lists({ onLogout }: ListsProps) {
   const {
     favorites, setFavorites,
+    recommendations, setRecommendations,
     listsLoaded, loadLists,
     history, historyLoaded, loadHistory,
   } = useDataCache();
@@ -43,6 +45,7 @@ export function Lists({ onLogout }: ListsProps) {
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [group, setGroup] = useState<GroupKey>("none");
   const [search, setSearch] = useState("");
+  const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -73,13 +76,19 @@ export function Lists({ onLogout }: ListsProps) {
     return map;
   }, [history]);
 
+  const allItems = useMemo(() => {
+    if (listFilter === "favorite") return favorites;
+    if (listFilter === "recommendation") return recommendations;
+    return [...favorites, ...recommendations];
+  }, [favorites, recommendations, listFilter]);
+
   const filtered = useMemo(() => {
-    if (!search) return favorites;
+    if (!search) return allItems;
     const q = search.toLowerCase();
-    return favorites.filter(
+    return allItems.filter(
       (a) => a.title.toLowerCase().includes(q) || a.creator.toLowerCase().includes(q)
     );
-  }, [favorites, search]);
+  }, [allItems, search]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -133,7 +142,13 @@ export function Lists({ onLogout }: ListsProps) {
 
   const handleRemove = (item: Item) => {
     setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+    setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
     setSelectedAlbumId(null);
+  };
+
+  const handlePromote = (item: Item) => {
+    setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+    setFavorites((prev) => [...prev, { ...item, list_type: "favorite" as const }]);
   };
 
   return (
@@ -251,6 +266,29 @@ export function Lists({ onLogout }: ListsProps) {
             <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
 
             <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              LIST
+            </span>
+            {([["all", "ALL"], ["favorite", "★ FAV"], ["recommendation", "◈ REC"]] as [ListFilter, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => { setListFilter(key); setSelectedAlbumId(null); }}
+                className="font-mono shrink-0 cursor-pointer"
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  letterSpacing: "0.08em",
+                  border: listFilter === key ? "1px solid #ff5e00" : "1px solid #3d2815",
+                  background: listFilter === key ? "rgba(255,94,0,0.1)" : "transparent",
+                  color: listFilter === key ? "#ff5e00" : "#907558",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
               GROUP
             </span>
             <select
@@ -290,7 +328,7 @@ export function Lists({ onLogout }: ListsProps) {
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <VinylDisc size={56} />
             <p className="font-mono text-center" style={{ fontSize: 11, color: "#907558", opacity: 0.5 }}>
-              {search ? "no albums match" : "no favorites yet — add some records"}
+              {search ? "no albums match" : listFilter === "recommendation" ? "no recommendations yet" : listFilter === "favorite" ? "no favorites yet — add some records" : "no albums yet — add some records"}
             </p>
           </div>
         ) : (
@@ -303,6 +341,7 @@ export function Lists({ onLogout }: ListsProps) {
               selectedAlbumId={selectedAlbumId}
               onSelectAlbum={setSelectedAlbumId}
               onRemoveAlbum={handleRemove}
+              onPromoteAlbum={handlePromote}
               pickStats={pickStats}
               sortKey={sort}
             />
