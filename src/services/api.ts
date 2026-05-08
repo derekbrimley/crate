@@ -184,9 +184,9 @@ export async function sendRecommendation(data: {
     external_url: string | null;
   };
 }): Promise<{ recommendation: unknown }> {
-  return request<{ recommendation: unknown }>("/recommendations/send", {
+  return request<{ recommendation: unknown }>("/recommendations", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ action: "send", ...data }),
   });
 }
 
@@ -194,9 +194,9 @@ export async function actOnRecommendation(
   recId: number,
   action: "accept" | "dismiss"
 ): Promise<{ ok: true }> {
-  return request<{ ok: true }>(`/recommendations/${recId}`, {
+  return request<{ ok: true }>("/recommendations", {
     method: "POST",
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, rec_id: recId }),
   });
 }
 
