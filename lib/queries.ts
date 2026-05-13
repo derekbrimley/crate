@@ -333,3 +333,66 @@ export async function updateFriendRecommendationStatus(
     .eq("id", recId)
     .eq("recipient_id", recipientId);
 }
+
+export async function getRecentRecipients(
+  senderId: number
+): Promise<{ display_name: string | null; email: string | null }[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("recipient_id")
+    .eq("sender_id", senderId)
+    .order("sent_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const seen = new Set<number>();
+  const uniqueIds: number[] = [];
+  for (const r of data) {
+    if (!seen.has(r.recipient_id)) {
+      seen.add(r.recipient_id);
+      uniqueIds.push(r.recipient_id);
+    }
+  }
+
+  const { data: users } = await supabaseAdmin
+    .from("users")
+    .select("display_name, email")
+    .in("id", uniqueIds);
+
+  return (users ?? []) as { display_name: string | null; email: string | null }[];
+}
+
+export async function getSentRecommendationsForAlbum(
+  senderId: number,
+  externalId: string
+): Promise<{ recipient_name: string | null; recipient_email: string | null; sent_at: number; status: string }[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("recipient_id, sent_at, status")
+    .eq("sender_id", senderId)
+    .eq("external_id", externalId)
+    .order("sent_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const recipientIds = [...new Set(data.map((r) => r.recipient_id))];
+  const { data: users } = await supabaseAdmin
+    .from("users")
+    .select("id, display_name, email")
+    .in("id", recipientIds);
+
+  const userMap = new Map<number, { display_name: string | null; email: string | null }>();
+  for (const u of users ?? []) {
+    userMap.set(u.id, { display_name: u.display_name, email: u.email });
+  }
+
+  return data.map((r) => {
+    const recipient = userMap.get(r.recipient_id);
+    return {
+      recipient_name: recipient?.display_name ?? null,
+      recipient_email: recipient?.email ?? null,
+      sent_at: r.sent_at,
+      status: r.status,
+    };
+  });
+}

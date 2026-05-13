@@ -7,6 +7,7 @@ import {
   updateFriendRecommendationStatus,
   addItem,
 } from "../../lib/queries";
+import { sendRecNotificationEmail } from "../../lib/email";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -52,6 +53,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           external_url: album.external_url ?? null,
         }
       );
+
+      sendRecNotificationEmail(
+        recipient.email,
+        user.display_name || "A friend",
+        album.title,
+        album.creator
+      ).catch(() => {});
 
       return res.json({ recommendation });
     }

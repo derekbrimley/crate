@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Crate?
+## What is s?
 
-Crate is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums (favorites + recommendations), and get weighted random selections across different modes (favorites, discover, for_right_now, surprise). The "for_right_now" mode uses Claude Haiku to suggest context-aware picks (e.g., "cooking dinner").
+Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums (favorites + recommendations), and get weighted random selections across different modes (favorites, discover, for_right_now, surprise). The "for_right_now" mode uses Claude Haiku to suggest context-aware picks (e.g., "cooking dinner").
 
 ## Development Commands
 

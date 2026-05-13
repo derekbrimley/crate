@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { deleteItem, promoteItem, updateItemListType, getItems } from "../../lib/queries";
+import { deleteItem, promoteItem, updateItemListType, getItems, getSentRecommendationsForAlbum } from "../../lib/queries";
 import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -100,10 +100,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           artists: t.artists.map((a) => a.name).join(", "),
         }));
 
+        const sentTo = await getSentRecommendationsForAlbum(user.id, spotifyId);
+
         return res.json({
           tracks: trackList,
           artist_albums: otherAlbums,
           genres,
+          sent_to: sentTo,
         });
       } catch (err: any) {
         console.error("Album details error:", err);

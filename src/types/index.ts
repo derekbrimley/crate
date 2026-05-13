@@ -79,10 +79,18 @@ export interface ArtistAlbum {
   already_added: "favorite" | "recommendation" | null;
 }
 
+export interface SentRecommendation {
+  recipient_name: string | null;
+  recipient_email: string | null;
+  sent_at: number;
+  status: string;
+}
+
 export interface AlbumDetails {
   tracks: AlbumTrack[];
   artist_albums: ArtistAlbum[];
   genres: string[];
+  sent_to: SentRecommendation[];
 }
 
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";

@@ -190,6 +190,10 @@ export async function sendRecommendation(data: {
   });
 }
 
+export async function getRecentRecipients(): Promise<{ recipients: { display_name: string | null; email: string | null }[] }> {
+  return request<{ recipients: { display_name: string | null; email: string | null }[] }>("/recommendations/recipients");
+}
+
 export async function actOnRecommendation(
   recId: number,
   action: "accept" | "dismiss"

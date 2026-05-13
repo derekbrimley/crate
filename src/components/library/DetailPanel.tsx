@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "../VinylDisc";
-import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation } from "../../services/api";
-import type { Item, AlbumTrack, ArtistAlbum } from "../../types";
+import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation, getRecentRecipients } from "../../services/api";
+import type { Item, AlbumTrack, ArtistAlbum, SentRecommendation } from "../../types";
 
 interface DetailPanelProps {
   item: Item;
@@ -34,13 +34,14 @@ function daysAgo(ts: number | null): number {
   return Math.floor((Date.now() / 1000 - ts) / (60 * 60 * 24));
 }
 
-const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[] }>();
+const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[]; sentTo: SentRecommendation[] }>();
 
 export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote }: DetailPanelProps) {
   const cached = detailsCache.get(item.external_id);
   const [genres, setGenres] = useState<string[]>(cached?.genres || []);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>(cached?.artistAlbums || []);
   const [tracks, setTracks] = useState<AlbumTrack[]>(cached?.tracks || []);
+  const [sentTo, setSentTo] = useState<SentRecommendation[]>(cached?.sentTo || []);
   const [loadingDetails, setLoadingDetails] = useState(!cached);
   const [addingAlbums, setAddingAlbums] = useState<Set<string>>(new Set());
   const [addedAlbums, setAddedAlbums] = useState<Map<string, "favorite" | "recommendation">>(() => {
@@ -79,6 +80,17 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const [sendEmail, setSendEmail] = useState("");
   const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [sendError, setSendError] = useState("");
+  const [recentRecipients, setRecentRecipients] = useState<{ display_name: string | null; email: string | null }[]>([]);
+  const [recipientsLoaded, setRecipientsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (sendFormOpen && !recipientsLoaded) {
+      getRecentRecipients()
+        .then((data) => setRecentRecipients(data.recipients))
+        .catch(() => {})
+        .finally(() => setRecipientsLoaded(true));
+    }
+  }, [sendFormOpen, recipientsLoaded]);
 
   const handleSend = async () => {
     if (!sendEmail.trim()) return;
@@ -96,6 +108,10 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           external_url: item.external_url,
         },
       });
+      detailsCache.delete(item.external_id);
+      const refreshed = await getAlbumDetails(item.external_id);
+      setSentTo(refreshed.sent_to ?? []);
+      detailsCache.set(item.external_id, { genres: refreshed.genres, artistAlbums: refreshed.artist_albums, tracks: refreshed.tracks, sentTo: refreshed.sent_to ?? [] });
       setSendStatus("sent");
       setTimeout(() => {
         setSendFormOpen(false);
@@ -115,6 +131,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       setGenres(c.genres);
       setArtistAlbums(c.artistAlbums);
       setTracks(c.tracks);
+      setSentTo(c.sentTo);
       setLoadingDetails(false);
       const initial = new Map<string, "favorite" | "recommendation">();
       for (const a of c.artistAlbums) {
@@ -128,10 +145,11 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
     getAlbumDetails(item.external_id)
       .then((data) => {
         if (cancelled) return;
-        detailsCache.set(item.external_id, { genres: data.genres, artistAlbums: data.artist_albums, tracks: data.tracks });
+        detailsCache.set(item.external_id, { genres: data.genres, artistAlbums: data.artist_albums, tracks: data.tracks, sentTo: data.sent_to ?? [] });
         setGenres(data.genres);
         setArtistAlbums(data.artist_albums);
         setTracks(data.tracks);
+        setSentTo(data.sent_to ?? []);
         const initial = new Map<string, "favorite" | "recommendation">();
         for (const a of data.artist_albums) {
           if (a.already_added) initial.set(a.spotify_id, a.already_added);
@@ -424,6 +442,26 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             </button>
           ) : (
             <div style={{ border: "1px solid rgba(168,85,247,0.35)", padding: "8px" }}>
+              {recentRecipients.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {recentRecipients.map((r) => (
+                    <button
+                      key={r.email}
+                      onClick={() => setSendEmail(r.email || "")}
+                      className="font-mono cursor-pointer"
+                      style={{
+                        fontSize: 10,
+                        padding: "2px 6px",
+                        border: sendEmail === r.email ? "1px solid rgba(168,85,247,0.7)" : "1px solid #3d2815",
+                        color: sendEmail === r.email ? "#a855f7" : "#f2e8d2",
+                        background: sendEmail === r.email ? "rgba(168,85,247,0.1)" : "transparent",
+                      }}
+                    >
+                      {r.display_name || r.email}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-1.5">
                 <input
                   type="email"
@@ -458,6 +496,26 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Sent to */}
+      {!isFriendRec && !isAiSuggested && sentTo.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div className="font-mono uppercase" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em", marginBottom: 4 }}>
+            SENT TO
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {sentTo.map((s, i) => (
+              <span
+                key={i}
+                className="font-mono"
+                style={{ fontSize: 10, padding: "2px 6px", border: "1px solid rgba(168,85,247,0.35)", color: "#a855f7" }}
+              >
+                {s.recipient_name || s.recipient_email || "Unknown"}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
