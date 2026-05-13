@@ -6,6 +6,7 @@ import {
   getPendingFriendRecommendations,
   updateFriendRecommendationStatus,
   addItem,
+  getRecentRecipients,
 } from "../../lib/queries";
 import { sendRecNotificationEmail } from "../../lib/email";
 
@@ -14,6 +15,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {
+    if (req.query.type === "recipients") {
+      const recipients = await getRecentRecipients(user.id);
+      return res.json({ recipients });
+    }
     const recommendations = await getPendingFriendRecommendations(user.id);
     return res.json({ recommendations });
   }
