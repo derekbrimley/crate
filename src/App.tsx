@@ -26,7 +26,7 @@ function AppInner() {
   }
 
   if (!user) {
-    return <Login onEmailLogin={loginWithEmail} onSignUp={signUpWithEmail} onForgotPassword={resetPasswordForEmail} />;
+    return <Login onEmailLogin={loginWithEmail} onSignUp={signUpWithEmail} onForgotPassword={resetPasswordForEmail} onSpotifyLogin={login} />;
   }
 
   return (

@@ -330,6 +330,23 @@ export async function fetchAlbumGenres(
   return Array.from(genres);
 }
 
+export async function startPlayback(
+  userId: number,
+  spotifyUri: string
+): Promise<void> {
+  const body = JSON.stringify({ context_uri: spotifyUri });
+  const res = await spotifyFetch(userId, "/me/player/play", {
+    method: "PUT",
+    body,
+  });
+  if (res.status === 404) {
+    throw new Error("No active Spotify device found. Open Spotify on any device first.");
+  }
+  if (!res.ok && res.status !== 204) {
+    throw new Error(`Failed to start playback: ${res.status}`);
+  }
+}
+
 export async function getArtistGenres(artistIds: string[]): Promise<string[]> {
   if (artistIds.length === 0) return [];
   const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });

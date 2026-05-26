@@ -154,6 +154,13 @@ export async function getDashboardMode(mode: string, context: string): Promise<D
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
+export async function playOnSpotify(spotifyUri: string): Promise<void> {
+  await request("/spotify/play", {
+    method: "PUT",
+    body: JSON.stringify({ spotify_uri: spotifyUri }),
+  });
+}
+
 export async function recordPick(data: {
   item_id: number;
   mode: string;

@@ -1,8 +1,8 @@
-# Crate — Intentional Album Picker
+# Crates — Intentional Album Picker
 
 ## Overview
 
-Crate is a web app that helps you decide what to listen to — quickly and intentionally. Instead of scrolling through infinite libraries or surrendering to algorithmic recommendations, Crate presents a small number of album options across different modes so you can make a fast, deliberate choice and start listening.
+Crates is a web app that helps you decide what to listen to — quickly and intentionally. Instead of scrolling through infinite libraries or surrendering to algorithmic recommendations, Crates presents a small number of album options across different modes so you can make a fast, deliberate choice and start listening.
 
 The app balances three listening goals:
 1. **Revisiting recent favorites** — albums you've been into lately
@@ -438,7 +438,7 @@ user_config
 
 ## Open Decisions
 
-1. **App name** — "Crate" is a working title. Alternatives: "Spin," "Pick," "Dig," "Stack." Could also be something less literal.
+1. **App name** — "Crates" is a working title. Alternatives: "Spin," "Pick," "Dig," "Stack." Could also be something less literal.
 2. **Spotify rate limits** — Audio features endpoint is rate-limited. Need to cache aggressively and batch requests when importing large libraries.
 3. **Claude cost management** — Context matching calls Claude per request. Caching helps, but should monitor usage. Could also use a lighter model (Haiku) for this task.
 4. **Database choice** — SQLite is fine for single-user / low-traffic. If scaling to many users, migrate to Postgres. Use an ORM or query builder (e.g., Drizzle, Prisma) so the switch is straightforward.

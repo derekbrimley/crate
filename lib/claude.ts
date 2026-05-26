@@ -37,7 +37,7 @@ function resolvePreferGenres(context: string, contextProfile?: RightNowContext):
   return [];
 }
 
-const SURPRISE_SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crate.
+const SURPRISE_SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crates.
 The user has a set of favorite albums that represent their taste.
 Suggest 5 albums they would love that are NOT already in their library — albums they likely haven't heard but would genuinely enjoy.
 Make the suggestions varied: different artists, different eras, different moods — but all fitting the taste profile.

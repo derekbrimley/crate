@@ -79,14 +79,15 @@ export function useAuth() {
       provider: "spotify",
       options: {
         scopes:
-          "user-library-read playlist-read-private playlist-read-collaborative",
+          "user-library-read playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state",
         redirectTo: `${window.location.origin}/callback`,
+        queryParams: { show_dialog: "true" },
       },
     });
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "global" });
     setUser(null);
   };
 
