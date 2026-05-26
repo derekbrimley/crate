@@ -29,6 +29,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 
 ### API (`api/`)
 - Vercel serverless functions — each file exports a default `handler(req, res)`
+- **Hobby plan limit: 12 serverless functions per deployment.** When adding new endpoints, consolidate related routes into a single catch-all file (e.g. `[[...path]].ts`) instead of creating separate files.
 - Auth: `lib/auth.ts` — verifies Bearer JWT via Supabase admin client, returns `public.users` row
 - Routes:
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
@@ -36,9 +37,11 @@ Single Vercel project: React client (static) + serverless API functions in `api/
   - `api/albums/search.ts` — GET Spotify search
   - `api/albums/bulk.ts` — POST bulk-add albums
   - `api/albums/[id].ts` — DELETE album, POST promote to favorite, GET album details (tracks + artist albums)
-  - `api/spotify/library.ts` — GET albums from user's Spotify library
-  - `api/spotify/playlists/index.ts` — GET user's Spotify playlists
-  - `api/spotify/playlists/[id]/albums.ts` — GET albums from a specific playlist
+  - `api/spotify/[[...path]].ts` — Catch-all for Spotify routes:
+    - `GET /api/spotify/library` — albums from user's Spotify library
+    - `GET /api/spotify/playlists` — user's Spotify playlists
+    - `GET /api/spotify/playlists/:id/albums` — albums from a specific playlist
+    - `PUT /api/spotify/play` — trigger playback on active Spotify device
   - `api/picks/dashboard.ts` — GET picks for all modes
   - `api/picks/index.ts` — GET pick history, POST record a pick
   - `api/config/index.ts` — GET/PATCH user config
