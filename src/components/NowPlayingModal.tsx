@@ -354,15 +354,19 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
           <button
             onClick={async () => {
               onPlay?.();
-              if (item.external_uri) {
-                try {
-                  await playOnSpotify(item.external_uri);
-                } catch {
-                  window.open(item.external_url || item.external_uri, "_blank");
-                }
-              } else if (item.external_url) {
-                window.open(item.external_url, "_blank");
+              const uri = item.external_uri || (item.external_id ? `spotify:album:${item.external_id}` : null);
+              const url = item.external_url || uri;
+              if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+                if (url) window.location.href = url;
+                return;
               }
+              if (uri) {
+                try {
+                  await playOnSpotify(uri);
+                  return;
+                } catch { /* fall through */ }
+              }
+              if (url) window.open(url, "_blank");
             }}
             className="mt-3 flex items-center gap-2 px-4 py-2 border border-[#1DB954]/40
                        text-[11px] font-mono tracking-widest uppercase cursor-pointer

@@ -7,7 +7,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const pathSegments = (req.query.path as string[] | undefined) ?? [];
+  const rawPath = req.query.path;
+  const pathSegments = Array.isArray(rawPath)
+    ? rawPath
+    : rawPath
+      ? rawPath.split("/")
+      : (req.url ?? "").replace(/^\/api\/spotify\/?/, "").split("?")[0].split("/").filter(Boolean);
   const route = pathSegments.join("/");
 
   // PUT /api/spotify/play

@@ -339,17 +339,21 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       <div className="flex gap-1.5" style={{ marginBottom: 10 }}>
         <button
           onClick={async () => {
-            if (!item.external_url && !item.external_uri) return;
+            const uri = item.external_uri || (item.external_id ? `spotify:album:${item.external_id}` : null);
+            const url = item.external_url || uri;
+            if (!url && !uri) return;
             onPlay?.();
-            if (item.external_uri) {
-              try {
-                await playOnSpotify(item.external_uri);
-              } catch {
-                window.open(item.external_url || item.external_uri, "_blank");
-              }
-            } else if (item.external_url) {
-              window.open(item.external_url, "_blank");
+            if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+              if (url) window.location.href = url;
+              return;
             }
+            if (uri) {
+              try {
+                await playOnSpotify(uri);
+                return;
+              } catch { /* fall through */ }
+            }
+            if (url) window.open(url, "_blank");
           }}
           className="flex-1 flex items-center justify-center gap-1 text-center font-mono cursor-pointer"
           style={{
