@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { ShelfRow } from "../components/library/ShelfRow";
@@ -32,6 +32,7 @@ export function Crates({ onLogout }: CratesProps) {
     dashboardLoaded,
     loadDashboard,
     refreshDashboardMode,
+    pickStats,
     history, historyLoaded, loadHistory,
   } = useDataCache();
 
@@ -70,21 +71,6 @@ export function Crates({ onLogout }: CratesProps) {
     if (!historyLoaded) loadHistory();
   }, [historyLoaded, loadHistory]);
 
-  const pickStats = useMemo(() => {
-    const map = new Map<number, { pickCount: number; lastPickedTs: number | null }>();
-    for (const entry of history) {
-      const existing = map.get(entry.item_id);
-      if (existing) {
-        existing.pickCount += 1;
-        if (entry.picked_at_ts > (existing.lastPickedTs ?? 0)) {
-          existing.lastPickedTs = entry.picked_at_ts;
-        }
-      } else {
-        map.set(entry.item_id, { pickCount: 1, lastPickedTs: entry.picked_at_ts });
-      }
-    }
-    return map;
-  }, [history]);
 
   const refreshMode = async (mode: string) => {
     setLoadingModes((prev) => new Set([...prev, mode]));

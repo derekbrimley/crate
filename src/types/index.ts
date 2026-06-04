@@ -95,6 +95,12 @@ export interface AlbumDetails {
 
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";
 
+export interface PickStat {
+  item_id: number;
+  picked_at: number;
+  pick_count: number;
+}
+
 export interface DashboardData {
   favorites?: Item[];
   discover?: Item[];
@@ -102,6 +108,7 @@ export interface DashboardData {
   surprise?: Item[];
   from_friends?: Item[];
   _config?: AppConfig;
+  _picks?: PickStat[];
 }
 
 export interface FriendRecommendation {

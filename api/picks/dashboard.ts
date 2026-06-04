@@ -147,5 +147,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   );
 
-  res.json({ ...Object.fromEntries(modeEntries), _config: config });
+  res.json({ ...Object.fromEntries(modeEntries), _config: config, _picks: recentPicks });
 }

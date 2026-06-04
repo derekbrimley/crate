@@ -36,7 +36,7 @@ export function Lists({ onLogout }: ListsProps) {
     favorites, setFavorites,
     recommendations, setRecommendations,
     listsLoaded, loadLists,
-    history, historyLoaded, loadHistory,
+    pickStats,
   } = useDataCache();
 
   const navigate = useNavigate();
@@ -55,26 +55,6 @@ export function Lists({ onLogout }: ListsProps) {
       loadLists().finally(() => setLoading(false));
     }
   }, [listsLoaded, loadLists]);
-
-  useEffect(() => {
-    if (!historyLoaded) loadHistory();
-  }, [historyLoaded, loadHistory]);
-
-  const pickStats = useMemo(() => {
-    const map = new Map<number, { pickCount: number; lastPickedTs: number | null }>();
-    for (const entry of history) {
-      const existing = map.get(entry.item_id);
-      if (existing) {
-        existing.pickCount += 1;
-        if (entry.picked_at_ts > (existing.lastPickedTs ?? 0)) {
-          existing.lastPickedTs = entry.picked_at_ts;
-        }
-      } else {
-        map.set(entry.item_id, { pickCount: 1, lastPickedTs: entry.picked_at_ts });
-      }
-    }
-    return map;
-  }, [history]);
 
   const allItems = useMemo(() => {
     if (listFilter === "favorite") return favorites;

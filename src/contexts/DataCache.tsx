@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { getDashboard, getDashboardMode, getAlbums, getHistory, getConfig } from "../services/api";
-import type { Item, DashboardData, AppConfig, PickHistoryEntry } from "../types";
+import type { Item, DashboardData, AppConfig, PickHistoryEntry, PickStat } from "../types";
 
 interface DataCacheState {
   // Dashboard
@@ -11,6 +11,9 @@ interface DataCacheState {
   refreshDashboardMode: (mode: string, ctx: string) => Promise<void>;
   loadConfig: () => Promise<void>;
 
+  // Pick stats (all-time, from dashboard _picks)
+  pickStats: Map<number, { pickCount: number; lastPickedTs: number | null }>;
+
   // Lists
   favorites: Item[];
   recommendations: Item[];
@@ -19,7 +22,7 @@ interface DataCacheState {
   setFavorites: React.Dispatch<React.SetStateAction<Item[]>>;
   setRecommendations: React.Dispatch<React.SetStateAction<Item[]>>;
 
-  // History
+  // History (raw pick log, used for History page display)
   history: PickHistoryEntry[];
   historyLoaded: boolean;
   loadHistory: () => Promise<void>;
@@ -32,6 +35,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const [dashboardData, setDashboardData] = useState<DashboardData>({});
   const [dashboardConfig, setDashboardConfig] = useState<AppConfig | null>(null);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
+  const [rawPickStats, setRawPickStats] = useState<PickStat[]>([]);
 
   // Lists state
   const [favorites, setFavorites] = useState<Item[]>([]);
@@ -49,10 +53,19 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  const pickStats = useMemo(() => {
+    const map = new Map<number, { pickCount: number; lastPickedTs: number | null }>();
+    for (const p of rawPickStats) {
+      map.set(p.item_id, { pickCount: Number(p.pick_count), lastPickedTs: p.picked_at });
+    }
+    return map;
+  }, [rawPickStats]);
+
   const loadDashboard = useCallback(async (ctx?: string) => {
     try {
       const result = await getDashboard(ctx, ["surprise"]);
       if (result._config) setDashboardConfig(result._config);
+      if (result._picks) setRawPickStats(result._picks);
       setDashboardData(result);
       setDashboardLoaded(true);
 
@@ -111,6 +124,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
         loadDashboard,
         refreshDashboardMode,
         loadConfig,
+        pickStats,
         favorites,
         recommendations,
         listsLoaded,
