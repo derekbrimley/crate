@@ -86,6 +86,10 @@ export async function searchSpotify(
   );
 }
 
+export async function backfillReleaseDates(): Promise<{ updated: number }> {
+  return request<{ updated: number }>("/albums/backfill", { method: "POST" });
+}
+
 // ── Spotify Import ───────────────────────────────────────────────────────────
 
 export async function getSpotifyLibrary(
