@@ -64,6 +64,14 @@ describe("applyFilters - year", () => {
     const r = applyFilters(items, [{ id: "a", field: "year", operator: "after", value: "1000" }], "AND", NO_STATS);
     expect(r.map((i) => i.id)).toEqual([1, 2, 3]);
   });
+  it("ignores non-numeric value", () => {
+    const r = applyFilters(items, [{ id: "a", field: "year", operator: "is", value: "-" }], "AND", NO_STATS);
+    expect(r.map((i) => i.id)).toEqual([]);
+  });
+  it("ignores non-numeric value2 in between", () => {
+    const r = applyFilters(items, [{ id: "a", field: "year", operator: "between", value: "1970", value2: "-" }], "AND", NO_STATS);
+    expect(r.map((i) => i.id)).toEqual([]);
+  });
 });
 
 describe("applyFilters - genre / artist / list / plays", () => {

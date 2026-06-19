@@ -69,7 +69,18 @@ export function Lists({ onLogout }: ListsProps) {
       return !m || !m.release_date;
     });
     if (!hasMissing) return;
+    // Gate: run at most once per browser session
+    try {
+      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("crate_backfill_done")) {
+        return;
+      }
+    } catch {}
     let cancelled = false;
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("crate_backfill_done", "1");
+      }
+    } catch {}
     backfillReleaseDates()
       .then((r) => {
         if (!cancelled && r.updated > 0) loadLists();

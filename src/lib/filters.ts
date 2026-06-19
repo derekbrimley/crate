@@ -109,11 +109,13 @@ function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>
       const y = getItemYear(item);
       if (y === null) return false;
       const v = parseInt(rule.value, 10);
+      if (Number.isNaN(v)) return false;
       if (rule.operator === "is") return y === v;
       if (rule.operator === "before") return y < v;
       if (rule.operator === "after") return y > v;
       if (rule.operator === "between") {
         const v2 = parseInt(rule.value2 ?? "", 10);
+        if (Number.isNaN(v2)) return false;
         const lo = Math.min(v, v2);
         const hi = Math.max(v, v2);
         return y >= lo && y <= hi;

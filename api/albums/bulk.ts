@@ -36,8 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (alb?.id && alb.release_date) releaseDates.set(alb.id, alb.release_date);
       }
     }
-  } catch {
-    // Spotify unavailable — albums still get added without release dates
+  } catch (err) {
+    console.warn("Bulk import: Spotify fetch failed, albums added without release dates", err);
   }
 
   const rows = albums.map((a) => {
