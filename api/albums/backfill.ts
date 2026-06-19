@@ -30,14 +30,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(502).json({ error: "Spotify fetch failed", detail: message });
   }
 
-  let updated = 0;
+  const updates = [];
   for (const [externalId, rd] of releaseDates) {
     const item = byExternalId.get(externalId);
     if (!item) continue;
     const existing = (item.metadata as Record<string, unknown> | null) ?? {};
-    await updateItemMetadata(user.id, item.id, { ...existing, release_date: rd });
-    updated++;
+    updates.push(updateItemMetadata(user.id, item.id, { ...existing, release_date: rd }));
   }
+
+  await Promise.all(updates);
+  const updated = updates.length;
 
   res.json({ updated });
 }
