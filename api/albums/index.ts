@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { getItems, addItem } from "../../lib/queries";
-import { fetchAlbumGenres } from "../../lib/spotify";
+import { fetchAlbumMeta } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -34,17 +34,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid list_type" });
     }
 
-    // Fetch artist genres from Spotify (best-effort — don't block the add if it fails)
+    // Fetch artist genres + release date from Spotify (best-effort — don't block the add if it fails)
     let metadata: Record<string, unknown> = {};
     if (genres?.length) metadata.genres = genres;
 
     try {
-      const fetchedGenres = await fetchAlbumGenres(spotify_id);
-      if (fetchedGenres.length > 0) {
-        metadata.genres = fetchedGenres;
-      }
+      const meta = await fetchAlbumMeta(spotify_id);
+      if (meta.genres.length > 0) metadata.genres = meta.genres;
+      if (meta.release_date) metadata.release_date = meta.release_date;
     } catch {
-      // Genres unavailable — album still gets added without them
+      // Spotify metadata unavailable — album still gets added without it
     }
 
     const item = await addItem(

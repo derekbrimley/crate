@@ -6,6 +6,10 @@ import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
+import AdvancedFilters from "../components/library/AdvancedFilters";
+import { applyFilters, getItemGenres } from "../lib/filters";
+import type { FilterRule } from "../lib/filters";
+import { backfillReleaseDates } from "../services/api";
 
 const SPINES_PER_ROW = 14;
 
@@ -48,6 +52,8 @@ export function Lists({ onLogout }: ListsProps) {
   const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [rules, setRules] = useState<FilterRule[]>([]);
+  const [matchMode, setMatchMode] = useState<"AND" | "OR">("AND");
 
   useEffect(() => {
     if (!listsLoaded) {
@@ -56,11 +62,45 @@ export function Lists({ onLogout }: ListsProps) {
     }
   }, [listsLoaded, loadLists]);
 
+  useEffect(() => {
+    if (!listsLoaded) return;
+    const hasMissing = [...favorites, ...recommendations].some((i) => {
+      const m = (typeof i.metadata === "string" ? null : i.metadata) as Record<string, unknown> | null;
+      return !m || !m.release_date;
+    });
+    if (!hasMissing) return;
+    // Gate: run at most once per browser session
+    try {
+      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("crate_backfill_done")) {
+        return;
+      }
+    } catch {}
+    let cancelled = false;
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("crate_backfill_done", "1");
+      }
+    } catch {}
+    backfillReleaseDates()
+      .then((r) => {
+        if (!cancelled && r.updated > 0) loadLists();
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listsLoaded]);
+
   const allItems = useMemo(() => {
     if (listFilter === "favorite") return favorites;
     if (listFilter === "recommendation") return recommendations;
     return [...favorites, ...recommendations];
   }, [favorites, recommendations, listFilter]);
+
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of allItems) for (const g of getItemGenres(item)) set.add(g);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allItems]);
 
   const filtered = useMemo(() => {
     if (!search) return allItems;
@@ -70,8 +110,13 @@ export function Lists({ onLogout }: ListsProps) {
     );
   }, [allItems, search]);
 
+  const ruleFiltered = useMemo(
+    () => applyFilters(filtered, rules, matchMode, pickStats),
+    [filtered, rules, matchMode, pickStats]
+  );
+
   const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
+    return [...ruleFiltered].sort((a, b) => {
       let v = 0;
       if (sort === "title") v = a.title.localeCompare(b.title);
       if (sort === "artist") v = a.creator.localeCompare(b.creator) || a.title.localeCompare(b.title);
@@ -84,7 +129,7 @@ export function Lists({ onLogout }: ListsProps) {
       if (sort === "added") v = (b.added_at ?? 0) - (a.added_at ?? 0);
       return v * sortDir;
     });
-  }, [filtered, sort, sortDir, pickStats]);
+  }, [ruleFiltered, sort, sortDir, pickStats]);
 
   function getGroupKey(item: Item): string {
     if (group === "artist") return item.creator;
@@ -288,6 +333,13 @@ export function Lists({ onLogout }: ListsProps) {
               ))}
             </select>
           </div>
+          <AdvancedFilters
+            rules={rules}
+            matchMode={matchMode}
+            availableGenres={availableGenres}
+            onChangeRules={(r) => { setRules(r); setSelectedAlbumId(null); }}
+            onChangeMatchMode={setMatchMode}
+          />
         </div>
         {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
       </div>

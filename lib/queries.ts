@@ -396,3 +396,30 @@ export async function getSentRecommendationsForAlbum(
     };
   });
 }
+
+export async function updateItemMetadata(
+  userId: number,
+  itemId: number,
+  metadata: Record<string, unknown>
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("items")
+    .update({ metadata })
+    .eq("user_id", userId)
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function getItemsMissingReleaseDate(userId: number): Promise<Item[]> {
+  const { data, error } = await supabaseAdmin
+    .from("items")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("media_type", "album");
+  if (error) throw error;
+  const items = (data ?? []) as Item[];
+  return items.filter((i) => {
+    const m = i.metadata as Record<string, unknown> | null;
+    return !m || !m.release_date;
+  });
+}
