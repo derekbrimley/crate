@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { bulkAddItems } from "../../lib/queries";
+import { getAlbumsBatch } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -25,14 +26,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid list_type" });
   }
 
-  const rows = albums.map((a) => ({
-    title: a.title,
-    creator: a.artist,
-    image_url: a.image_url ?? null,
-    external_id: a.spotify_id,
-    external_uri: a.spotify_uri ?? null,
-    external_url: a.spotify_url ?? null,
-  }));
+  // Best-effort: fetch release dates from Spotify (20 ids per request)
+  const releaseDates = new Map<string, string>();
+  try {
+    for (let i = 0; i < albums.length; i += 20) {
+      const chunk = albums.slice(i, i + 20).map((a) => a.spotify_id);
+      const fetched = await getAlbumsBatch(chunk);
+      for (const alb of fetched) {
+        if (alb?.id && alb.release_date) releaseDates.set(alb.id, alb.release_date);
+      }
+    }
+  } catch {
+    // Spotify unavailable — albums still get added without release dates
+  }
+
+  const rows = albums.map((a) => {
+    const rd = releaseDates.get(a.spotify_id);
+    return {
+      title: a.title,
+      creator: a.artist,
+      image_url: a.image_url ?? null,
+      external_id: a.spotify_id,
+      external_uri: a.spotify_uri ?? null,
+      external_url: a.spotify_url ?? null,
+      metadata: rd ? { release_date: rd } : null,
+    };
+  });
 
   try {
     const added = await bulkAddItems(user.id, list_type, rows);
