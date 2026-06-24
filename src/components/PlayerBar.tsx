@@ -10,7 +10,7 @@ export function PlayerBar() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-3 px-4 py-2 border-t"
+      className="fixed bottom-[70px] left-0 right-0 z-50 flex items-center gap-3 px-4 py-2 border-t"
       style={{ background: "#1a120b", borderColor: "#3d2815" }}
     >
       {/* Art */}

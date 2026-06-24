@@ -1,5 +1,6 @@
 import React from "react";
 import { BottomNav } from "./BottomNav";
+import { usePlayer } from "../hooks/usePlayer";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children, title, headerRight }: LayoutProps) {
+  const { available, currentTrack } = usePlayer();
+  const barVisible = available && !!currentTrack;
+
   return (
     <div className="min-h-screen bg-crate-bg flex flex-col">
       {title && (
@@ -29,7 +33,7 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
           </div>
         </header>
       )}
-      <main className="flex-1 max-w-xl lg:max-w-4xl mx-auto w-full pb-24">{children}</main>
+      <main className={`flex-1 max-w-xl lg:max-w-4xl mx-auto w-full ${barVisible ? "pb-44" : "pb-24"}`}>{children}</main>
       <BottomNav />
     </div>
   );
