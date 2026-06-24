@@ -2,6 +2,8 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import { DataCacheProvider } from "./contexts/DataCache";
+import { PlayerProvider } from "./hooks/usePlayer";
+import { PlayerBar } from "./components/PlayerBar";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
 import { Crates } from "./pages/Crates";
@@ -30,16 +32,19 @@ function AppInner() {
   }
 
   return (
-    <DataCacheProvider>
-      <Routes>
-        <Route path="/" element={<Crates onLogout={logout} />} />
-        <Route path="/library" element={<Lists onLogout={logout} />} />
-        <Route path="/add" element={<AddAlbums />} />
-        <Route path="/history" element={<History onLogout={logout} />} />
-        <Route path="/settings" element={<Settings onLogout={logout} />} />
-        <Route path="/callback" element={<Crates onLogout={logout} />} />
-      </Routes>
-    </DataCacheProvider>
+    <PlayerProvider>
+      <DataCacheProvider>
+        <Routes>
+          <Route path="/" element={<Crates onLogout={logout} />} />
+          <Route path="/library" element={<Lists onLogout={logout} />} />
+          <Route path="/add" element={<AddAlbums />} />
+          <Route path="/history" element={<History onLogout={logout} />} />
+          <Route path="/settings" element={<Settings onLogout={logout} />} />
+          <Route path="/callback" element={<Crates onLogout={logout} />} />
+        </Routes>
+      </DataCacheProvider>
+      <PlayerBar />
+    </PlayerProvider>
   );
 }
 
