@@ -337,10 +337,14 @@ export async function fetchAlbumGenres(albumId: string): Promise<string[]> {
 
 export async function startPlayback(
   userId: number,
-  spotifyUri: string
+  spotifyUri: string,
+  deviceId?: string
 ): Promise<void> {
   const body = JSON.stringify({ context_uri: spotifyUri });
-  const res = await spotifyFetch(userId, "/me/player/play", {
+  const endpoint = deviceId
+    ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}`
+    : "/me/player/play";
+  const res = await spotifyFetch(userId, endpoint, {
     method: "PUT",
     body,
   });

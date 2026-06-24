@@ -17,10 +17,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // PUT /api/spotify/play
   if (route === "play" && req.method === "PUT") {
-    const { spotify_uri } = req.body as { spotify_uri?: string };
+    const { spotify_uri, device_id } = req.body as { spotify_uri?: string; device_id?: string };
     if (!spotify_uri) return res.status(400).json({ error: "spotify_uri is required" });
     try {
-      await startPlayback(user.id, spotify_uri);
+      await startPlayback(user.id, spotify_uri, device_id);
       return res.status(204).end();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
