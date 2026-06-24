@@ -7,6 +7,7 @@ import { VinylDisc } from "../components/VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
 import AdvancedFilters from "../components/library/AdvancedFilters";
+import DuplicatesPanel from "../components/library/DuplicatesPanel";
 import { applyFilters, getItemGenres } from "../lib/filters";
 import type { FilterRule } from "../lib/filters";
 import { backfillReleaseDates } from "../services/api";
@@ -54,6 +55,7 @@ export function Lists({ onLogout }: ListsProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [rules, setRules] = useState<FilterRule[]>([]);
   const [matchMode, setMatchMode] = useState<"AND" | "OR">("AND");
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   useEffect(() => {
     if (!listsLoaded) {
@@ -174,6 +176,12 @@ export function Lists({ onLogout }: ListsProps) {
   const handlePromote = (item: Item) => {
     setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
     setFavorites((prev) => [...prev, { ...item, list_type: "favorite" as const }]);
+  };
+
+  const handleDuplicatesDeleted = (ids: number[]) => {
+    const idSet = new Set(ids);
+    setFavorites((prev) => prev.filter((i) => !idSet.has(i.id)));
+    setRecommendations((prev) => prev.filter((i) => !idSet.has(i.id)));
   };
 
   return (
@@ -332,6 +340,21 @@ export function Lists({ onLogout }: ListsProps) {
                 <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </select>
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <button
+              onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); return !v; })}
+              className="font-mono shrink-0 cursor-pointer"
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                letterSpacing: "0.08em",
+                border: showDuplicates ? "1px solid #ff5e00" : "1px solid #3d2815",
+                background: showDuplicates ? "rgba(255,94,0,0.1)" : "transparent",
+                color: showDuplicates ? "#ff5e00" : "#907558",
+              }}
+            >
+              DUPLICATES
+            </button>
           </div>
           <AdvancedFilters
             rules={rules}
@@ -346,7 +369,14 @@ export function Lists({ onLogout }: ListsProps) {
 
       {/* Shelf content */}
       <div style={{ paddingTop: 18, paddingBottom: 20 }}>
-        {loading ? (
+        {showDuplicates ? (
+          <DuplicatesPanel
+            items={allItems}
+            pickStats={pickStats}
+            onDeleted={handleDuplicatesDeleted}
+            onClose={() => setShowDuplicates(false)}
+          />
+        ) : loading ? (
           <div style={{ padding: "0 12px" }}>
             {[...Array(3)].map((_, i) => (
               <div key={i} style={{ marginBottom: 16 }}>
