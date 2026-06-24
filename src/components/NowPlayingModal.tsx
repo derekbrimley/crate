@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "./VinylDisc";
 import { getAlbumDetails, addAlbum, deleteAlbum, moveAlbum, playOnSpotify } from "../services/api";
 import type { Item, AlbumTrack, ArtistAlbum } from "../types";
+import { usePlayer } from "../hooks/usePlayer";
 
 interface NowPlayingModalProps {
   item: Item;
@@ -18,6 +19,7 @@ function formatDuration(ms: number): string {
 }
 
 export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeChange }: NowPlayingModalProps) {
+  const player = usePlayer();
   const [tracks, setTracks] = useState<AlbumTrack[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>([]);
@@ -359,6 +361,12 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
               if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
                 if (url) window.location.href = url;
                 return;
+              }
+              if (uri && player.available) {
+                try {
+                  await player.playAlbum(uri);
+                  return;
+                } catch { /* fall through */ }
               }
               if (uri) {
                 try {

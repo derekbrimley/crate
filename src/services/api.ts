@@ -159,10 +159,14 @@ export async function getDashboardMode(mode: string, context: string): Promise<D
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
-export async function playOnSpotify(spotifyUri: string): Promise<void> {
+export async function getSpotifyToken(): Promise<{ access_token: string; expires_at: number }> {
+  return request<{ access_token: string; expires_at: number }>("/spotify/token");
+}
+
+export async function playOnSpotify(spotifyUri: string, deviceId?: string): Promise<void> {
   await request("/spotify/play", {
     method: "PUT",
-    body: JSON.stringify({ spotify_uri: spotifyUri }),
+    body: JSON.stringify({ spotify_uri: spotifyUri, ...(deviceId ? { device_id: deviceId } : {}) }),
   });
 }
 

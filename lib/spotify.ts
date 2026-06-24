@@ -337,10 +337,14 @@ export async function fetchAlbumGenres(albumId: string): Promise<string[]> {
 
 export async function startPlayback(
   userId: number,
-  spotifyUri: string
+  spotifyUri: string,
+  deviceId?: string
 ): Promise<void> {
   const body = JSON.stringify({ context_uri: spotifyUri });
-  const res = await spotifyFetch(userId, "/me/player/play", {
+  const endpoint = deviceId
+    ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}`
+    : "/me/player/play";
+  const res = await spotifyFetch(userId, endpoint, {
     method: "PUT",
     body,
   });
@@ -350,6 +354,16 @@ export async function startPlayback(
   if (!res.ok && res.status !== 204) {
     throw new Error(`Failed to start playback: ${res.status}`);
   }
+}
+
+export async function getValidAccessToken(
+  userId: number
+): Promise<{ access_token: string; expires_at: number }> {
+  // getAccessToken refreshes if the stored token is within 60s of expiry.
+  const access_token = await getAccessToken(userId);
+  const user = await getUserById(userId);
+  const expires_at = user?.token_expires_at ?? Math.floor(Date.now() / 1000) + 3600;
+  return { access_token, expires_at };
 }
 
 export async function getArtistGenres(artistIds: string[]): Promise<string[]> {
