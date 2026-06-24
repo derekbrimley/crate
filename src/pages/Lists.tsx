@@ -1,159 +1,418 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { getAlbums, deleteAlbum, promoteAlbum } from "../services/api";
+import { LibraryShelf } from "../components/library/LibraryShelf";
+import { ProfileDropdown } from "../components/library/ProfileDropdown";
+import { VinylDisc } from "../components/VinylDisc";
+import { useDataCache } from "../contexts/DataCache";
 import type { Item } from "../types";
+import AdvancedFilters from "../components/library/AdvancedFilters";
+import DuplicatesPanel from "../components/library/DuplicatesPanel";
+import { applyFilters, getItemGenres } from "../lib/filters";
+import type { FilterRule } from "../lib/filters";
+import { backfillReleaseDates } from "../services/api";
 
-type Tab = "favorites" | "recommendations";
+const SPINES_PER_ROW = 14;
 
-export function Lists() {
-  const [tab, setTab] = useState<Tab>("favorites");
-  const [favorites, setFavorites] = useState<Item[]>([]);
-  const [recommendations, setRecommendations] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState<number | null>(null);
+type SortKey = "title" | "artist" | "plays" | "recent" | "added";
+type GroupKey = "none" | "artist" | "genre";
+type ListFilter = "all" | "favorite" | "recommendation";
 
-  const loadItems = async () => {
-    setLoading(true);
-    try {
-      const [favRes, recRes] = await Promise.all([
-        getAlbums("favorite"),
-        getAlbums("recommendation"),
-      ]);
-      setFavorites(favRes.items);
-      setRecommendations(recRes.items);
-    } finally {
-      setLoading(false);
-    }
-  };
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "title", label: "TITLE" },
+  { key: "artist", label: "ARTIST" },
+  { key: "plays", label: "PLAYS" },
+  { key: "recent", label: "RECENT" },
+  { key: "added", label: "ADDED" },
+];
+
+const GROUP_OPTIONS: { key: GroupKey; label: string }[] = [
+  { key: "none", label: "NONE" },
+  { key: "artist", label: "ARTIST" },
+  { key: "genre", label: "GENRE" },
+];
+
+interface ListsProps {
+  onLogout: () => void;
+}
+
+export function Lists({ onLogout }: ListsProps) {
+  const {
+    favorites, setFavorites,
+    recommendations, setRecommendations,
+    listsLoaded, loadLists,
+    pickStats,
+  } = useDataCache();
+
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(!listsLoaded);
+  const [sort, setSort] = useState<SortKey>("artist");
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [group, setGroup] = useState<GroupKey>("none");
+  const [search, setSearch] = useState("");
+  const [listFilter, setListFilter] = useState<ListFilter>("all");
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [rules, setRules] = useState<FilterRule[]>([]);
+  const [matchMode, setMatchMode] = useState<"AND" | "OR">("AND");
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   useEffect(() => {
-    loadItems();
-  }, []);
+    if (!listsLoaded) {
+      setLoading(true);
+      loadLists().finally(() => setLoading(false));
+    }
+  }, [listsLoaded, loadLists]);
 
-  const handleDelete = async (item: Item) => {
-    setActionId(item.id);
+  useEffect(() => {
+    if (!listsLoaded) return;
+    const hasMissing = [...favorites, ...recommendations].some((i) => {
+      const m = (typeof i.metadata === "string" ? null : i.metadata) as Record<string, unknown> | null;
+      return !m || !m.release_date;
+    });
+    if (!hasMissing) return;
+    // Gate: run at most once per browser session
     try {
-      await deleteAlbum(item.id);
-      if (item.list_type === "favorite") {
-        setFavorites((prev) => prev.filter((i) => i.id !== item.id));
-      } else {
-        setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("crate_backfill_done")) {
+        return;
       }
-    } finally {
-      setActionId(null);
-    }
-  };
-
-  const handlePromote = async (item: Item) => {
-    setActionId(item.id);
+    } catch {}
+    let cancelled = false;
     try {
-      await promoteAlbum(item.id);
-      setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
-      setFavorites((prev) => [{ ...item, list_type: "favorite" }, ...prev]);
-    } finally {
-      setActionId(null);
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("crate_backfill_done", "1");
+      }
+    } catch {}
+    backfillReleaseDates()
+      .then((r) => {
+        if (!cancelled && r.updated > 0) loadLists();
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listsLoaded]);
+
+  const allItems = useMemo(() => {
+    if (listFilter === "favorite") return favorites;
+    if (listFilter === "recommendation") return recommendations;
+    return [...favorites, ...recommendations];
+  }, [favorites, recommendations, listFilter]);
+
+  const allLibraryItems = useMemo(
+    () => [...favorites, ...recommendations],
+    [favorites, recommendations]
+  );
+
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of allItems) for (const g of getItemGenres(item)) set.add(g);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allItems]);
+
+  const filtered = useMemo(() => {
+    if (!search) return allItems;
+    const q = search.toLowerCase();
+    return allItems.filter(
+      (a) => a.title.toLowerCase().includes(q) || a.creator.toLowerCase().includes(q)
+    );
+  }, [allItems, search]);
+
+  const ruleFiltered = useMemo(
+    () => applyFilters(filtered, rules, matchMode, pickStats),
+    [filtered, rules, matchMode, pickStats]
+  );
+
+  const sorted = useMemo(() => {
+    return [...ruleFiltered].sort((a, b) => {
+      let v = 0;
+      if (sort === "title") v = a.title.localeCompare(b.title);
+      if (sort === "artist") v = a.creator.localeCompare(b.creator) || a.title.localeCompare(b.title);
+      if (sort === "plays") {
+        v = (pickStats.get(b.id)?.pickCount ?? 0) - (pickStats.get(a.id)?.pickCount ?? 0);
+      }
+      if (sort === "recent") {
+        v = (pickStats.get(b.id)?.lastPickedTs ?? 0) - (pickStats.get(a.id)?.lastPickedTs ?? 0);
+      }
+      if (sort === "added") v = (b.added_at ?? 0) - (a.added_at ?? 0);
+      return v * sortDir;
+    });
+  }, [ruleFiltered, sort, sortDir, pickStats]);
+
+  function getGroupKey(item: Item): string {
+    if (group === "artist") return item.creator;
+    if (group === "genre") {
+      try {
+        const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
+        const genres = meta?.genres as string[] | undefined;
+        if (genres && genres.length > 0) return genres[0];
+      } catch {}
+      return "Unknown";
     }
+    return "All";
+  }
+
+  const grouped = useMemo(() => {
+    const map: Record<string, Item[]> = {};
+    for (const item of sorted) {
+      const key = getGroupKey(item);
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    }
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, albums]) => ({ key, albums }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sorted, group]);
+
+  function handleSort(key: SortKey) {
+    if (sort === key) setSortDir((d) => (d === 1 ? -1 : 1));
+    else {
+      setSort(key);
+      setSortDir(1);
+    }
+  }
+
+  const handleRemove = (item: Item) => {
+    setFavorites((prev) => prev.filter((i) => i.id !== item.id));
+    setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedAlbumId(null);
   };
 
-  const items = tab === "favorites" ? favorites : recommendations;
+  const handlePromote = (item: Item) => {
+    setRecommendations((prev) => prev.filter((i) => i.id !== item.id));
+    setFavorites((prev) => [...prev, { ...item, list_type: "favorite" as const }]);
+  };
+
+  const handleDuplicatesDeleted = (ids: number[]) => {
+    const idSet = new Set(ids);
+    setFavorites((prev) => prev.filter((i) => !idSet.has(i.id)));
+    setRecommendations((prev) => prev.filter((i) => !idSet.has(i.id)));
+  };
 
   return (
-    <Layout title="My Lists">
-      {/* Tab switcher */}
-      <div className="sticky top-14 z-30 bg-crate-bg border-b border-crate-border px-4 flex gap-4">
-        <button
-          onClick={() => setTab("favorites")}
-          className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === "favorites"
-              ? "border-crate-accent text-crate-text"
-              : "border-transparent text-crate-muted hover:text-crate-text"
-          }`}
-        >
-          Favorites
-          {favorites.length > 0 && (
-            <span className="ml-1.5 text-xs bg-crate-elevated px-1.5 py-0.5 rounded-full">
-              {favorites.length}
+    <Layout>
+      {/* Custom header */}
+      <div
+        className="sticky top-0 z-40 relative"
+        style={{
+          background: "rgba(15,10,12,0.97)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid #3d2815",
+        }}
+      >
+        <div className="max-w-xl lg:max-w-4xl mx-auto" style={{ padding: "10px 12px 9px" }}>
+          {/* Title row */}
+          <div className="flex items-center mb-2">
+            <h1
+              className="font-display flex-1 leading-none"
+              style={{ fontSize: 22, color: "#f2e8d2", letterSpacing: "0.4em" }}
+            >
+              LIBRARY
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate("/add")}
+                className="flex items-center justify-center cursor-pointer"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "#ff5e00",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 18,
+                  fontWeight: 300,
+                  lineHeight: 1,
+                  boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
+                }}
+                title="Add albums"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setShowProfile((v) => !v)}
+                className="flex items-center justify-center cursor-pointer"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3a2010, #261406)",
+                  border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
+                  color: showProfile ? "#ff5e00" : "#907558",
+                  boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+                }}
+                title="Profile"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Search bar */}
+          <div
+            className="flex items-center gap-1.5 mb-2"
+            style={{
+              border: "1px solid #3d2815",
+              padding: "4px 8px",
+              background: "#1a1210",
+            }}
+          >
+            <span style={{ color: "#907558", fontSize: 11 }}>⌕</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search albums or artists"
+              className="flex-1 bg-transparent border-none outline-none font-mono text-crate-text"
+              style={{ fontSize: 11 }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="bg-transparent border-none cursor-pointer"
+                style={{ color: "#907558", fontSize: 10 }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Sort + Group controls */}
+          <div className="flex gap-1 items-center flex-wrap">
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              SORT
             </span>
-          )}
-        </button>
-        <button
-          onClick={() => setTab("recommendations")}
-          className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === "recommendations"
-              ? "border-crate-accent text-crate-text"
-              : "border-transparent text-crate-muted hover:text-crate-text"
-          }`}
-        >
-          Recommendations
-          {recommendations.length > 0 && (
-            <span className="ml-1.5 text-xs bg-crate-elevated px-1.5 py-0.5 rounded-full">
-              {recommendations.length}
+            {SORT_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => handleSort(key)}
+                className="font-mono shrink-0 cursor-pointer"
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  letterSpacing: "0.08em",
+                  border: sort === key ? "1px solid #ff5e00" : "1px solid #3d2815",
+                  background: sort === key ? "rgba(255,94,0,0.1)" : "transparent",
+                  color: sort === key ? "#ff5e00" : "#907558",
+                }}
+              >
+                {label}{sort === key ? (sortDir === 1 ? " ↑" : " ↓") : ""}
+              </button>
+            ))}
+
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              LIST
             </span>
-          )}
-        </button>
+            {([["all", "ALL"], ["favorite", "★ FAV"], ["recommendation", "◈ REC"]] as [ListFilter, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => { setListFilter(key); setSelectedAlbumId(null); }}
+                className="font-mono shrink-0 cursor-pointer"
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  letterSpacing: "0.08em",
+                  border: listFilter === key ? "1px solid #ff5e00" : "1px solid #3d2815",
+                  background: listFilter === key ? "rgba(255,94,0,0.1)" : "transparent",
+                  color: listFilter === key ? "#ff5e00" : "#907558",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+              GROUP
+            </span>
+            <select
+              value={group}
+              onChange={(e) => { setGroup(e.target.value as GroupKey); setSelectedAlbumId(null); }}
+              className="font-mono cursor-pointer outline-none"
+              style={{
+                fontSize: 10,
+                padding: "2px 4px",
+                border: group !== "none" ? "1px solid #ff5e00" : "1px solid #3d2815",
+                background: "#1a1210",
+                color: group !== "none" ? "#ff5e00" : "#907558",
+              }}
+            >
+              {GROUP_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <button
+              onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); return !v; })}
+              className="font-mono shrink-0 cursor-pointer"
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                letterSpacing: "0.08em",
+                border: showDuplicates ? "1px solid #ff5e00" : "1px solid #3d2815",
+                background: showDuplicates ? "rgba(255,94,0,0.1)" : "transparent",
+                color: showDuplicates ? "#ff5e00" : "#907558",
+              }}
+            >
+              DUPLICATES
+            </button>
+          </div>
+          <AdvancedFilters
+            rules={rules}
+            matchMode={matchMode}
+            availableGenres={availableGenres}
+            onChangeRules={(r) => { setRules(r); setSelectedAlbumId(null); }}
+            onChangeMatchMode={setMatchMode}
+          />
+        </div>
+        {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
       </div>
 
-      <div className="px-4 pt-4">
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl bg-crate-elevated animate-pulse" />
+      {/* Shelf content */}
+      <div style={{ paddingTop: 18, paddingBottom: 20 }}>
+        {showDuplicates ? (
+          <DuplicatesPanel
+            items={allLibraryItems}
+            pickStats={pickStats}
+            onDeleted={handleDuplicatesDeleted}
+            onClose={() => setShowDuplicates(false)}
+          />
+        ) : loading ? (
+          <div style={{ padding: "0 12px" }}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "#2e1c0a" }} />
+                <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "#0e0609" }} />
+                <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "#221008" }} />
+              </div>
             ))}
           </div>
-        ) : items.length === 0 ? (
-          <div className="mt-12 text-center">
-            <p className="text-4xl mb-4">{tab === "favorites" ? "⭐" : "📋"}</p>
-            <p className="text-crate-muted text-sm">
-              {tab === "favorites"
-                ? "No favorites yet — add some albums"
-                : "No recommendations yet — add some albums to try"}
+        ) : grouped.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <VinylDisc size={56} />
+            <p className="font-mono text-center" style={{ fontSize: 11, color: "#907558", opacity: 0.5 }}>
+              {search ? "no albums match" : listFilter === "recommendation" ? "no recommendations yet" : listFilter === "favorite" ? "no favorites yet — add some records" : "no albums yet — add some records"}
             </p>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-3 p-3 bg-crate-elevated rounded-xl"
-              >
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.title}
-                    className="w-14 h-14 rounded-lg object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-crate-border flex items-center justify-center shrink-0">
-                    <span className="text-2xl">🎵</span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-crate-text truncate">{item.title}</p>
-                  <p className="text-xs text-crate-muted truncate">{item.creator}</p>
-                </div>
-                <div className="flex gap-1.5 shrink-0">
-                  {tab === "recommendations" && (
-                    <button
-                      onClick={() => handlePromote(item)}
-                      disabled={actionId === item.id}
-                      className="text-xs px-2.5 py-1.5 rounded-lg bg-crate-accent text-black font-semibold hover:bg-crate-accent-dim disabled:opacity-50 transition-colors"
-                      title="Promote to Favorites"
-                    >
-                      {actionId === item.id ? "..." : "⭐"}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(item)}
-                    disabled={actionId === item.id}
-                    className="text-xs px-2.5 py-1.5 rounded-lg bg-crate-surface border border-crate-border text-crate-muted hover:text-red-400 disabled:opacity-50 transition-colors"
-                    title="Remove"
-                  >
-                    {actionId === item.id ? "..." : "✕"}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          grouped.map(({ key, albums }) => (
+            <LibraryShelf
+              key={key}
+              albums={albums}
+              spinesPerRow={SPINES_PER_ROW}
+              groupLabel={group !== "none" ? key : undefined}
+              selectedAlbumId={selectedAlbumId}
+              onSelectAlbum={setSelectedAlbumId}
+              onRemoveAlbum={handleRemove}
+              onPromoteAlbum={handlePromote}
+              pickStats={pickStats}
+              sortKey={sort}
+            />
+          ))
         )}
       </div>
     </Layout>

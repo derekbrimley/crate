@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Crate?
+## What is s?
 
-Crate is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums (favorites + recommendations), and get weighted random selections across different modes (favorites, discover, for_right_now, surprise). The "for_right_now" mode uses Claude Haiku to suggest context-aware picks (e.g., "cooking dinner").
+Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums (favorites + recommendations), and get weighted random selections across different modes (favorites, discover, for_right_now, surprise). The "for_right_now" mode uses Claude Haiku to suggest context-aware picks (e.g., "cooking dinner").
 
 ## Development Commands
 
@@ -29,17 +29,21 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 
 ### API (`api/`)
 - Vercel serverless functions — each file exports a default `handler(req, res)`
+- **Hobby plan limit: 12 serverless functions per deployment.** When adding new endpoints, consolidate related routes into a single catch-all file (e.g. `[[...path]].ts`) instead of creating separate files.
 - Auth: `lib/auth.ts` — verifies Bearer JWT via Supabase admin client, returns `public.users` row
 - Routes:
-  - `api/auth/me.ts` — GET current user
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
   - `api/albums/index.ts` — GET/POST albums
   - `api/albums/search.ts` — GET Spotify search
-  - `api/albums/[id].ts` — DELETE album
-  - `api/albums/[id]/promote.ts` — POST promote to favorite
+  - `api/albums/bulk.ts` — POST bulk-add albums
+  - `api/albums/[id].ts` — DELETE album, POST promote to favorite, GET album details (tracks + artist albums)
+  - `api/spotify/[[...path]].ts` — Catch-all for Spotify routes:
+    - `GET /api/spotify/library` — albums from user's Spotify library
+    - `GET /api/spotify/playlists` — user's Spotify playlists
+    - `GET /api/spotify/playlists/:id/albums` — albums from a specific playlist
+    - `PUT /api/spotify/play` — trigger playback on active Spotify device
   - `api/picks/dashboard.ts` — GET picks for all modes
-  - `api/picks/index.ts` — POST record a pick
-  - `api/picks/history.ts` — GET pick history
+  - `api/picks/index.ts` — GET pick history, POST record a pick
   - `api/config/index.ts` — GET/PATCH user config
 
 ### Shared library (`lib/`)

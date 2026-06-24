@@ -1,5 +1,73 @@
+import type { RightNowContext } from "./types";
+
+const DEFAULT_RIGHT_NOW_CONTEXTS: RightNowContext[] = [
+  {
+    key: "morning",
+    label: "Morning",
+    emoji: "☀️",
+    prefer_genres: ["indie pop", "folk", "acoustic", "singer-songwriter", "pop", "jazz", "soul"],
+    prompt_hints: "",
+  },
+  {
+    key: "gym",
+    label: "Gym / Workout",
+    emoji: "💪",
+    prefer_genres: ["hip hop", "rap", "metal", "rock", "electronic", "edm", "pop", "punk", "hard rock", "drum and bass"],
+    prompt_hints: "",
+  },
+  {
+    key: "driving",
+    label: "Driving",
+    emoji: "🚗",
+    prefer_genres: ["rock", "classic rock", "pop", "hip hop", "country", "alternative", "indie", "electronic"],
+    prompt_hints: "",
+  },
+  {
+    key: "deep_work",
+    label: "Deep Work",
+    emoji: "🧠",
+    prefer_genres: ["ambient", "electronic", "post-rock", "classical", "instrumental", "jazz", "lo-fi", "neo-classical"],
+    prompt_hints: "",
+  },
+  {
+    key: "cooking",
+    label: "Cooking",
+    emoji: "🍳",
+    prefer_genres: ["pop", "soul", "r&b", "jazz", "funk", "bossa nova", "latin", "indie pop"],
+    prompt_hints: "",
+  },
+  {
+    key: "hosting",
+    label: "Hosting / Party",
+    emoji: "🎉",
+    prefer_genres: ["pop", "indie pop", "soul", "r&b", "funk", "jazz", "latin", "dance"],
+    prompt_hints: "",
+  },
+  {
+    key: "walking",
+    label: "Walking / Errands",
+    emoji: "🚶",
+    prefer_genres: ["pop", "indie", "rock", "hip hop", "electronic", "folk", "jazz", "classical"],
+    prompt_hints: "",
+  },
+  {
+    key: "chill",
+    label: "Chill / Background",
+    emoji: "🧘",
+    prefer_genres: ["lo-fi", "chillhop", "indie", "soul", "r&b", "jazz", "ambient", "neo-soul", "folk"],
+    prompt_hints: "",
+  },
+  {
+    key: "winding_down",
+    label: "Winding Down",
+    emoji: "🌙",
+    prefer_genres: ["ambient", "folk", "acoustic", "indie folk", "classical", "singer-songwriter", "jazz", "lo-fi", "neo-soul"],
+    prompt_hints: "",
+  },
+];
+
 export const DEFAULT_CONFIG: Record<string, unknown> = {
-  dashboard_modes: ["favorites", "discover", "for_right_now", "surprise"],
+  dashboard_modes: ["favorites", "discover", "for_right_now", "surprise", "from_friends"],
   cards_per_mode: 2,
   cooldown_days: 3,
   weight_recent_days: 14,
@@ -20,4 +88,5 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
     "chill",
   ],
   randomness_factor: 1.0,
+  right_now_contexts: DEFAULT_RIGHT_NOW_CONTEXTS,
 };

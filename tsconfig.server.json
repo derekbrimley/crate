@@ -12,5 +12,5 @@
     "noUnusedParameters": false,
     "outDir": "dist-server"
   },
-  "include": ["lib", "api"]
+  "include": ["lib/**/*.ts", "api/**/*.ts"]
 }

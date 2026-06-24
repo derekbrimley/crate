@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getAllConfig, getItems, getLastPicksForUser } from "../../lib/queries";
+import { getAllConfig, getItems, getLastPicksForUser, getPendingFriendRecommendations } from "../../lib/queries";
 import { selectAlbums, type SelectionConfig } from "../../lib/selection";
-import { getContextSuggestions } from "../../lib/claude";
-import type { Item } from "../../lib/types";
+import { getContextSuggestions, getSurpriseSuggestion } from "../../lib/claude";
+import { searchAlbums, getBestImageUrl } from "../../lib/spotify";
+import type { Item, RightNowContext } from "../../lib/types";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
@@ -11,7 +12,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const context = (req.query.context as string) || null;
+  const requestedMode = (req.query.mode as string) || null;
+  const rawContext = (req.query.context as string) || null;
+  const excludeModes = (req.query.exclude as string)?.split(",").map(s => s.trim()) || [];
 
   const [config, allItems, recentPicks] = await Promise.all([
     getAllConfig(user.id),
@@ -21,6 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const cardsPerMode = config.cards_per_mode as number;
   const dashboardModes = config.dashboard_modes as string[];
+  const rightNowContexts = config.right_now_contexts as RightNowContext[] | undefined;
+
+  // Resolve "auto" to the user's first configured context
+  const context = rawContext === "auto"
+    ? (rightNowContexts?.[0]?.key ?? (config.contexts as string[])?.[0] ?? null)
+    : rawContext;
 
   const selectionConfig: SelectionConfig = {
     cooldown_days: config.cooldown_days as number,
@@ -36,36 +45,107 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const favorites = allItems.filter((i) => i.list_type === "favorite");
   const recommendations = allItems.filter((i) => i.list_type === "recommendation");
 
-  const result: Record<string, Item[]> = {};
+  // When a specific mode is requested, only run that mode
+  const modesToRun = requestedMode && dashboardModes.includes(requestedMode)
+    ? [requestedMode]
+    : dashboardModes.filter(m => !excludeModes.includes(m));
 
-  for (const mode of dashboardModes) {
-    switch (mode) {
-      case "favorites":
-        result.favorites = selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig);
-        break;
-      case "discover":
-        result.discover = selectAlbums(recommendations, cardsPerMode, recentPicks, selectionConfig);
-        break;
-      case "for_right_now":
-        if (context && allItems.length > 0) {
-          try {
-            const suggestions = await getContextSuggestions(context, allItems, cardsPerMode);
-            result.for_right_now =
-              suggestions.length > 0
-                ? suggestions
-                : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
-          } catch {
-            result.for_right_now = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+  const modeEntries = await Promise.all(
+    modesToRun.map(async (mode): Promise<[string, Item[]]> => {
+      switch (mode) {
+        case "favorites":
+          return ["favorites", selectAlbums(favorites, cardsPerMode, recentPicks, selectionConfig)];
+
+        case "discover":
+          return ["discover", selectAlbums(recommendations, cardsPerMode, [], selectionConfig)];
+
+        case "for_right_now": {
+          if (context && allItems.length > 0) {
+            const contextProfile = rightNowContexts?.find((c) => c.key === context);
+            return ["for_right_now", getContextSuggestions(context, allItems, cardsPerMode, contextProfile, recentPicks, selectionConfig)];
           }
-        } else {
-          result.for_right_now = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
+          return ["for_right_now", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
         }
-        break;
-      case "surprise":
-        result.surprise = selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig);
-        break;
-    }
-  }
 
-  res.json(result);
+        case "surprise": {
+          const hasEnoughFavorites = favorites.length >= 2;
+          const randomPicks = selectAlbums(allItems, hasEnoughFavorites ? cardsPerMode - 1 : cardsPerMode, recentPicks, selectionConfig);
+
+          if (!hasEnoughFavorites) return ["surprise", randomPicks];
+
+          try {
+            const suggestions = await getSurpriseSuggestion(favorites);
+            const existingIds = new Set(allItems.map((i) => i.external_id));
+
+            // Shuffle so each refresh surfaces a different suggestion
+            const shuffled = [...suggestions].sort(() => Math.random() - 0.5);
+
+            // Search all suggestions in parallel, then find first match
+            const searchResults = await Promise.all(
+              shuffled.map(({ title, artist }) =>
+                searchAlbums(`${title} ${artist}`, 5).catch(() => [] as typeof searchResults[number])
+              )
+            );
+
+            let aiPick: Item | null = null;
+            for (let i = 0; i < shuffled.length; i++) {
+              const match = searchResults[i].find((r) => !existingIds.has(r.id));
+              if (match) {
+                const { artist } = shuffled[i];
+                aiPick = {
+                  id: 0,
+                  user_id: user.id,
+                  media_type: "album",
+                  list_type: "recommendation",
+                  title: match.name,
+                  creator: match.artists[0]?.name || artist,
+                  image_url: getBestImageUrl(match.images),
+                  external_id: match.id,
+                  external_uri: match.uri,
+                  external_url: match.external_urls.spotify,
+                  added_at: Date.now(),
+                  metadata: { _ai_suggested: true },
+                };
+                break;
+              }
+            }
+
+            return ["surprise", aiPick
+              ? [...randomPicks, aiPick]
+              : selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
+          } catch {
+            return ["surprise", selectAlbums(allItems, cardsPerMode, recentPicks, selectionConfig)];
+          }
+        }
+
+        case "from_friends": {
+          const recs = await getPendingFriendRecommendations(user.id, cardsPerMode);
+          const items: Item[] = recs.map((rec) => ({
+            id: rec.id,
+            user_id: user.id,
+            media_type: "album",
+            list_type: "recommendation" as const,
+            title: rec.title,
+            creator: rec.creator,
+            image_url: rec.image_url,
+            external_id: rec.external_id,
+            external_uri: rec.external_uri,
+            external_url: rec.external_url,
+            added_at: rec.sent_at,
+            metadata: {
+              _friend_rec: true,
+              _rec_id: rec.id,
+              _sender_name: rec.sender_display_name,
+            },
+          }));
+          return ["from_friends", items];
+        }
+
+        default:
+          return [mode, []];
+      }
+    })
+  );
+
+  res.json({ ...Object.fromEntries(modeEntries), _config: config, _picks: recentPicks });
 }

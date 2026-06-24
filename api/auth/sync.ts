@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
-import { upsertUser } from "../../lib/queries";
+import { upsertUser, saveSpotifyTokens } from "../../lib/queries";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -16,30 +16,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (error || !user) return res.status(401).json({ error: "Invalid token" });
 
   const spotifyIdentity = user.identities?.find((i) => i.provider === "spotify");
-  if (!spotifyIdentity) return res.status(400).json({ error: "No Spotify identity" });
-
-  const spotifyId = spotifyIdentity.identity_data?.provider_id as string;
-  const displayName = (spotifyIdentity.identity_data?.name as string) ?? null;
+  const spotifyId = spotifyIdentity?.identity_data?.provider_id as string | undefined;
+  const displayName = (spotifyIdentity?.identity_data?.name as string) ?? null;
   const email = user.email ?? null;
 
+  await upsertUser(user.id, displayName, email);
+
   const { provider_token, provider_refresh_token } = req.body as {
-    provider_token: string;
-    provider_refresh_token: string;
+    provider_token?: string;
+    provider_refresh_token?: string;
   };
 
-  if (!provider_token) return res.status(400).json({ error: "Missing provider_token" });
-
-  const expiresAt = Math.floor(Date.now() / 1000) + 3600;
-
-  await upsertUser(
-    user.id,
-    spotifyId,
-    displayName,
-    email,
-    provider_token,
-    provider_refresh_token ?? "",
-    expiresAt
-  );
+  if (spotifyId && provider_token) {
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+    await saveSpotifyTokens(
+      user.id,
+      spotifyId,
+      displayName,
+      provider_token,
+      provider_refresh_token ?? "",
+      expiresAt
+    );
+  }
 
   res.json({ ok: true });
 }

@@ -1,9 +1,12 @@
 import type {
   Item,
   SpotifySearchResult,
+  LibraryAlbum,
+  SpotifyPlaylistInfo,
   PickHistoryEntry,
   DashboardData,
   AppConfig,
+  AlbumDetails,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -31,6 +34,7 @@ async function request<T>(
     throw new Error(`API error ${res.status}: ${body}`);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -61,7 +65,17 @@ export async function deleteAlbum(id: number): Promise<void> {
 }
 
 export async function promoteAlbum(id: number): Promise<void> {
-  await request(`/albums/${id}/promote`, { method: "POST" });
+  await request(`/albums/${id}`, { method: "POST" });
+}
+
+export async function moveAlbum(
+  id: number,
+  listType: "favorite" | "recommendation"
+): Promise<void> {
+  await request(`/albums/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ list_type: listType }),
+  });
 }
 
 export async function searchSpotify(
@@ -72,11 +86,84 @@ export async function searchSpotify(
   );
 }
 
+export async function backfillReleaseDates(): Promise<{ updated: number }> {
+  return request<{ updated: number }>("/albums/backfill", { method: "POST" });
+}
+
+// ── Spotify Import ───────────────────────────────────────────────────────────
+
+export async function getSpotifyLibrary(
+  limit = 50,
+  offset = 0
+): Promise<{ albums: LibraryAlbum[]; total: number }> {
+  return request<{ albums: LibraryAlbum[]; total: number }>(
+    `/spotify/library?limit=${limit}&offset=${offset}`
+  );
+}
+
+export async function getSpotifyPlaylists(
+  limit = 50,
+  offset = 0
+): Promise<{ playlists: SpotifyPlaylistInfo[]; total: number }> {
+  return request<{ playlists: SpotifyPlaylistInfo[]; total: number }>(
+    `/spotify/playlists?limit=${limit}&offset=${offset}`
+  );
+}
+
+export async function getPlaylistAlbums(
+  playlistId: string
+): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(
+    `/spotify/playlists/${playlistId}/albums`
+  );
+}
+
+export async function bulkAddAlbums(
+  albums: SpotifySearchResult[],
+  listType: "favorite" | "recommendation"
+): Promise<{ added: number }> {
+  return request<{ added: number }>("/albums/bulk", {
+    method: "POST",
+    body: JSON.stringify({
+      albums: albums.map((a) => ({
+        spotify_id: a.spotify_id,
+        title: a.title,
+        artist: a.artist,
+        image_url: a.image_url,
+        spotify_uri: a.spotify_uri,
+        spotify_url: a.spotify_url,
+      })),
+      list_type: listType,
+    }),
+  });
+}
+
+// ── Album Details ────────────────────────────────────────────────────────────
+
+export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> {
+  return request<AlbumDetails>(`/albums/${spotifyId}`);
+}
+
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
 
-export async function getDashboard(context?: string): Promise<DashboardData> {
-  const query = context ? `?context=${encodeURIComponent(context)}` : "";
-  return request<DashboardData>(`/picks/dashboard${query}`);
+export async function getDashboard(context?: string, exclude?: string[]): Promise<DashboardData> {
+  const params = new URLSearchParams();
+  if (context) params.set("context", context);
+  if (exclude?.length) params.set("exclude", exclude.join(","));
+  const query = params.toString();
+  return request<DashboardData>(`/picks/dashboard${query ? `?${query}` : ""}`);
+}
+
+export async function getDashboardMode(mode: string, context: string): Promise<DashboardData> {
+  const params = new URLSearchParams({ mode, context });
+  return request<DashboardData>(`/picks/dashboard?${params}`);
+}
+
+export async function playOnSpotify(spotifyUri: string): Promise<void> {
+  await request("/spotify/play", {
+    method: "PUT",
+    body: JSON.stringify({ spotify_uri: spotifyUri }),
+  });
 }
 
 export async function recordPick(data: {
@@ -92,8 +179,41 @@ export async function getHistory(
   offset = 0
 ): Promise<{ history: PickHistoryEntry[] }> {
   return request<{ history: PickHistoryEntry[] }>(
-    `/picks/history?limit=${limit}&offset=${offset}`
+    `/picks?limit=${limit}&offset=${offset}`
   );
+}
+
+// ── Friend Recommendations ───────────────────────────────────────────────────
+
+export async function sendRecommendation(data: {
+  email: string;
+  album: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+  };
+}): Promise<{ recommendation: unknown }> {
+  return request<{ recommendation: unknown }>("/recommendations", {
+    method: "POST",
+    body: JSON.stringify({ action: "send", ...data }),
+  });
+}
+
+export async function getRecentRecipients(): Promise<{ recipients: { display_name: string | null; email: string | null }[] }> {
+  return request<{ recipients: { display_name: string | null; email: string | null }[] }>("/recommendations?type=recipients");
+}
+
+export async function actOnRecommendation(
+  recId: number,
+  action: "accept" | "dismiss"
+): Promise<{ ok: true }> {
+  return request<{ ok: true }>("/recommendations", {
+    method: "POST",
+    body: JSON.stringify({ action, rec_id: recId }),
+  });
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────

@@ -1,0 +1,2 @@
+- display a ticker of notable albums that have come out in the last week that you can click and open
+- 

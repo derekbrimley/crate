@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { DEFAULT_CONFIG } from "./defaults";
-import type { User, Item, Pick, LastPickInfo } from "./types";
+import type { User, Item, Pick, LastPickInfo, FriendRecommendation } from "./types";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -29,32 +29,40 @@ export async function setConfig(userId: number, key: string, value: unknown): Pr
 
 export async function upsertUser(
   supabaseUid: string,
-  spotifyId: string,
   displayName: string | null,
-  email: string | null,
-  accessToken: string,
-  refreshToken: string,
-  expiresAt: number
+  email: string | null
 ): Promise<User> {
   const { data, error } = await supabaseAdmin
     .from("users")
     .upsert(
-      {
-        supabase_uid: supabaseUid,
-        spotify_id: spotifyId,
-        display_name: displayName,
-        email,
-        spotify_access_token: accessToken,
-        spotify_refresh_token: refreshToken,
-        token_expires_at: expiresAt,
-      },
-      { onConflict: "spotify_id" }
+      { supabase_uid: supabaseUid, display_name: displayName, email },
+      { onConflict: "supabase_uid" }
     )
     .select()
     .single();
 
   if (error) throw error;
   return data as User;
+}
+
+export async function saveSpotifyTokens(
+  supabaseUid: string,
+  spotifyId: string,
+  displayName: string | null,
+  accessToken: string,
+  refreshToken: string,
+  expiresAt: number
+): Promise<void> {
+  await supabaseAdmin
+    .from("users")
+    .update({
+      spotify_id: spotifyId,
+      display_name: displayName,
+      spotify_access_token: accessToken,
+      spotify_refresh_token: refreshToken,
+      token_expires_at: expiresAt,
+    })
+    .eq("supabase_uid", supabaseUid);
 }
 
 export async function getUserById(id: number): Promise<User | null> {
@@ -121,6 +129,45 @@ export async function addItem(
   return data as Item;
 }
 
+export async function bulkAddItems(
+  userId: number,
+  listType: "favorite" | "recommendation",
+  albums: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+    metadata?: Record<string, unknown> | null;
+  }[]
+): Promise<number> {
+  if (albums.length === 0) return 0;
+
+  const now = Math.floor(Date.now() / 1000);
+  const rows = albums.map((a) => ({
+    user_id: userId,
+    media_type: "album" as const,
+    list_type: listType,
+    title: a.title,
+    creator: a.creator,
+    image_url: a.image_url,
+    external_id: a.external_id,
+    external_uri: a.external_uri,
+    external_url: a.external_url,
+    added_at: now,
+    metadata: a.metadata ?? null,
+  }));
+
+  const { data, error } = await supabaseAdmin
+    .from("items")
+    .upsert(rows, { onConflict: "user_id,external_id,media_type" })
+    .select("id");
+
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 export async function getItems(
   userId: number,
   listType?: "favorite" | "recommendation"
@@ -151,6 +198,18 @@ export async function promoteItem(userId: number, itemId: number): Promise<void>
   await supabaseAdmin
     .from("items")
     .update({ list_type: "favorite" })
+    .eq("id", itemId)
+    .eq("user_id", userId);
+}
+
+export async function updateItemListType(
+  userId: number,
+  itemId: number,
+  listType: "favorite" | "recommendation"
+): Promise<void> {
+  await supabaseAdmin
+    .from("items")
+    .update({ list_type: listType })
     .eq("id", itemId)
     .eq("user_id", userId);
 }
@@ -190,33 +249,177 @@ export async function getPickHistory(
 }
 
 export async function getLastPicksForUser(userId: number): Promise<LastPickInfo[]> {
+  const { data, error } = await supabaseAdmin.rpc("get_last_picks_for_user", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return (data ?? []) as LastPickInfo[];
+}
+
+// ── Friend Recommendations ───────────────────────────────────────────────────
+
+export async function getUserByEmail(email: string): Promise<User | null> {
   const { data } = await supabaseAdmin
-    .from("picks")
-    .select("item_id, picked_at")
-    .eq("user_id", userId);
+    .from("users")
+    .select("*")
+    .eq("email", email.toLowerCase().trim())
+    .single();
+  return (data as User) ?? null;
+}
 
-  if (!data) return [];
+export async function sendFriendRecommendation(
+  senderId: number,
+  senderDisplayName: string | null,
+  senderEmail: string | null,
+  recipientId: number,
+  album: {
+    title: string;
+    creator: string;
+    image_url: string | null;
+    external_id: string;
+    external_uri: string | null;
+    external_url: string | null;
+    metadata?: Record<string, unknown> | null;
+  }
+): Promise<FriendRecommendation> {
+  const now = Math.floor(Date.now() / 1000);
+  const { data, error } = await supabaseAdmin
+    .from("friend_recommendations")
+    .insert({
+      sender_id: senderId,
+      recipient_id: recipientId,
+      title: album.title,
+      creator: album.creator,
+      image_url: album.image_url,
+      external_id: album.external_id,
+      external_uri: album.external_uri,
+      external_url: album.external_url,
+      metadata: album.metadata ?? null,
+      status: "pending",
+      sent_at: now,
+      sender_display_name: senderDisplayName,
+      sender_email: senderEmail,
+    })
+    .select()
+    .single();
 
-  // Group by item_id client-side (no GROUP BY in Supabase PostgREST directly)
-  const map = new Map<number, { picked_at: number; pick_count: number }>();
-  for (const row of data) {
-    const existing = map.get(row.item_id);
-    if (!existing || row.picked_at > existing.picked_at) {
-      map.set(row.item_id, {
-        picked_at: Math.max(row.picked_at, existing?.picked_at ?? 0),
-        pick_count: (existing?.pick_count ?? 0) + 1,
-      });
-    } else {
-      map.set(row.item_id, {
-        picked_at: existing.picked_at,
-        pick_count: existing.pick_count + 1,
-      });
+  if (error) throw error;
+  return data as FriendRecommendation;
+}
+
+export async function getPendingFriendRecommendations(
+  recipientId: number,
+  limit = 4
+): Promise<FriendRecommendation[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("*")
+    .eq("recipient_id", recipientId)
+    .eq("status", "pending")
+    .order("sent_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as FriendRecommendation[];
+}
+
+export async function updateFriendRecommendationStatus(
+  recipientId: number,
+  recId: number,
+  status: "accepted" | "dismissed"
+): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  await supabaseAdmin
+    .from("friend_recommendations")
+    .update({ status, acted_at: now })
+    .eq("id", recId)
+    .eq("recipient_id", recipientId);
+}
+
+export async function getRecentRecipients(
+  senderId: number
+): Promise<{ display_name: string | null; email: string | null }[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("recipient_id")
+    .eq("sender_id", senderId)
+    .order("sent_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const seen = new Set<number>();
+  const uniqueIds: number[] = [];
+  for (const r of data) {
+    if (!seen.has(r.recipient_id)) {
+      seen.add(r.recipient_id);
+      uniqueIds.push(r.recipient_id);
     }
   }
 
-  return Array.from(map.entries()).map(([item_id, { picked_at, pick_count }]) => ({
-    item_id,
-    picked_at,
-    pick_count,
-  }));
+  const { data: users } = await supabaseAdmin
+    .from("users")
+    .select("display_name, email")
+    .in("id", uniqueIds);
+
+  return (users ?? []) as { display_name: string | null; email: string | null }[];
+}
+
+export async function getSentRecommendationsForAlbum(
+  senderId: number,
+  externalId: string
+): Promise<{ recipient_name: string | null; recipient_email: string | null; sent_at: number; status: string }[]> {
+  const { data } = await supabaseAdmin
+    .from("friend_recommendations")
+    .select("recipient_id, sent_at, status")
+    .eq("sender_id", senderId)
+    .eq("external_id", externalId)
+    .order("sent_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const recipientIds = [...new Set(data.map((r) => r.recipient_id))];
+  const { data: users } = await supabaseAdmin
+    .from("users")
+    .select("id, display_name, email")
+    .in("id", recipientIds);
+
+  const userMap = new Map<number, { display_name: string | null; email: string | null }>();
+  for (const u of users ?? []) {
+    userMap.set(u.id, { display_name: u.display_name, email: u.email });
+  }
+
+  return data.map((r) => {
+    const recipient = userMap.get(r.recipient_id);
+    return {
+      recipient_name: recipient?.display_name ?? null,
+      recipient_email: recipient?.email ?? null,
+      sent_at: r.sent_at,
+      status: r.status,
+    };
+  });
+}
+
+export async function updateItemMetadata(
+  userId: number,
+  itemId: number,
+  metadata: Record<string, unknown>
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("items")
+    .update({ metadata })
+    .eq("user_id", userId)
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function getItemsMissingReleaseDate(userId: number): Promise<Item[]> {
+  const { data, error } = await supabaseAdmin
+    .from("items")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("media_type", "album");
+  if (error) throw error;
+  const items = (data ?? []) as Item[];
+  return items.filter((i) => {
+    const m = i.metadata as Record<string, unknown> | null;
+    return !m || !m.release_date;
+  });
 }

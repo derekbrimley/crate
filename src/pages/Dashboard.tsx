@@ -1,42 +1,76 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { ModeSection } from "../components/ModeSection";
-import { getDashboard, recordPick, getConfig } from "../services/api";
-import type { Item, DashboardData, AppConfig } from "../types";
+import { NowPlayingModal } from "../components/NowPlayingModal";
+import { recordPick } from "../services/api";
+import { useDataCache } from "../contexts/DataCache";
+import type { Item } from "../types";
 import { CONTEXT_LABELS } from "../types";
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
+const MODE_CONFIG: Record<string, { title: string; }> = {
+  favorites:    { title: "Favorites" },
+  discover:     { title: "Recommendations" },
+  for_right_now:{ title: "Right Now" },
+  surprise:     { title: "Surprise Me" },
+};
+
 export function Dashboard({ onLogout }: DashboardProps) {
-  const [data, setData] = useState<DashboardData>({});
-  const [loading, setLoading] = useState(true);
+  const {
+    dashboardData: data,
+    dashboardConfig: config,
+    dashboardLoaded,
+    loadDashboard,
+    refreshDashboardMode,
+  } = useDataCache();
+  const [loading, setLoading] = useState(!dashboardLoaded);
   const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
-  const [context, setContext] = useState("chill");
-  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
 
+  // Derive context pills from right_now_contexts if available, else fall back to contexts + CONTEXT_LABELS
+  const contextPills = config?.right_now_contexts?.length
+    ? config.right_now_contexts.map((c) => ({ key: c.key, label: c.label, emoji: c.emoji }))
+    : (config?.contexts || Object.keys(CONTEXT_LABELS)).map((ctx) => ({
+        key: ctx,
+        label: CONTEXT_LABELS[ctx]?.label || ctx,
+        emoji: CONTEXT_LABELS[ctx]?.emoji || "●",
+      }));
+  const [nowPlaying, setNowPlaying] = useState<Item | null>(null);
+
+  // Load dashboard immediately using "auto" context — server resolves the user's first
+  // configured context, and config is bundled in the response to eliminate the waterfall.
   useEffect(() => {
-    getConfig().then(({ config }) => setConfig(config)).catch(() => {});
-  }, []);
-
-  const loadDashboard = useCallback(async (ctx?: string) => {
+    if (dashboardLoaded) return;
     setLoading(true);
-    try {
-      const result = await getDashboard(ctx || context);
-      setData(result);
-    } catch (err) {
-      console.error("Failed to load dashboard:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [context]);
-
-  useEffect(() => {
-    loadDashboard();
+    loadDashboard("auto").finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handlePick = async (item: Item, mode: string) => {
+  // Once config arrives (from the dashboard response), sync the active context pill
+  // to match what the server used so the UI stays consistent.
+  useEffect(() => {
+    if (!config) return;
+    const initialCtx =
+      config.right_now_contexts?.[0]?.key ??
+      config.contexts?.[0] ??
+      Object.keys(CONTEXT_LABELS)[0];
+    setContext(initialCtx);
+  }, [config]);
+
+  const [pendingPick, setPendingPick] = useState<{ item: Item; mode: string } | null>(null);
+
+  const handlePick = (item: Item, mode: string) => {
+    setNowPlaying(item);
+    setPendingPick({ item, mode });
+  };
+
+  const handlePlay = async () => {
+    if (!pendingPick) return;
+    const { item, mode } = pendingPick;
+    setPendingPick(null);
     try {
       await recordPick({
         item_id: item.id,
@@ -51,8 +85,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const refreshMode = async (mode: string) => {
     setLoadingModes((prev) => new Set([...prev, mode]));
     try {
-      const result = await getDashboard(context);
-      setData((prev) => ({ ...prev, [mode]: result[mode as keyof DashboardData] }));
+      await refreshDashboardMode(mode, context);
     } finally {
       setLoadingModes((prev) => {
         const next = new Set(prev);
@@ -66,8 +99,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     setContext(newCtx);
     setLoadingModes((prev) => new Set([...prev, "for_right_now"]));
     try {
-      const result = await getDashboard(newCtx);
-      setData((prev) => ({ ...prev, for_right_now: result.for_right_now }));
+      await refreshDashboardMode("for_right_now", newCtx);
     } finally {
       setLoadingModes((prev) => {
         const next = new Set(prev);
@@ -77,32 +109,50 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
-  const contexts = config?.contexts || Object.keys(CONTEXT_LABELS);
   const modes = config?.dashboard_modes || ["favorites", "discover", "for_right_now", "surprise"];
 
   const headerRight = (
     <button
       onClick={onLogout}
-      className="text-xs text-crate-muted hover:text-crate-text transition-colors"
+      className="font-mono text-[9px] tracking-[0.2em] text-crate-muted hover:text-crate-text transition-colors uppercase"
+      style={{ letterSpacing: "0.2em" }}
     >
-      Sign out
+      SIGN OUT
     </button>
   );
 
   return (
     <Layout headerRight={headerRight}>
-      {/* Crate Header */}
-      <div className="px-4 pt-5 pb-2">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-2xl font-bold text-crate-text tracking-tight">crate</h1>
-          <span className="text-sm text-crate-muted">what should we listen to?</span>
+      {/* Store header */}
+      <div className="px-5 pt-6 pb-4 relative">
+
+
+        {/* Main wordmark */}
+        <h1
+          className="font-display leading-none"
+          style={{ fontSize: 24, color: "#39ff14", textShadow: "0 0 5px #39ff14,0 0 10px #39ff14,0 0 20px #0fa", letterSpacing: "0.4em" }}
+        >
+          CRATES
+        </h1>
+
+        {/* Subtitle */}
+        <div className="flex items-center gap-2 mt-2">
+          <div className="w-3 h-px" style={{ background: "#907558" }} />
+          <p className="font-mono text-[9px] text-crate-muted tracking-widest uppercase" style={{ letterSpacing: "0.22em" }}>
+            listen up
+          </p>
         </div>
       </div>
 
+      {/* Divider with neon pink hint */}
+      <div
+        className="mx-5 mb-2 h-px"
+        style={{ background: "linear-gradient(90deg, rgba(255,0,145,0.4) 0%, rgba(255,0,145,0.15) 30%, transparent 100%)" }}
+      />
+
       {modes.includes("favorites") && (
         <ModeSection
-          title="Favorites"
-          icon="🎲"
+          title={MODE_CONFIG.favorites.title}
           items={data.favorites || []}
           loading={loading || loadingModes.has("favorites")}
           mode="favorites"
@@ -113,8 +163,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       {modes.includes("discover") && (
         <ModeSection
-          title="Discover"
-          icon="🔮"
+          title={MODE_CONFIG.discover.title}
           items={data.discover || []}
           loading={loading || loadingModes.has("discover")}
           mode="discover"
@@ -125,30 +174,37 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       {modes.includes("for_right_now") && (
         <ModeSection
-          title="For Right Now"
-          icon="📍"
+          title={MODE_CONFIG.for_right_now.title}
           items={data.for_right_now || []}
           loading={loading || loadingModes.has("for_right_now")}
           mode="for_right_now"
           onPick={handlePick}
           onRefresh={() => refreshMode("for_right_now")}
         >
-          {/* Context pills */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3">
-            {contexts.map((ctx) => {
-              const info = CONTEXT_LABELS[ctx];
+          {/* Context tags — styled as vintage catalog dividers */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {contextPills.map(({ key, label, emoji }) => {
+              const isActive = context === key;
               return (
                 <button
-                  key={ctx}
-                  onClick={() => handleContextChange(ctx)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 ${
-                    context === ctx
-                      ? "bg-crate-accent text-black"
-                      : "bg-crate-elevated text-crate-muted hover:text-crate-text"
-                  }`}
+                  key={key}
+                  onClick={() => handleContextChange(key)}
+                  className="shrink-0 flex items-center gap-1.5 transition-all duration-150"
+                  style={{
+                    padding: "4px 10px",
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    border: isActive ? "1px solid #ff5e00" : "1px solid rgba(61,40,21,0.8)",
+                    background: isActive ? "rgba(255,94,0,0.12)" : "transparent",
+                    color: isActive ? "#ff5e00" : "#907558",
+                    textShadow: isActive ? "0 0 8px rgba(255,94,0,0.5)" : "none",
+                    boxShadow: isActive ? "0 0 8px rgba(255,94,0,0.2),inset 0 0 4px rgba(255,94,0,0.05)" : "none",
+                  }}
                 >
-                  <span>{info?.emoji || "🎵"}</span>
-                  <span>{info?.label || ctx}</span>
+                  <span>{emoji}</span>
+                  <span>{label}</span>
                 </button>
               );
             })}
@@ -158,13 +214,22 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
       {modes.includes("surprise") && (
         <ModeSection
-          title="Surprise Me"
-          icon="✨"
+          title={MODE_CONFIG.surprise.title}
           items={data.surprise || []}
-          loading={loading || loadingModes.has("surprise")}
+          loading={loading || loadingModes.has("surprise") || (dashboardLoaded && data.surprise === undefined)}
           mode="surprise"
           onPick={handlePick}
           onRefresh={() => refreshMode("surprise")}
+        />
+      )}
+
+      {nowPlaying && (
+        <NowPlayingModal
+          item={nowPlaying}
+          onClose={() => setNowPlaying(null)}
+          onPlay={handlePlay}
+          onRemove={() => setNowPlaying(null)}
+          onListTypeChange={(_item, _newListType) => { /* dashboard refreshes naturally on next interaction */ }}
         />
       )}
     </Layout>

@@ -11,7 +11,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const q = req.query.q as string | undefined;
   if (!q) return res.status(400).json({ error: "Missing query" });
 
-  const results = await searchAlbums(user.id, q);
+  let results;
+  try {
+    results = await searchAlbums(q);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(502).json({ error: "Spotify search failed", detail: message });
+  }
+
   const albums = results.map((album) => ({
     spotify_id: album.id,
     title: album.name,
@@ -19,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     image_url: getBestImageUrl(album.images),
     spotify_uri: album.uri,
     spotify_url: album.external_urls.spotify,
+    total_tracks: album.total_tracks,
   }));
 
   res.json({ albums });

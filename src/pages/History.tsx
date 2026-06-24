@@ -1,28 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
-import { getHistory } from "../services/api";
-import type { PickHistoryEntry } from "../types";
-import { CONTEXT_LABELS } from "../types";
+import { VinylDisc } from "../components/VinylDisc";
+import { ProfileDropdown } from "../components/library/ProfileDropdown";
+import { useDataCache } from "../contexts/DataCache";
+import { CONTEXT_LABELS, PickHistoryEntry } from "../types";
 
-const MODE_LABELS: Record<string, { label: string; emoji: string }> = {
-  favorites: { label: "Favorites", emoji: "🎲" },
-  discover: { label: "Discover", emoji: "🔮" },
-  for_right_now: { label: "For Right Now", emoji: "📍" },
-  surprise: { label: "Surprise Me", emoji: "✨" },
+const MODE_SYMBOLS: Record<string, { label: string }> = {
+  favorites:    { label: "Favorites" },
+  discover:     { label: "Recommendations" },
+  for_right_now:{ label: "Right Now" },
+  surprise:     { label: "Surprise Me" },
 };
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   const now = new Date();
-  const diffDays = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) {
-    return date.toLocaleDateString("en-US", { weekday: "long" });
-  }
+  if (diffDays < 7) return date.toLocaleDateString("en-US", { weekday: "long" });
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -33,105 +29,184 @@ function formatTime(timestamp: number): string {
   });
 }
 
-export function History() {
-  const [history, setHistory] = useState<PickHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+interface HistoryProps {
+  onLogout: () => void;
+}
+
+export function History({ onLogout }: HistoryProps) {
+  const { history, historyLoaded, loadHistory } = useDataCache();
+  const [loading, setLoading] = useState(!historyLoaded);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    getHistory(100)
-      .then(({ history }) => setHistory(history))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    if (!historyLoaded) {
+      setLoading(true);
+      loadHistory().finally(() => setLoading(false));
+    }
+  }, [historyLoaded, loadHistory]);
 
-  // Group by date label
   const grouped: { label: string; entries: PickHistoryEntry[] }[] = [];
   for (const entry of history) {
     const label = formatDate(entry.picked_at_ts);
     const existing = grouped.find((g) => g.label === label);
-    if (existing) {
-      existing.entries.push(entry);
-    } else {
-      grouped.push({ label, entries: [entry] });
-    }
+    if (existing) existing.entries.push(entry);
+    else grouped.push({ label, entries: [entry] });
   }
 
-  return (
-    <Layout title="History">
-      <div className="px-4 pt-4">
-        {loading ? (
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-12 h-12 rounded-lg bg-crate-elevated animate-pulse shrink-0" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-3 rounded bg-crate-elevated animate-pulse w-40" />
-                  <div className="h-2.5 rounded bg-crate-elevated animate-pulse w-24" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : history.length === 0 ? (
-          <div className="mt-12 text-center">
-            <p className="text-4xl mb-4">📖</p>
-            <p className="text-crate-muted text-sm">
-              Your listening history will appear here once you start picking albums
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {grouped.map(({ label, entries }) => (
-              <div key={label}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-crate-muted mb-3">
-                  {label}
-                </h3>
-                <ul className="space-y-2">
-                  {entries.map((entry) => {
-                    const modeInfo = MODE_LABELS[entry.mode] || { label: entry.mode, emoji: "🎵" };
-                    const contextInfo = entry.context ? CONTEXT_LABELS[entry.context] : null;
+  const profileButton = (
+    <div className="relative">
+      <button
+        onClick={() => setShowProfile((v) => !v)}
+        className="flex items-center justify-center cursor-pointer"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #3a2010, #261406)",
+          border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
+          color: showProfile ? "#ff5e00" : "#907558",
+          boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+        }}
+        title="Profile"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+        </svg>
+      </button>
+      {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
+    </div>
+  );
 
-                    return (
-                      <li
-                        key={entry.id}
-                        className="flex items-center gap-3 p-3 bg-crate-elevated rounded-xl"
+  return (
+    <Layout title="Listening Log" headerRight={profileButton}>
+      {loading ? (
+        <div className="px-5 pt-4 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex gap-3 py-2">
+              <div className="w-12 h-12 shrink-0 animate-pulse" style={{ background: "#1a1218" }} />
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="h-2.5 w-36 animate-pulse" style={{ background: "#1a1218" }} />
+                <div className="h-2 w-24 animate-pulse" style={{ background: "#1a1218" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : history.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <VinylDisc size={56} />
+          <p className="font-display text-3xl text-crate-muted/25 tracking-widest">EMPTY</p>
+          <p className="font-mono text-[10px] text-crate-muted/40 text-center" style={{ letterSpacing: "0.12em" }}>
+            START PICKING RECORDS
+            <br />TO BUILD YOUR LOG
+          </p>
+        </div>
+      ) : (
+        <div className="pb-6">
+          {grouped.map(({ label, entries }) => (
+            <div key={label}>
+              {/* Date divider tab */}
+              <div
+                className="sticky z-10 flex items-center gap-3 px-5 py-2"
+                style={{ top: 56, background: "rgba(9,7,10,0.97)", backdropFilter: "blur(12px)" }}
+              >
+                <div
+                  className="font-display text-sm px-3 py-0.5"
+                  style={{
+                    color: "#907558",
+                    border: "1px solid rgba(61,40,21,0.8)",
+                    letterSpacing: "0.18em",
+                    background: "rgba(9,7,10,0.9)",
+                  }}
+                >
+                  {label.toUpperCase()}
+                </div>
+                <div className="flex-1 h-px" style={{ background: "rgba(61,40,21,0.4)" }} />
+                <span className="font-mono text-[9px]" style={{ color: "rgba(144,117,88,0.4)", letterSpacing: "0.1em" }}>
+                  {entries.length} {entries.length === 1 ? "RECORD" : "RECORDS"}
+                </span>
+              </div>
+
+              {/* Entries */}
+              <ul className="px-5">
+                {entries.map((entry, i) => {
+                  const modeInfo = MODE_SYMBOLS[entry.mode] || { label: entry.mode.toUpperCase() };
+                  const contextInfo = entry.context ? CONTEXT_LABELS[entry.context] : null;
+
+                  return (
+                    <li
+                      key={entry.id}
+                      className="flex items-center gap-3 py-3"
+                      style={{
+                        borderBottom: i < entries.length - 1 ? "1px solid rgba(61,40,21,0.3)" : "none",
+                      }}
+                    >
+                      {/* Sleeve art */}
+                      <div
+                        className="shrink-0 relative"
+                        style={{
+                          width: 48,
+                          height: 48,
+                          boxShadow: "2px 2px 8px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.06)",
+                        }}
                       >
                         {entry.image_url ? (
                           <img
                             src={entry.image_url}
                             alt={entry.title}
-                            className="w-12 h-12 rounded-lg object-cover shrink-0"
+                            className="w-full h-full object-cover block"
+                            loading="lazy"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-crate-border flex items-center justify-center shrink-0">
-                            <span className="text-xl">🎵</span>
+                          <div
+                            className="w-full h-full flex items-center justify-center"
+                            style={{ background: "#1a1218" }}
+                          >
+                            <VinylDisc size={32} />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-crate-text truncate">
-                            {entry.title}
-                          </p>
-                          <p className="text-xs text-crate-muted truncate">{entry.creator}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs text-crate-muted">
-                              {modeInfo.emoji}{" "}
-                              {entry.context && contextInfo
-                                ? `${modeInfo.label}: ${contextInfo.label}`
-                                : modeInfo.label}
-                            </span>
-                          </div>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="font-type truncate leading-tight"
+                          style={{ fontSize: 13, color: "#f2e8d2", letterSpacing: "0.01em" }}
+                        >
+                          {entry.title}
+                        </p>
+                        <p
+                          className="font-mono truncate mt-0.5"
+                          style={{ fontSize: 10, color: "#907558", letterSpacing: "0.06em" }}
+                        >
+                          {entry.creator}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span
+                            className="font-mono"
+                            style={{ fontSize: 9, color: "rgba(144,117,88,0.5)", letterSpacing: "0.08em" }}
+                          >
+                            {entry.context && contextInfo
+                              ? `${modeInfo.label} · ${contextInfo.label.toUpperCase()}`
+                              : modeInfo.label}
+                          </span>
                         </div>
-                        <span className="text-xs text-crate-muted shrink-0">
-                          {formatTime(entry.picked_at_ts)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                      </div>
+
+                      {/* Time */}
+                      <span
+                        className="font-mono shrink-0 tabular-nums"
+                        style={{ fontSize: 10, color: "rgba(144,117,88,0.45)", letterSpacing: "0.05em" }}
+                      >
+                        {formatTime(entry.picked_at_ts)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
     </Layout>
   );
 }

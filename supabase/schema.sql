@@ -3,7 +3,7 @@
 CREATE TABLE public.users (
   id SERIAL PRIMARY KEY,
   supabase_uid UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  spotify_id TEXT NOT NULL UNIQUE,
+  spotify_id TEXT UNIQUE,
   display_name TEXT,
   email TEXT,
   spotify_access_token TEXT,
@@ -68,11 +68,47 @@ RETURNS TABLE(
   LIMIT p_limit OFFSET p_offset;
 $$ LANGUAGE SQL SECURITY DEFINER;
 
+-- Used by api/picks/dashboard.ts (aggregated per-item pick info)
+CREATE OR REPLACE FUNCTION get_last_picks_for_user(p_user_id INTEGER)
+RETURNS TABLE(item_id INTEGER, picked_at INTEGER, pick_count BIGINT) AS $$
+  SELECT item_id,
+         MAX(picked_at)::INTEGER AS picked_at,
+         COUNT(*) AS pick_count
+  FROM public.picks
+  WHERE user_id = p_user_id
+  GROUP BY item_id;
+$$ LANGUAGE SQL SECURITY DEFINER;
+
+CREATE TABLE public.friend_recommendations (
+  id SERIAL PRIMARY KEY,
+  sender_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  creator TEXT NOT NULL,
+  image_url TEXT,
+  external_id TEXT NOT NULL,
+  external_uri TEXT,
+  external_url TEXT,
+  metadata JSONB,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'dismissed')),
+  sent_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
+  acted_at INTEGER,
+  sender_display_name TEXT,
+  sender_email TEXT
+);
+
+CREATE INDEX idx_friend_recs_recipient ON public.friend_recommendations(recipient_id, status);
+CREATE INDEX idx_friend_recs_sender ON public.friend_recommendations(sender_id);
+CREATE UNIQUE INDEX idx_friend_recs_unique_pending
+  ON public.friend_recommendations(sender_id, recipient_id, external_id)
+  WHERE status = 'pending';
+
 -- Row Level Security
 ALTER TABLE public.users       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.items       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.picks       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.friend_recommendations ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY users_self ON public.users
   USING (supabase_uid = auth.uid());
@@ -85,3 +121,9 @@ CREATE POLICY picks_owner ON public.picks
 
 CREATE POLICY config_owner ON public.user_config
   USING (user_id IN (SELECT id FROM public.users WHERE supabase_uid = auth.uid()));
+
+CREATE POLICY friend_recs_recipient ON public.friend_recommendations
+  FOR SELECT USING (recipient_id IN (SELECT id FROM public.users WHERE supabase_uid = auth.uid()));
+
+CREATE POLICY friend_recs_sender ON public.friend_recommendations
+  FOR SELECT USING (sender_id IN (SELECT id FROM public.users WHERE supabase_uid = auth.uid()));

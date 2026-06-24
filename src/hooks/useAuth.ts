@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabase";
 import type { User } from "../types";
 
 async function syncUser(session: Session): Promise<void> {
-  if (!session.provider_token) return;
   await fetch("/api/auth/sync", {
     method: "POST",
     headers: {
@@ -12,8 +11,8 @@ async function syncUser(session: Session): Promise<void> {
       Authorization: `Bearer ${session.access_token}`,
     },
     body: JSON.stringify({
-      provider_token: session.provider_token,
-      provider_refresh_token: session.provider_refresh_token,
+      provider_token: session.provider_token ?? null,
+      provider_refresh_token: session.provider_refresh_token ?? null,
     }),
   });
 }
@@ -24,20 +23,24 @@ function mapUser(supabaseUser: NonNullable<Session["user"]>): User {
     id: 0, // not used client-side
     displayName: (identity?.identity_data?.name as string) ?? null,
     email: supabaseUser.email ?? null,
-    spotifyId: (identity?.identity_data?.provider_id as string) ?? "",
+    spotifyId: (identity?.identity_data?.provider_id as string) ?? null,
   };
 }
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
+    let initialized = false;
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         await syncUser(session);
         setUser(mapUser(session.user));
       }
+      initialized = true;
       setLoading(false);
     });
 
@@ -45,8 +48,14 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+        // Skip the initial SIGNED_IN that fires at the same time as getSession
+        if (!initialized && event === "SIGNED_IN") return;
         await syncUser(session);
         setUser(mapUser(session.user));
+      } else if (event === "PASSWORD_RECOVERY" && session) {
+        await syncUser(session);
+        setUser(mapUser(session.user));
+        setNeedsPasswordReset(true);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
       }
@@ -55,21 +64,58 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const loginWithEmail = async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  };
+
+  const signUpWithEmail = async (email: string, password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    return error?.message ?? null;
+  };
+
   const login = () => {
     supabase.auth.signInWithOAuth({
       provider: "spotify",
       options: {
         scopes:
-          "user-library-read playlist-read-private playlist-read-collaborative",
+          "user-library-read playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state",
         redirectTo: `${window.location.origin}/callback`,
+        queryParams: { show_dialog: "true" },
       },
     });
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "global" });
     setUser(null);
   };
 
-  return { user, loading, login, logout };
+  const resetPasswordForEmail = async (email: string): Promise<string | null> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    return error?.message ?? null;
+  };
+
+  const updatePassword = async (password: string): Promise<string | null> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) setNeedsPasswordReset(false);
+    return error?.message ?? null;
+  };
+
+  const clearPasswordReset = () => setNeedsPasswordReset(false);
+
+  return {
+    user,
+    loading,
+    login,
+    loginWithEmail,
+    signUpWithEmail,
+    logout,
+    needsPasswordReset,
+    resetPasswordForEmail,
+    updatePassword,
+    clearPasswordReset,
+  };
 }

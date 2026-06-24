@@ -2,7 +2,7 @@ export interface User {
   id: number;
   displayName: string | null;
   email: string | null;
-  spotifyId: string;
+  spotifyId: string | null;
 }
 
 export interface Item {
@@ -17,7 +17,7 @@ export interface Item {
   external_uri: string | null;
   external_url: string | null;
   added_at: number;
-  metadata: string | null;
+  metadata: Record<string, unknown> | string | null;
 }
 
 export interface SpotifySearchResult {
@@ -27,6 +27,7 @@ export interface SpotifySearchResult {
   image_url: string | null;
   spotify_uri: string;
   spotify_url: string;
+  total_tracks?: number;
 }
 
 export interface PickHistoryEntry {
@@ -44,13 +45,95 @@ export interface PickHistoryEntry {
   list_type: string;
 }
 
-export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise";
+export interface LibraryAlbum extends SpotifySearchResult {
+  total_tracks?: number;
+  already_added: "favorite" | "recommendation" | null;
+}
+
+export interface SpotifyPlaylistInfo {
+  id: string;
+  name: string;
+  image_url: string | null;
+  track_count: number;
+  owner: string;
+}
+
+export interface AlbumTrack {
+  number: number;
+  disc: number;
+  name: string;
+  duration_ms: number;
+  artists: string;
+}
+
+export interface ArtistAlbum {
+  spotify_id: string;
+  title: string;
+  artist: string;
+  image_url: string | null;
+  spotify_uri: string;
+  spotify_url: string;
+  total_tracks: number;
+  release_date: string;
+  popularity: number;
+  already_added: "favorite" | "recommendation" | null;
+}
+
+export interface SentRecommendation {
+  recipient_name: string | null;
+  recipient_email: string | null;
+  sent_at: number;
+  status: string;
+}
+
+export interface AlbumDetails {
+  tracks: AlbumTrack[];
+  artist_albums: ArtistAlbum[];
+  genres: string[];
+  sent_to: SentRecommendation[];
+}
+
+export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";
+
+export interface PickStat {
+  item_id: number;
+  picked_at: number;
+  pick_count: number;
+}
 
 export interface DashboardData {
   favorites?: Item[];
   discover?: Item[];
   for_right_now?: Item[];
   surprise?: Item[];
+  from_friends?: Item[];
+  _config?: AppConfig;
+  _picks?: PickStat[];
+}
+
+export interface FriendRecommendation {
+  id: number;
+  sender_id: number;
+  recipient_id: number;
+  title: string;
+  creator: string;
+  image_url: string | null;
+  external_id: string;
+  external_uri: string | null;
+  external_url: string | null;
+  metadata: Record<string, unknown> | null;
+  status: "pending" | "accepted" | "dismissed";
+  sent_at: number;
+  acted_at: number | null;
+  sender_display_name: string | null;
+  sender_email: string | null;
+}
+
+export interface RightNowContext {
+  key: string;
+  label: string;
+  emoji: string;
+  prefer_genres: string[];
 }
 
 export interface AppConfig {
@@ -65,6 +148,7 @@ export interface AppConfig {
   weight_never_picked_bonus: number;
   contexts: string[];
   randomness_factor: number;
+  right_now_contexts: RightNowContext[];
 }
 
 export const CONTEXT_LABELS: Record<string, { label: string; emoji: string }> = {

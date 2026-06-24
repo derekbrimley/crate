@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   supabase_uid: string;
-  spotify_id: string;
+  spotify_id: string | null;
   display_name: string | null;
   email: string | null;
   spotify_access_token: string | null;
@@ -38,4 +38,30 @@ export interface LastPickInfo {
   item_id: number;
   picked_at: number;
   pick_count: number;
+}
+
+export interface RightNowContext {
+  key: string;
+  label: string;
+  emoji: string;
+  prefer_genres: string[];
+  prompt_hints: string;
+}
+
+export interface FriendRecommendation {
+  id: number;
+  sender_id: number;
+  recipient_id: number;
+  title: string;
+  creator: string;
+  image_url: string | null;
+  external_id: string;
+  external_uri: string | null;
+  external_url: string | null;
+  metadata: Record<string, unknown> | null;
+  status: "pending" | "accepted" | "dismissed";
+  sent_at: number;
+  acted_at: number | null;
+  sender_display_name: string | null;
+  sender_email: string | null;
 }
