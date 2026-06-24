@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getSavedAlbums, getUserPlaylists, getPlaylistAlbums, getBestImageUrl, startPlayback } from "../../lib/spotify";
+import { getSavedAlbums, getUserPlaylists, getPlaylistAlbums, getBestImageUrl, startPlayback, getValidAccessToken } from "../../lib/spotify";
 import { getItems } from "../../lib/queries";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -26,6 +26,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const message = err instanceof Error ? err.message : String(err);
       const status = message.includes("No active Spotify device") ? 404 : 502;
       return res.status(status).json({ error: message });
+    }
+  }
+
+  // GET /api/spotify/token  — fresh access token for the Web Playback SDK
+  if (route === "token" && req.method === "GET") {
+    try {
+      const token = await getValidAccessToken(user.id);
+      return res.json(token);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(502).json({ error: "Failed to get Spotify token", detail: message });
     }
   }
 

@@ -352,6 +352,16 @@ export async function startPlayback(
   }
 }
 
+export async function getValidAccessToken(
+  userId: number
+): Promise<{ access_token: string; expires_at: number }> {
+  // getAccessToken refreshes if the stored token is within 60s of expiry.
+  const access_token = await getAccessToken(userId);
+  const user = await getUserById(userId);
+  const expires_at = user?.token_expires_at ?? Math.floor(Date.now() / 1000) + 3600;
+  return { access_token, expires_at };
+}
+
 export async function getArtistGenres(artistIds: string[]): Promise<string[]> {
   if (artistIds.length === 0) return [];
   const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
