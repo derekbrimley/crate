@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "../VinylDisc";
 import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation, getRecentRecipients, playOnSpotify } from "../../services/api";
 import type { Item, AlbumTrack, ArtistAlbum, SentRecommendation } from "../../types";
+import { usePlayer } from "../../hooks/usePlayer";
 
 interface DetailPanelProps {
   item: Item;
@@ -37,6 +38,7 @@ function daysAgo(ts: number | null): number {
 const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[]; sentTo: SentRecommendation[] }>();
 
 export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote }: DetailPanelProps) {
+  const player = usePlayer();
   const cached = detailsCache.get(item.external_id);
   const [genres, setGenres] = useState<string[]>(cached?.genres || []);
   const [artistAlbums, setArtistAlbums] = useState<ArtistAlbum[]>(cached?.artistAlbums || []);
@@ -346,6 +348,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
               if (url) window.location.href = url;
               return;
+            }
+            if (uri && player.available) {
+              try {
+                await player.playAlbum(uri);
+                return;
+              } catch { /* fall through */ }
             }
             if (uri) {
               try {
