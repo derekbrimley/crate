@@ -98,6 +98,11 @@ export function Lists({ onLogout }: ListsProps) {
     return [...favorites, ...recommendations];
   }, [favorites, recommendations, listFilter]);
 
+  const allLibraryItems = useMemo(
+    () => [...favorites, ...recommendations],
+    [favorites, recommendations]
+  );
+
   const availableGenres = useMemo(() => {
     const set = new Set<string>();
     for (const item of allItems) for (const g of getItemGenres(item)) set.add(g);
@@ -371,7 +376,7 @@ export function Lists({ onLogout }: ListsProps) {
       <div style={{ paddingTop: 18, paddingBottom: 20 }}>
         {showDuplicates ? (
           <DuplicatesPanel
-            items={allItems}
+            items={allLibraryItems}
             pickStats={pickStats}
             onDeleted={handleDuplicatesDeleted}
             onClose={() => setShowDuplicates(false)}

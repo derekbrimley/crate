@@ -6,7 +6,7 @@ export interface DuplicateGroup {
 }
 
 // Edition / remaster suffixes that should be ignored when comparing titles.
-const PAREN_SUFFIX = /\s*[([](?:[^)\]]*\b(?:deluxe|remaster(?:ed)?|expanded|anniversary|bonus track|special|legacy|edition)\b[^)\]]*)[)\]]\s*/gi;
+const PAREN_SUFFIX = /\s*[([](?:[^)\]]*\b(?:deluxe|remaster(?:ed)?|expanded|anniversary|bonus track)\b[^)\]]*)[)\]]\s*/gi;
 const DASH_SUFFIX = /\s*-\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?\s*$/gi;
 
 function baseNormalize(s: string): string {
