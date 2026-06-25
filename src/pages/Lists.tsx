@@ -68,7 +68,7 @@ export function Lists({ onLogout }: ListsProps) {
     if (!listsLoaded) return;
     const hasMissing = [...favorites, ...recommendations].some((i) => {
       const m = (typeof i.metadata === "string" ? null : i.metadata) as Record<string, unknown> | null;
-      return !m || !m.release_date;
+      return !m || !m.release_date || m.total_tracks === undefined;
     });
     if (!hasMissing) return;
     // Gate: run at most once per browser session

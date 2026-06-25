@@ -309,15 +309,16 @@ export async function getAlbumFull(
 
 export async function fetchAlbumMeta(
   albumId: string
-): Promise<{ genres: string[]; release_date: string | null }> {
-  // Single album fetch gives us artist IDs (for genres) and the release date.
-  const albumRes = await spotifyPublicFetch(`/albums/${albumId}?fields=artists(id),release_date`);
+): Promise<{ genres: string[]; release_date: string | null; total_tracks: number | null }> {
+  // Single album fetch gives us artist IDs (for genres), the release date, and track count.
+  const albumRes = await spotifyPublicFetch(`/albums/${albumId}?fields=artists(id),release_date,total_tracks`);
   if (!albumRes.ok) throw new Error(`Failed to fetch album: ${albumRes.status}`);
-  const albumData = (await albumRes.json()) as SpotifyAlbumDetail & { release_date?: string };
+  const albumData = (await albumRes.json()) as SpotifyAlbumDetail & { release_date?: string; total_tracks?: number };
   const release_date = albumData.release_date ?? null;
+  const total_tracks = typeof albumData.total_tracks === "number" ? albumData.total_tracks : null;
 
   const artistIds = albumData.artists.map((a) => a.id).filter(Boolean);
-  if (artistIds.length === 0) return { genres: [], release_date };
+  if (artistIds.length === 0) return { genres: [], release_date, total_tracks };
 
   const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
   const artistRes = await spotifyPublicFetch(`/artists?${params}`);
@@ -328,7 +329,7 @@ export async function fetchAlbumMeta(
   for (const artist of artistData.artists ?? []) {
     for (const g of artist.genres ?? []) genres.add(g);
   }
-  return { genres: Array.from(genres), release_date };
+  return { genres: Array.from(genres), release_date, total_tracks };
 }
 
 export async function fetchAlbumGenres(albumId: string): Promise<string[]> {

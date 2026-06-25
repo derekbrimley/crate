@@ -10,11 +10,19 @@ interface DuplicatesPanelProps {
   onClose: () => void;
 }
 
+function itemMeta(item: Item): Record<string, unknown> | null {
+  return typeof item.metadata === "string" ? safeParse(item.metadata) : item.metadata;
+}
+
 function itemYear(item: Item): string {
-  const m = typeof item.metadata === "string" ? safeParse(item.metadata) : item.metadata;
-  const rd = m && (m as Record<string, unknown>).release_date;
+  const rd = itemMeta(item)?.release_date;
   if (typeof rd === "string" && rd.length >= 4) return rd.slice(0, 4);
   return "—";
+}
+
+function itemTrackCount(item: Item): number | null {
+  const tc = itemMeta(item)?.total_tracks;
+  return typeof tc === "number" ? tc : null;
 }
 
 function safeParse(s: string): Record<string, unknown> | null {
@@ -79,16 +87,44 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
             const failed = errorIds.has(it.id);
             return (
               <div key={it.id} className="flex items-center gap-2" style={{ padding: "4px 0" }}>
-                {it.image_url
-                  ? <img src={it.image_url} alt="" style={{ width: 36, height: 36, objectFit: "cover" }} />
-                  : <div style={{ width: 36, height: 36, background: "#1a1210" }} />}
-                <div className="flex-1" style={{ minWidth: 0 }}>
-                  <div className="font-mono truncate" style={{ fontSize: 11, color: "#f2e8d2" }}>{it.title}</div>
-                  <div className="font-mono truncate" style={{ fontSize: 10, color: "#907558" }}>
-                    {it.creator} · {itemYear(it)} · {it.list_type === "favorite" ? "★ FAV" : "◈ REC"} · {pickStats.get(it.id)?.pickCount ?? 0} plays
-                  </div>
-                  {failed && <div className="font-mono" style={{ fontSize: 9, color: "#e0573e" }}>delete failed — try again</div>}
-                </div>
+                {(() => {
+                  const trackCount = itemTrackCount(it);
+                  const metaLine = [
+                    it.creator,
+                    itemYear(it),
+                    it.list_type === "favorite" ? "★ FAV" : "◈ REC",
+                    ...(trackCount !== null ? [`${trackCount} tracks`] : []),
+                    `${pickStats.get(it.id)?.pickCount ?? 0} plays`,
+                  ].join(" · ");
+                  const inner = (
+                    <>
+                      {it.image_url
+                        ? <img src={it.image_url} alt="" style={{ width: 36, height: 36, objectFit: "cover" }} />
+                        : <div style={{ width: 36, height: 36, background: "#1a1210" }} />}
+                      <div className="flex-1" style={{ minWidth: 0 }}>
+                        <div className="font-mono truncate" style={{ fontSize: 11, color: "#f2e8d2" }}>{it.title}</div>
+                        <div className="font-mono truncate" style={{ fontSize: 10, color: "#907558" }}>{metaLine}</div>
+                        {failed && <div className="font-mono" style={{ fontSize: 9, color: "#e0573e" }}>delete failed — try again</div>}
+                      </div>
+                    </>
+                  );
+                  return it.external_url ? (
+                    <a
+                      href={it.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 flex-1"
+                      style={{ minWidth: 0, textDecoration: "none" }}
+                      title="Open in Spotify"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1" style={{ minWidth: 0 }}>
+                      {inner}
+                    </div>
+                  );
+                })()}
                 <button
                   onClick={() => toggle(it.id)}
                   disabled={deleting}
