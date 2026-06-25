@@ -410,7 +410,7 @@ export async function updateItemMetadata(
   if (error) throw error;
 }
 
-export async function getItemsMissingReleaseDate(userId: number): Promise<Item[]> {
+export async function getItemsMissingMetadata(userId: number): Promise<Item[]> {
   const { data, error } = await supabaseAdmin
     .from("items")
     .select("*")
@@ -420,6 +420,6 @@ export async function getItemsMissingReleaseDate(userId: number): Promise<Item[]
   const items = (data ?? []) as Item[];
   return items.filter((i) => {
     const m = i.metadata as Record<string, unknown> | null;
-    return !m || !m.release_date;
+    return !m || !m.release_date || m.total_tracks === undefined;
   });
 }

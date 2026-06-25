@@ -362,7 +362,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                 if (url) window.location.href = url;
                 return;
               }
-              if (uri && player.available) {
+              if (uri && player.canPlay) {
                 try {
                   await player.playAlbum(uri);
                   return;
