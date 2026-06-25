@@ -26,22 +26,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid list_type" });
   }
 
-  // Best-effort: fetch release dates from Spotify (20 ids per request)
+  // Best-effort: fetch release dates + track counts from Spotify (20 ids per request)
   const releaseDates = new Map<string, string>();
+  const trackCounts = new Map<string, number>();
   try {
     for (let i = 0; i < albums.length; i += 20) {
       const chunk = albums.slice(i, i + 20).map((a) => a.spotify_id);
       const fetched = await getAlbumsBatch(chunk);
       for (const alb of fetched) {
         if (alb?.id && alb.release_date) releaseDates.set(alb.id, alb.release_date);
+        if (alb?.id && typeof alb.total_tracks === "number") trackCounts.set(alb.id, alb.total_tracks);
       }
     }
   } catch (err) {
-    console.warn("Bulk import: Spotify fetch failed, albums added without release dates", err);
+    console.warn("Bulk import: Spotify fetch failed, albums added without metadata", err);
   }
 
   const rows = albums.map((a) => {
     const rd = releaseDates.get(a.spotify_id);
+    const tc = trackCounts.get(a.spotify_id);
+    const metadata: Record<string, unknown> = {};
+    if (rd) metadata.release_date = rd;
+    if (typeof tc === "number") metadata.total_tracks = tc;
     return {
       title: a.title,
       creator: a.artist,
@@ -49,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       external_id: a.spotify_id,
       external_uri: a.spotify_uri ?? null,
       external_url: a.spotify_url ?? null,
-      metadata: rd ? { release_date: rd } : null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     };
   });
 
