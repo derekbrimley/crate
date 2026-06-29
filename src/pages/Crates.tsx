@@ -127,7 +127,7 @@ export function Crates({ onLogout }: CratesProps) {
   const handleSaveCrate = async (crate: CrateDefinition) => {
     const next = upsertCrate(crateDefs, crate);
     await saveCrateDefs(next);
-    refreshCrateHandler(crate.id);
+    await refreshCrateHandler(crate.id);
     setEditingCrate(null);
   };
 
