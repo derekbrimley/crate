@@ -88,8 +88,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setCanPlay(false);
       };
       player.addListener("initialization_error", fail("init error"));
-      player.addListener("authentication_error", fail("auth error"));
       player.addListener("account_error", fail("account error (Premium required)"));
+      // NOTE: authentication_error is NOT treated as fatal. The SDK fires it from
+      // a spurious internal `check_scope?scope=web-playback` 403 ("Token does not
+      // satisfy scope") even when the token DOES hold the `streaming` scope — the
+      // device still becomes `ready` and plays fine. (Verified: Spotify's OAuth
+      // server reports `streaming` in the granted scopes, yet check_scope 403s.)
+      // A genuine auth failure instead manifests as `ready` never firing, which
+      // waitForDevice's timeout already handles. Killing the player here was what
+      // forced the silent fallback to the Spotify web tab.
+      player.addListener("authentication_error", (e) => {
+        console.warn("Spotify auth error (non-fatal):", e.message);
+      });
 
       player.connect();
     };
