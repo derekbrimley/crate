@@ -5,10 +5,11 @@ import { ShelfRow } from "../components/library/ShelfRow";
 import { DetailPanel } from "../components/library/DetailPanel";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
+import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 import { recordPick, promoteAlbum, actOnRecommendation } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
-import type { Item } from "../types";
-import { CONTEXT_LABELS } from "../types";
+import { getItemGenres } from "../lib/filters";
+import type { Item, CrateDefinition } from "../types";
 
 const SPINES_PER_ROW = 4;
 const CRATE_OVERLAP = 0;
@@ -17,134 +18,129 @@ interface CratesProps {
   onLogout: () => void;
 }
 
-const CRATE_META: Record<string, { name: string; desc: string }> = {
-  favorites:     { name: "Favorites",    desc: "From the albums you love" },
-  discover:      { name: "Discover",     desc: "From your recommendation list" },
-  for_right_now: { name: "Right Now",    desc: "Matched to the moment" },
-  surprise:      { name: "Surprise Me",  desc: "A random pull from the full collection" },
-  from_friends:  { name: "From Friends", desc: "Albums friends sent you" },
-};
+function upsertCrate(list: CrateDefinition[], crate: CrateDefinition): CrateDefinition[] {
+  const idx = list.findIndex((c) => c.id === crate.id);
+  if (idx === -1) return [...list, crate];
+  const next = [...list];
+  next[idx] = crate;
+  return next;
+}
 
 export function Crates({ onLogout }: CratesProps) {
   const {
-    dashboardData: data,
-    dashboardConfig: config,
+    cratesData,
+    crateDefs,
     dashboardLoaded,
     loadDashboard,
-    refreshDashboardMode,
+    refreshCrate,
+    saveCrateDefs,
     pickStats,
-    history, historyLoaded, loadHistory,
+    favorites,
+    recommendations,
+    listsLoaded,
+    loadLists,
+    history,
+    historyLoaded,
+    loadHistory,
   } = useDataCache();
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(!dashboardLoaded);
-  const [loadingModes, setLoadingModes] = useState<Set<string>>(new Set());
-  const [context, setContext] = useState(() => Object.keys(CONTEXT_LABELS)[0]);
+  const [loadingCrates, setLoadingCrates] = useState<Set<string>>(new Set());
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-
-  const contextPills = config?.right_now_contexts?.length
-    ? config.right_now_contexts.map((c) => ({ key: c.key, label: c.label, emoji: c.emoji }))
-    : (config?.contexts || Object.keys(CONTEXT_LABELS)).map((ctx) => ({
-        key: ctx,
-        label: CONTEXT_LABELS[ctx]?.label || ctx,
-        emoji: CONTEXT_LABELS[ctx]?.emoji || "●",
-      }));
+  const [editingCrate, setEditingCrate] = useState<CrateDefinition | null>(null);
 
   useEffect(() => {
     if (dashboardLoaded) return;
     setLoading(true);
-    loadDashboard("auto").finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadDashboard().finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!config) return;
-    const initialCtx =
-      config.right_now_contexts?.[0]?.key ??
-      config.contexts?.[0] ??
-      Object.keys(CONTEXT_LABELS)[0];
-    setContext(initialCtx);
-  }, [config]);
+    if (!listsLoaded) loadLists();
+  }, [listsLoaded, loadLists]);
 
   useEffect(() => {
     if (!historyLoaded) loadHistory();
   }, [historyLoaded, loadHistory]);
 
 
-  const refreshMode = async (mode: string) => {
-    setLoadingModes((prev) => new Set([...prev, mode]));
+  const refreshCrateHandler = async (crateId: string) => {
+    setLoadingCrates((prev) => new Set([...prev, crateId]));
     try {
-      await refreshDashboardMode(mode, context);
+      await refreshCrate(crateId);
     } finally {
-      setLoadingModes((prev) => {
+      setLoadingCrates((prev) => {
         const next = new Set(prev);
-        next.delete(mode);
+        next.delete(crateId);
         return next;
       });
     }
   };
 
-  const handleContextChange = async (newCtx: string) => {
-    setContext(newCtx);
-    setLoadingModes((prev) => new Set([...prev, "for_right_now"]));
-    try {
-      await refreshDashboardMode("for_right_now", newCtx);
-    } finally {
-      setLoadingModes((prev) => {
-        const next = new Set(prev);
-        next.delete("for_right_now");
-        return next;
-      });
-    }
-  };
-
-  const handlePromote = async (item: Item) => {
+  const handlePromote = async (item: Item, crateId: string) => {
     try {
       await promoteAlbum(item.id);
-      refreshMode("discover");
+      refreshCrateHandler(crateId);
     } catch (err) {
       console.error("Failed to promote album:", err);
     }
   };
 
-  const handleAcceptFriendRec = async (item: Item) => {
+  const handleAcceptFriendRec = async (item: Item, crateId: string) => {
     const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
     const recId = meta?._rec_id;
     if (!recId) return;
     try {
       await actOnRecommendation(recId, "accept");
-      refreshMode("from_friends");
+      refreshCrateHandler(crateId);
     } catch (err) {
       console.error("Failed to accept recommendation:", err);
     }
   };
 
-  const handleDismissFriendRec = async (item: Item) => {
+  const handleDismissFriendRec = async (item: Item, crateId: string) => {
     const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
     const recId = meta?._rec_id;
     if (!recId) return;
     try {
       await actOnRecommendation(recId, "dismiss");
-      refreshMode("from_friends");
+      refreshCrateHandler(crateId);
     } catch (err) {
       console.error("Failed to dismiss recommendation:", err);
     }
   };
 
-  const handlePick = async (item: Item, mode: string) => {
+  const handlePick = async (item: Item, crateId: string) => {
     try {
       await recordPick({
         item_id: item.id,
-        mode,
-        context: mode === "for_right_now" ? context : undefined,
+        mode: crateId,
       });
     } catch (err) {
       console.error("Failed to record pick:", err);
     }
   };
 
-  const modes = config?.dashboard_modes || ["favorites", "discover", "for_right_now", "surprise"];
+  const handleSaveCrate = async (crate: CrateDefinition) => {
+    const next = upsertCrate(crateDefs, crate);
+    await saveCrateDefs(next);
+    refreshCrateHandler(crate.id);
+    setEditingCrate(null);
+  };
+
+  const handleDeleteCrate = async (id: string) => {
+    await saveCrateDefs(crateDefs.filter((c) => c.id !== id));
+    setEditingCrate(null);
+  };
+
+  const availableGenres = listsLoaded
+    ? Array.from(
+        new Set([...favorites, ...recommendations].flatMap((item) => getItemGenres(item)))
+      ).sort()
+    : [];
 
   return (
     <Layout>
@@ -171,7 +167,7 @@ export function Crates({ onLogout }: CratesProps) {
           </h1>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/add")}
+              onClick={() => setEditingCrate(makeEmptyCrate(crateDefs.length))}
               className="flex items-center justify-center cursor-pointer"
               style={{
                 width: 28,
@@ -185,9 +181,26 @@ export function Crates({ onLogout }: CratesProps) {
                 lineHeight: 1,
                 boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
               }}
-              title="Add albums"
+              title="New crate"
             >
               +
+            </button>
+            <button
+              onClick={() => navigate("/add")}
+              className="flex items-center justify-center cursor-pointer"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #3a2010, #261406)",
+                border: "1px solid #3d2815",
+                color: "#907558",
+              }}
+              title="Add albums"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
             </button>
             <button
               onClick={() => setShowProfile((v) => !v)}
@@ -214,33 +227,47 @@ export function Crates({ onLogout }: CratesProps) {
 
       {/* Crate shelves */}
       <div style={{ paddingTop: 18, paddingBottom: 100 }}>
-        {modes.map((mode) => {
-          const meta = CRATE_META[mode] || { name: mode, desc: "" };
-          const items = (data[mode as keyof typeof data] as Item[] | undefined) || [];
-          const isLoading = loading || loadingModes.has(mode);
+        {crateDefs.map((crate) => {
+          const items = cratesData.get(crate.id) ?? [];
+          const isLoading = loading || loadingCrates.has(crate.id);
+          const isFriendCrate = crate.source === "friends";
 
           return (
             <CrateSection
-              key={mode}
-              mode={mode}
-              name={meta.name}
-              desc={meta.desc}
+              key={crate.id}
+              crateId={crate.id}
+              name={crate.name}
+              desc=""
               items={items}
               loading={isLoading}
               selectedAlbumId={selectedAlbumId}
               onSelectAlbum={setSelectedAlbumId}
-              onRefresh={() => refreshMode(mode)}
+              onRefresh={() => refreshCrateHandler(crate.id)}
+              onEdit={() => setEditingCrate(crate)}
               onPick={handlePick}
               pickStats={pickStats}
-              contextPills={mode === "for_right_now" ? contextPills : undefined}
-              activeContext={context}
-              onContextChange={handleContextChange}
-              onFavorite={mode === "discover" ? handlePromote : mode === "from_friends" ? handleAcceptFriendRec : undefined}
-              onRemoveAlbum={mode === "discover" ? () => refreshMode("discover") : mode === "from_friends" ? (item) => handleDismissFriendRec(item) : undefined}
+              onFavorite={
+                isFriendCrate
+                  ? (item) => handleAcceptFriendRec(item, crate.id)
+                  : (item) => handlePromote(item, crate.id)
+              }
+              onRemoveAlbum={
+                isFriendCrate ? (item) => handleDismissFriendRec(item, crate.id) : undefined
+              }
             />
           );
         })}
       </div>
+
+      {editingCrate && (
+        <CrateEditorModal
+          initial={editingCrate}
+          availableGenres={availableGenres}
+          onSave={handleSaveCrate}
+          onDelete={editingCrate.name ? handleDeleteCrate : undefined}
+          onClose={() => setEditingCrate(null)}
+        />
+      )}
     </Layout>
   );
 }
@@ -248,7 +275,7 @@ export function Crates({ onLogout }: CratesProps) {
 /* ─── Crate Section ─── */
 
 interface CrateSectionProps {
-  mode: string;
+  crateId: string;
   name: string;
   desc: string;
   items: Item[];
@@ -256,17 +283,15 @@ interface CrateSectionProps {
   selectedAlbumId: number | null;
   onSelectAlbum: (id: number | null) => void;
   onRefresh: () => void;
-  onPick: (item: Item, mode: string) => void;
+  onEdit: () => void;
+  onPick: (item: Item, crateId: string) => void;
   pickStats: Map<number, { pickCount: number; lastPickedTs: number | null }>;
-  contextPills?: { key: string; label: string; emoji: string }[];
-  activeContext?: string;
-  onContextChange?: (ctx: string) => void;
   onFavorite?: (item: Item) => void;
   onRemoveAlbum?: (item: Item) => void;
 }
 
 function CrateSection({
-  mode,
+  crateId,
   name,
   desc,
   items,
@@ -274,11 +299,9 @@ function CrateSection({
   selectedAlbumId,
   onSelectAlbum,
   onRefresh,
+  onEdit,
   onPick,
   pickStats,
-  contextPills,
-  activeContext,
-  onContextChange,
   onFavorite,
   onRemoveAlbum,
 }: CrateSectionProps) {
@@ -319,6 +342,24 @@ function CrateSection({
           {items.length}
         </span>
         <button
+          onClick={onEdit}
+          className="flex items-center justify-center cursor-pointer"
+          style={{
+            width: 20,
+            height: 20,
+            background: "transparent",
+            border: "1px solid #3d2815",
+            color: "#907558",
+            fontSize: 10,
+          }}
+          title="Edit crate"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </button>
+        <button
           onClick={handleRefresh}
           disabled={loading}
           className="flex items-center justify-center cursor-pointer disabled:opacity-40"
@@ -345,36 +386,6 @@ function CrateSection({
           </svg>
         </button>
       </div>
-
-      {/* Context pills for Right Now */}
-      {contextPills && onContextChange && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ padding: "0 12px", marginBottom: 8 }}>
-          {contextPills.map(({ key, label, emoji }) => {
-            const isActive = activeContext === key;
-            return (
-              <button
-                key={key}
-                onClick={() => onContextChange(key)}
-                className="shrink-0 flex items-center gap-1.5 font-mono cursor-pointer"
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase" as const,
-                  border: isActive ? "1px solid #ff5e00" : "1px solid rgba(61,40,21,0.8)",
-                  background: isActive ? "rgba(255,94,0,0.12)" : "transparent",
-                  color: isActive ? "#ff5e00" : "#907558",
-                  textShadow: isActive ? "0 0 8px rgba(255,94,0,0.5)" : "none",
-                  boxShadow: isActive ? "0 0 8px rgba(255,94,0,0.2),inset 0 0 4px rgba(255,94,0,0.05)" : "none",
-                }}
-              >
-                <span>{emoji}</span>
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Shelf */}
       {loading ? (
@@ -410,7 +421,7 @@ function CrateSection({
                 lastPickedTs={stats?.lastPickedTs ?? null}
                 onClose={() => onSelectAlbum(null)}
                 onRemove={handleRemove}
-                onPlay={() => onPick(selectedItem, mode)}
+                onPlay={() => onPick(selectedItem, crateId)}
                 onPromote={onFavorite ? () => onFavorite(selectedItem) : undefined}
               />
             ) : undefined
