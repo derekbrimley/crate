@@ -436,7 +436,14 @@ export function Lists({ onLogout }: ListsProps) {
         <CrateEditorModal
           initial={editing}
           availableGenres={availableGenres}
-          onSave={(crate) => { saveCrateDefs([...crateDefs, crate]); setEditing(null); }}
+          onSave={async (crate) => {
+            try {
+              await saveCrateDefs([...crateDefs, crate]);
+              setEditing(null);
+            } catch (err) {
+              console.error("Failed to save crate:", err);
+            }
+          }}
           onClose={() => setEditing(null)}
         />
       )}

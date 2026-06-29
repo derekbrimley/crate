@@ -114,6 +114,8 @@ export function Crates({ onLogout }: CratesProps) {
   };
 
   const handlePick = async (item: Item, crateId: string) => {
+    // Skip recording picks for AI-suggested items (id <= 0)
+    if (item.id <= 0) return;
     try {
       await recordPick({
         item_id: item.id,
@@ -228,9 +230,13 @@ export function Crates({ onLogout }: CratesProps) {
       {/* Crate shelves */}
       <div style={{ paddingTop: 18, paddingBottom: 100 }}>
         {crateDefs.map((crate) => {
-          const items = cratesData.get(crate.id) ?? [];
+          const rawItems = cratesData.get(crate.id) ?? [];
           const isLoading = loading || loadingCrates.has(crate.id);
           const isFriendCrate = crate.source === "friends";
+          const isAiNewCrate = crate.strategy.type === "ai_new";
+
+          // Assign unique synthetic negative ids to AI-suggested items (id <= 0) to avoid key/selection collisions
+          const items = rawItems.map((it, i) => (it.id > 0 ? it : { ...it, id: -(i + 1) }));
 
           return (
             <CrateSection
@@ -249,6 +255,8 @@ export function Crates({ onLogout }: CratesProps) {
               onFavorite={
                 isFriendCrate
                   ? (item) => handleAcceptFriendRec(item, crate.id)
+                  : isAiNewCrate
+                  ? undefined
                   : (item) => handlePromote(item, crate.id)
               }
               onRemoveAlbum={
