@@ -5,12 +5,13 @@ import { LibraryShelf } from "../components/library/LibraryShelf";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
-import type { Item } from "../types";
+import type { Item, CrateDefinition } from "../types";
 import AdvancedFilters from "../components/library/AdvancedFilters";
 import DuplicatesPanel from "../components/library/DuplicatesPanel";
 import { applyFilters, getItemGenres } from "../lib/filters";
 import type { FilterRule } from "../lib/filters";
 import { backfillReleaseDates } from "../services/api";
+import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 
 const SPINES_PER_ROW = 14;
 
@@ -42,6 +43,7 @@ export function Lists({ onLogout }: ListsProps) {
     recommendations, setRecommendations,
     listsLoaded, loadLists,
     pickStats,
+    crateDefs, saveCrateDefs,
   } = useDataCache();
 
   const navigate = useNavigate();
@@ -56,6 +58,7 @@ export function Lists({ onLogout }: ListsProps) {
   const [rules, setRules] = useState<FilterRule[]>([]);
   const [matchMode, setMatchMode] = useState<"AND" | "OR">("AND");
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [editing, setEditing] = useState<CrateDefinition | null>(null);
 
   useEffect(() => {
     if (!listsLoaded) {
@@ -360,6 +363,20 @@ export function Lists({ onLogout }: ListsProps) {
             >
               DUPLICATES
             </button>
+            <button
+              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: { rules, matchMode } })}
+              className="font-mono shrink-0 cursor-pointer"
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                letterSpacing: "0.08em",
+                border: "1px solid #3d2815",
+                background: "transparent",
+                color: "#907558",
+              }}
+            >
+              SAVE AS CRATE
+            </button>
           </div>
           <AdvancedFilters
             rules={rules}
@@ -415,6 +432,14 @@ export function Lists({ onLogout }: ListsProps) {
           ))
         )}
       </div>
+      {editing && (
+        <CrateEditorModal
+          initial={editing}
+          availableGenres={availableGenres}
+          onSave={(crate) => { saveCrateDefs([...crateDefs, crate]); setEditing(null); }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </Layout>
   );
 }
