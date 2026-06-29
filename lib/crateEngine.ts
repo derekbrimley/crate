@@ -64,7 +64,7 @@ export async function runCrate(
       try {
         return await deps.aiNewPick(crate.strategy.prompt, allItems, crate.count);
       } catch {
-        return randomSample(pool, crate.count);
+        return randomSample(allItems, crate.count);
       }
     }
 

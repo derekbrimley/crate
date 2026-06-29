@@ -96,6 +96,18 @@ describe("runCrate strategies dispatch to deps", () => {
     expect(res.map((i) => i.id).sort()).toEqual([1, 3]); // fell back to filtered pool
   });
 
+  it("ai_new falls back to a local pick from the full library when the dep throws", async () => {
+    const aiNewPick = vi.fn().mockRejectedValue(new Error("nope"));
+    const c = crate({
+      filters: { rules: [{ id: "r", field: "list", operator: "is", value: "favorite" }], matchMode: "AND" },
+      strategy: { type: "ai_new" },
+      count: 5,
+    });
+    const res = await runCrate(c, library, [], { ...noDeps, aiNewPick });
+    // Fallback draws from the FULL library (3 items), not just the 2 filtered favorites.
+    expect(res.length).toBe(3);
+  });
+
   it("source=friends calls friendPicks and ignores filters", async () => {
     const friendPicks = vi.fn().mockResolvedValue([item({ id: 7 })]);
     const c = crate({ source: "friends", count: 4, filters: { rules: [{ id: "r", field: "list", operator: "is", value: "favorite" }], matchMode: "AND" } });
