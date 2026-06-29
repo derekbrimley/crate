@@ -22,7 +22,7 @@ export interface Item {
   external_uri: string | null;
   external_url: string | null;
   added_at: number;
-  metadata: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | string | null;
 }
 
 export interface Pick {
