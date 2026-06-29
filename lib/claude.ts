@@ -102,3 +102,53 @@ export function getContextSuggestions(
 
   return selectAlbums(pool, count, recentPicks, selectionConfig);
 }
+
+const POOL_SYSTEM_PROMPT = `You are a music curator for an album-picker app called Crates.
+From the user's provided list of albums, choose the ones that best fit the user's described vibe.
+Return ONLY a JSON array of the chosen albums' "id" values (numbers), most-fitting first.
+No explanation, no markdown, just the raw JSON array of numbers.`;
+
+export async function getPoolSuggestions(
+  prompt: string | undefined,
+  pool: Item[],
+  count: number,
+  recentPicks: LastPickInfo[],
+  selectionConfig: SelectionConfig
+): Promise<Item[]> {
+  // No prompt → behave like a weighted pick from the pool.
+  if (!prompt || pool.length === 0) {
+    return selectAlbums(pool, count, recentPicks, selectionConfig);
+  }
+
+  const payload = pool.slice(0, 60).map((i) => ({
+    id: i.id,
+    title: i.title,
+    artist: i.creator,
+    genres: ((typeof i.metadata === "object" && i.metadata ? (i.metadata as Record<string, unknown>).genres : []) as string[]) || [],
+  }));
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 256,
+      system: POOL_SYSTEM_PROMPT,
+      messages: [
+        { role: "user", content: `Vibe: ${prompt}\n\nMy albums:\n${JSON.stringify(payload)}\n\nChoose up to ${count}.` },
+      ],
+    });
+    const raw = message.content[0].type === "text" ? message.content[0].text.trim() : "[]";
+    const text = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const ids = JSON.parse(text) as unknown;
+    if (Array.isArray(ids)) {
+      const byId = new Map(pool.map((i) => [i.id, i]));
+      const chosen = ids
+        .map((id) => byId.get(Number(id)))
+        .filter((i): i is Item => Boolean(i))
+        .slice(0, count);
+      if (chosen.length > 0) return chosen;
+    }
+  } catch {
+    // fall through
+  }
+  return selectAlbums(pool, count, recentPicks, selectionConfig);
+}
