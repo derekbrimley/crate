@@ -10,6 +10,8 @@ export interface SelectionConfig {
   weight_medium: number;
   weight_high: number;
   weight_never_picked_bonus: number;
+  recently_added_days: number;
+  recently_added_bonus: number;
   randomness_factor: number;
 }
 
@@ -62,6 +64,8 @@ export function selectAlbums(
     weight_medium,
     weight_high,
     weight_never_picked_bonus,
+    recently_added_days,
+    recently_added_bonus,
     randomness_factor,
   } = config;
 
@@ -93,6 +97,13 @@ export function selectAlbums(
 
     if (neverPicked) {
       weight += weight_never_picked_bonus;
+    }
+
+    if (recently_added_bonus > 0 && item.added_at) {
+      const addedDaysAgo = daysAgo(item.added_at);
+      if (addedDaysAgo <= recently_added_days) {
+        weight += recently_added_bonus;
+      }
     }
 
     if (weight > 0) {
