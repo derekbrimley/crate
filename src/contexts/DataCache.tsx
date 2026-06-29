@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { getDashboard, getDashboardMode, getAlbums, getHistory, getConfig } from "../services/api";
-import type { Item, DashboardData, AppConfig, PickHistoryEntry, PickStat } from "../types";
+import { getDashboard, getDashboardCrate, getAlbums, getHistory, getConfig, saveCrates } from "../services/api";
+import type { Item, DashboardData, AppConfig, PickHistoryEntry, PickStat, CrateDefinition } from "../types";
 
 interface DataCacheState {
   // Dashboard
-  dashboardData: DashboardData;
+  cratesData: Map<string, Item[]>;
+  crateDefs: CrateDefinition[];
   dashboardConfig: AppConfig | null;
   dashboardLoaded: boolean;
-  loadDashboard: (ctx?: string) => Promise<void>;
-  refreshDashboardMode: (mode: string, ctx: string) => Promise<void>;
+  loadDashboard: () => Promise<void>;
+  refreshCrate: (crateId: string) => Promise<void>;
+  saveCrateDefs: (next: CrateDefinition[]) => Promise<void>;
   loadConfig: () => Promise<void>;
 
   // Pick stats (all-time, from dashboard _picks)
@@ -32,7 +34,8 @@ const DataCacheContext = createContext<DataCacheState | null>(null);
 
 export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   // Dashboard state
-  const [dashboardData, setDashboardData] = useState<DashboardData>({});
+  const [cratesData, setCratesData] = useState<Map<string, Item[]>>(new Map());
+  const [crateDefs, setCrateDefs] = useState<CrateDefinition[]>([]);
   const [dashboardConfig, setDashboardConfig] = useState<AppConfig | null>(null);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
   const [rawPickStats, setRawPickStats] = useState<PickStat[]>([]);
@@ -61,36 +64,37 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
     return map;
   }, [rawPickStats]);
 
-  const loadDashboard = useCallback(async (ctx?: string) => {
+  const loadDashboard = useCallback(async () => {
     try {
-      const result = await getDashboard(ctx, ["surprise"]);
-      if (result._config) setDashboardConfig(result._config);
-      if (result._picks) setRawPickStats(result._picks);
-      setDashboardData(result);
-      setDashboardLoaded(true);
-
-      const modes = result._config?.dashboard_modes as string[] | undefined;
-      if (modes?.includes("surprise")) {
-        getDashboardMode("surprise", ctx || "auto")
-          .then((surpriseResult) => {
-            setDashboardData((prev) => ({ ...prev, surprise: surpriseResult.surprise }));
-          })
-          .catch(() => {
-            setDashboardData((prev) => ({ ...prev, surprise: [] }));
-          });
+      const result = await getDashboard();
+      if (result._config) {
+        setDashboardConfig(result._config);
+        setCrateDefs((result._config.crates ?? []).slice().sort((a, b) => a.position - b.position));
       }
+      if (result._picks) setRawPickStats(result._picks);
+      const map = new Map<string, Item[]>();
+      for (const c of result.crates ?? []) map.set(c.id, c.items);
+      setCratesData(map);
+      setDashboardLoaded(true);
     } catch (err) {
       console.error("Failed to load dashboard:", err);
     }
   }, []);
 
-  const refreshDashboardMode = useCallback(async (mode: string, ctx: string) => {
+  const refreshCrate = useCallback(async (crateId: string) => {
     try {
-      const result = await getDashboardMode(mode, ctx);
-      setDashboardData((prev) => ({ ...prev, [mode]: result[mode as keyof DashboardData] }));
+      const result = await getDashboardCrate(crateId);
+      const got = result.crates?.find((c) => c.id === crateId);
+      if (got) setCratesData((prev) => new Map(prev).set(crateId, got.items));
     } catch (err) {
-      console.error("Failed to refresh mode:", err);
+      console.error("Failed to refresh crate:", err);
     }
+  }, []);
+
+  const saveCrateDefs = useCallback(async (next: CrateDefinition[]) => {
+    const { config } = await saveCrates(next);
+    setDashboardConfig(config);
+    setCrateDefs((config.crates ?? []).slice().sort((a, b) => a.position - b.position));
   }, []);
 
   const loadLists = useCallback(async () => {
@@ -118,11 +122,13 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   return (
     <DataCacheContext.Provider
       value={{
-        dashboardData,
+        cratesData,
+        crateDefs,
         dashboardConfig,
         dashboardLoaded,
         loadDashboard,
-        refreshDashboardMode,
+        refreshCrate,
+        saveCrateDefs,
         loadConfig,
         pickStats,
         favorites,

@@ -7,6 +7,7 @@ import type {
   DashboardData,
   AppConfig,
   AlbumDetails,
+  CrateDefinition,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -146,16 +147,12 @@ export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> 
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
 
-export async function getDashboard(context?: string, exclude?: string[]): Promise<DashboardData> {
-  const params = new URLSearchParams();
-  if (context) params.set("context", context);
-  if (exclude?.length) params.set("exclude", exclude.join(","));
-  const query = params.toString();
-  return request<DashboardData>(`/picks/dashboard${query ? `?${query}` : ""}`);
+export async function getDashboard(): Promise<DashboardData> {
+  return request<DashboardData>("/picks/dashboard");
 }
 
-export async function getDashboardMode(mode: string, context: string): Promise<DashboardData> {
-  const params = new URLSearchParams({ mode, context });
+export async function getDashboardCrate(crateId: string): Promise<DashboardData> {
+  const params = new URLSearchParams({ crateId });
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
@@ -232,5 +229,12 @@ export async function updateConfig(
   return request<{ config: AppConfig }>("/config", {
     method: "PATCH",
     body: JSON.stringify(updates),
+  });
+}
+
+export async function saveCrates(crates: CrateDefinition[]): Promise<{ config: AppConfig }> {
+  return request<{ config: AppConfig }>("/config", {
+    method: "PATCH",
+    body: JSON.stringify({ crates }),
   });
 }

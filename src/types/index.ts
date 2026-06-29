@@ -1,3 +1,5 @@
+import type { FilterRule } from "../lib/filters";
+
 export interface User {
   id: number;
   displayName: string | null;
@@ -93,6 +95,37 @@ export interface AlbumDetails {
   sent_to: SentRecommendation[];
 }
 
+export interface Weighting {
+  cooldown_days: number;
+  weight_recent_days: number;
+  weight_medium_days: number;
+  weight_low: number;
+  weight_medium: number;
+  weight_high: number;
+  weight_never_picked_bonus: number;
+  recently_added_days: number;
+  recently_added_bonus: number;
+  randomness_factor: number;
+}
+
+export type CrateStrategy =
+  | { type: "weighted"; weighting: Weighting }
+  | { type: "random" }
+  | { type: "ai_pool"; prompt?: string }
+  | { type: "ai_new"; prompt?: string };
+
+export interface CrateFilters { rules: FilterRule[]; matchMode: "AND" | "OR"; }
+
+export interface CrateDefinition {
+  id: string;
+  name: string;
+  position: number;
+  source: "library" | "friends";
+  count: number;
+  filters: CrateFilters;
+  strategy: CrateStrategy;
+}
+
 export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";
 
 export interface PickStat {
@@ -102,11 +135,7 @@ export interface PickStat {
 }
 
 export interface DashboardData {
-  favorites?: Item[];
-  discover?: Item[];
-  for_right_now?: Item[];
-  surprise?: Item[];
-  from_friends?: Item[];
+  crates?: { id: string; items: Item[] }[];
   _config?: AppConfig;
   _picks?: PickStat[];
 }
@@ -149,6 +178,7 @@ export interface AppConfig {
   contexts: string[];
   randomness_factor: number;
   right_now_contexts: RightNowContext[];
+  crates?: CrateDefinition[];
 }
 
 export const CONTEXT_LABELS: Record<string, { label: string; emoji: string }> = {
