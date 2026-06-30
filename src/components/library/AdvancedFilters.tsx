@@ -8,6 +8,7 @@ interface AdvancedFiltersProps {
   availableGenres: string[];
   onChangeRules: (rules: FilterRule[]) => void;
   onChangeMatchMode: (m: "AND" | "OR") => void;
+  defaultOpen?: boolean;
 }
 
 const selectStyle: React.CSSProperties = {
@@ -35,8 +36,9 @@ export default function AdvancedFilters({
   availableGenres,
   onChangeRules,
   onChangeMatchMode,
+  defaultOpen = false,
 }: AdvancedFiltersProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   function addRule() {
     const field: FieldKey = "year";

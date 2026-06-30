@@ -194,6 +194,7 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
             availableGenres={availableGenres}
             onChangeRules={setRules}
             onChangeMatchMode={setMatchMode}
+            defaultOpen
           />
         </div>
 
