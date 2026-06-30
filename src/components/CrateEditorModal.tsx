@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdvancedFilters from "./library/AdvancedFilters";
 import type { CrateDefinition, Weighting, CrateStrategy } from "../types";
 import type { FilterRule } from "../lib/filters";
@@ -47,7 +47,24 @@ const STRATEGY_OPTIONS: { key: StrategyType; label: string }[] = [
   { key: "random", label: "RANDOM" },
   { key: "ai_pool", label: "AI · LIBRARY" },
   { key: "ai_new", label: "AI · NEW" },
+  { key: "hybrid", label: "HYBRID" },
 ];
+
+const STRATEGY_HELP: Record<StrategyType, string> = {
+  weighted: "Weighted random from your filtered albums, tuned by the sliders below.",
+  random: "Plain random pick from your filtered albums.",
+  ai_pool: "AI picks from your filtered albums. Blank = weighted pick.",
+  ai_new: "AI suggests albums outside your library.",
+  hybrid: "Mixes ~1/3 fresh AI suggestions with weighted picks from your library.",
+};
+
+// Human-readable descriptions shown under each tuning slider.
+const SLIDER_HELP = {
+  cooldown: "How long to wait before an album can be picked again.",
+  variety: "How predictable vs. surprising the picks are.",
+  discovery: "Extra weight for albums you've never picked before.",
+  fresh: "Extra weight for albums added to your library recently (last 2 weeks).",
+};
 
 const sliderStyle = `
   .algo-slider {
@@ -103,9 +120,20 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
     initial.strategy.type === "weighted" ? initial.strategy.weighting : { ...CLIENT_DEFAULT_WEIGHTING }
   );
   const [prompt, setPrompt] = useState<string>(
-    initial.strategy.type === "ai_pool" || initial.strategy.type === "ai_new" ? initial.strategy.prompt ?? "" : ""
+    initial.strategy.type === "ai_pool" || initial.strategy.type === "ai_new" || initial.strategy.type === "hybrid"
+      ? initial.strategy.prompt ?? ""
+      : ""
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Lock background scroll while the modal is open (#2).
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   const cooldownIdx = nearestIdx(weighting.cooldown_days, COOLDOWN_STOPS);
   const varietyIdx = nearestIdx(weighting.randomness_factor, VARIETY_STOPS);
@@ -115,6 +143,7 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
   function buildStrategy(): CrateStrategy {
     if (strategyType === "weighted") return { type: "weighted", weighting };
     if (strategyType === "random") return { type: "random" };
+    if (strategyType === "hybrid") return { type: "hybrid", weighting, prompt: prompt.trim() || undefined };
     return { type: strategyType, prompt: prompt.trim() || undefined };
   }
 
@@ -140,22 +169,29 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.7)" }}
       onClick={onClose}
     >
       <style>{sliderStyle}</style>
       <div
-        className="w-full max-w-lg overflow-y-auto"
-        style={{ background: "#140d0a", border: "1px solid #3d2815", borderRadius: 10, maxHeight: "90vh", padding: 20 }}
+        className="w-full max-w-lg flex flex-col"
+        style={{ background: "#140d0a", border: "1px solid #3d2815", borderRadius: 10, maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        {/* Header (fixed) */}
+        <div
+          className="flex items-center justify-between shrink-0"
+          style={{ padding: "20px 20px 12px", borderBottom: "1px solid #3d2815" }}
+        >
           <span className="font-display" style={{ fontSize: 16, color: "#f2e8d2", letterSpacing: "0.15em" }}>
             {initial.name ? "EDIT CRATE" : "NEW CRATE"}
           </span>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#907558", fontSize: 18, cursor: "pointer" }}>✕</button>
         </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto" style={{ padding: "16px 20px", flex: 1 }}>
 
         {/* Name */}
         <div className="mb-4">
@@ -221,33 +257,40 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
         </div>
 
         {/* Strategy detail */}
-        {strategyType === "weighted" && (
+        <p className="font-mono mb-3" style={{ fontSize: 10, color: "#907558", lineHeight: 1.5 }}>
+          {STRATEGY_HELP[strategyType]}
+        </p>
+
+        {(strategyType === "weighted" || strategyType === "hybrid") && (
           <div className="mb-4 flex flex-col gap-4">
             <Slider label="Cooldown" valueLabel={`${COOLDOWN_LABELS[cooldownIdx]} (${COOLDOWN_STOPS[cooldownIdx]}d)`}
+              help={SLIDER_HELP.cooldown}
               idx={cooldownIdx} onChange={(i) => setWeighting((w) => ({ ...w, cooldown_days: COOLDOWN_STOPS[i] }))} />
             <Slider label="Variety" valueLabel={VARIETY_LABELS[varietyIdx]}
+              help={SLIDER_HELP.variety}
               idx={varietyIdx} onChange={(i) => setWeighting((w) => ({ ...w, randomness_factor: VARIETY_STOPS[i] }))} />
             <Slider label="Discovery bias" valueLabel={DISCOVERY_LABELS[discoveryIdx]}
+              help={SLIDER_HELP.discovery}
               idx={discoveryIdx} onChange={(i) => setWeighting((w) => ({ ...w, weight_never_picked_bonus: DISCOVERY_STOPS[i] }))} />
             <Slider label="Recently added" valueLabel={FRESH_LABELS[freshIdx]}
+              help={SLIDER_HELP.fresh}
               idx={freshIdx} onChange={(i) => setWeighting((w) => ({ ...w, recently_added_bonus: FRESH_STOPS[i] }))} />
           </div>
         )}
 
-        {(strategyType === "ai_pool" || strategyType === "ai_new") && (
+        {(strategyType === "ai_pool" || strategyType === "ai_new" || strategyType === "hybrid") && (
           <div className="mb-4">
             <label style={label}>Vibe / prompt (optional)</label>
             <input style={input} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g. rainy Sunday morning" />
-            <p className="font-mono" style={{ fontSize: 10, color: "#907558", marginTop: 6 }}>
-              {strategyType === "ai_pool"
-                ? "AI picks from your filtered albums. Blank = weighted pick."
-                : "AI suggests albums outside your library."}
-            </p>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-6">
+        </div>
+        {/* Actions (sticky footer) */}
+        <div
+          className="flex items-center justify-between shrink-0"
+          style={{ padding: "12px 20px", borderTop: "1px solid #3d2815", background: "#140d0a" }}
+        >
           {onDelete ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">
@@ -284,13 +327,18 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
   );
 }
 
-function Slider({ label, valueLabel, idx, onChange }: { label: string; valueLabel: string; idx: number; onChange: (i: number) => void }) {
+function Slider({ label, valueLabel, help, idx, onChange }: { label: string; valueLabel: string; help?: string; idx: number; onChange: (i: number) => void }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: help ? 2 : 6 }}>
         <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "#f2e8d2" }}>{label}</span>
         <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "#ff5e00" }}>{valueLabel}</span>
       </div>
+      {help && (
+        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: "#907558", lineHeight: 1.4, marginBottom: 6 }}>
+          {help}
+        </p>
+      )}
       <input type="range" className="algo-slider" min={0} max={4} step={1} value={idx}
         style={{ width: "100%" }}
         onChange={(e) => onChange(Number(e.target.value))} />

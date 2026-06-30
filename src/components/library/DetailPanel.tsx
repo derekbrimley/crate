@@ -12,6 +12,9 @@ interface DetailPanelProps {
   onRemove: (item: Item) => void;
   onPlay?: () => void;
   onPromote?: (item: Item) => void;
+  // When true, hide library-mutating actions (remove / favorite / send).
+  // Used when opened from a read-only context like the History log.
+  readOnly?: boolean;
 }
 
 function formatLastPlayed(ts: number | null): string {
@@ -37,7 +40,7 @@ function daysAgo(ts: number | null): number {
 
 const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[]; sentTo: SentRecommendation[] }>();
 
-export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote }: DetailPanelProps) {
+export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote, readOnly = false }: DetailPanelProps) {
   const player = usePlayer();
   const cached = detailsCache.get(item.external_id);
   const [genres, setGenres] = useState<string[]>(cached?.genres || []);
@@ -426,7 +429,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                 {promoting ? "★ …" : promoted ? "★ FAVED" : isFriendRec ? "★ ADD TO FAVORITES" : "★ FAVORITE"}
               </button>
             )}
-            {!promoted && (
+            {!promoted && !readOnly && (
               <button
                 onClick={handleRemoveClick}
                 className="font-mono cursor-pointer"
@@ -445,7 +448,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         )}
       </div>
       {/* Send to Friend */}
-      {!isFriendRec && !isAiSuggested && (
+      {!isFriendRec && !isAiSuggested && !readOnly && (
         <div style={{ marginBottom: 10 }}>
           {!sendFormOpen ? (
             <button

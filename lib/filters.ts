@@ -1,6 +1,6 @@
 import type { Item } from "./types";
 
-export type FieldKey = "year" | "genre" | "artist" | "list" | "plays";
+export type FieldKey = "year" | "genre" | "artist" | "list" | "plays" | "last_played";
 
 export interface FilterRule {
   id: string;
@@ -15,11 +15,17 @@ export interface PickStat {
   lastPickedTs: number | null;
 }
 
+// Multi-value genre rules ("is any of") store their genres joined by this
+// separator so the rule stays a flat string. Pipe is safe — genres don't use it.
+export const MULTI_SEP = "|";
+
 interface FieldDef {
   label: string;
   operators: { key: string; label: string }[];
   valueType: "number" | "text" | "genre" | "list";
   needsValue2?: (op: string) => boolean;
+  // Operators that need no value at all (e.g. "never played").
+  needsValue?: (op: string) => boolean;
 }
 
 export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
@@ -39,6 +45,7 @@ export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
     operators: [
       { key: "is", label: "is" },
       { key: "is_not", label: "is not" },
+      { key: "is_any_of", label: "is any of" },
     ],
     valueType: "genre",
   },
@@ -63,6 +70,16 @@ export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
       { key: "is", label: "is" },
     ],
     valueType: "number",
+  },
+  last_played: {
+    label: "Last played",
+    operators: [
+      { key: "more_than_days_ago", label: "more than (days) ago" },
+      { key: "within_days", label: "within (days)" },
+      { key: "never", label: "never played" },
+    ],
+    valueType: "number",
+    needsValue: (op) => op !== "never",
   },
 };
 
@@ -96,8 +113,10 @@ export function makeRuleId(seed: number): string {
 }
 
 function ruleIsComplete(rule: FilterRule): boolean {
-  if (rule.value.trim() === "") return false;
-  if (FIELD_DEFS[rule.field].needsValue2?.(rule.operator) && (rule.value2 ?? "").trim() === "") {
+  const def = FIELD_DEFS[rule.field];
+  const valueOptional = def.needsValue ? !def.needsValue(rule.operator) : false;
+  if (!valueOptional && rule.value.trim() === "") return false;
+  if (def.needsValue2?.(rule.operator) && (rule.value2 ?? "").trim() === "") {
     return false;
   }
   return true;
@@ -124,6 +143,13 @@ function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>
     }
     case "genre": {
       const genres = getItemGenres(item).map((g) => g.toLowerCase());
+      if (rule.operator === "is_any_of") {
+        const targets = rule.value
+          .split(MULTI_SEP)
+          .map((g) => g.trim().toLowerCase())
+          .filter(Boolean);
+        return targets.some((t) => genres.includes(t));
+      }
       const target = rule.value.toLowerCase();
       const has = genres.includes(target);
       return rule.operator === "is_not" ? !has : has;
@@ -141,6 +167,20 @@ function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>
       if (rule.operator === "gte") return count >= v;
       if (rule.operator === "lte") return count <= v;
       if (rule.operator === "is") return count === v;
+      return false;
+    }
+    case "last_played": {
+      const lastTs = pickStats.get(item.id)?.lastPickedTs ?? null;
+      if (rule.operator === "never") return lastTs === null;
+      if (lastTs === null) {
+        // Never played: counts as "more than ago" (infinitely long), never "within".
+        return rule.operator === "more_than_days_ago";
+      }
+      const days = parseInt(rule.value, 10);
+      if (Number.isNaN(days)) return false;
+      const daysSince = (Date.now() / 1000 - lastTs) / 86400;
+      if (rule.operator === "more_than_days_ago") return daysSince > days;
+      if (rule.operator === "within_days") return daysSince <= days;
       return false;
     }
     default:

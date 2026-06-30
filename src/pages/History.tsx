@@ -2,8 +2,27 @@ import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
+import { DetailPanel } from "../components/library/DetailPanel";
 import { useDataCache } from "../contexts/DataCache";
-import { CONTEXT_LABELS, PickHistoryEntry } from "../types";
+import { CONTEXT_LABELS, PickHistoryEntry, Item } from "../types";
+
+// History entries carry enough album fields to build the Item the DetailPanel needs.
+function entryToItem(entry: PickHistoryEntry): Item {
+  return {
+    id: entry.item_id,
+    user_id: 0,
+    media_type: "album",
+    list_type: (entry.list_type === "favorite" ? "favorite" : "recommendation"),
+    title: entry.title,
+    creator: entry.creator,
+    image_url: entry.image_url,
+    external_id: entry.external_id,
+    external_uri: entry.external_uri,
+    external_url: entry.external_url,
+    added_at: entry.picked_at_ts,
+    metadata: null,
+  };
+}
 
 const MODE_SYMBOLS: Record<string, { label: string }> = {
   favorites:    { label: "Favorites" },
@@ -34,9 +53,10 @@ interface HistoryProps {
 }
 
 export function History({ onLogout }: HistoryProps) {
-  const { history, historyLoaded, loadHistory } = useDataCache();
+  const { history, historyLoaded, loadHistory, pickStats } = useDataCache();
   const [loading, setLoading] = useState(!historyLoaded);
   const [showProfile, setShowProfile] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   useEffect(() => {
     if (!historyLoaded) {
@@ -135,7 +155,8 @@ export function History({ onLogout }: HistoryProps) {
                   return (
                     <li
                       key={entry.id}
-                      className="flex items-center gap-3 py-3"
+                      onClick={() => setSelectedItem(entryToItem(entry))}
+                      className="flex items-center gap-3 py-3 cursor-pointer"
                       style={{
                         borderBottom: i < entries.length - 1 ? "1px solid rgba(61,40,21,0.3)" : "none",
                       }}
@@ -205,6 +226,29 @@ export function History({ onLogout }: HistoryProps) {
               </ul>
             </div>
           ))}
+        </div>
+      )}
+
+      {selectedItem && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.7)" }}
+          onClick={() => setSelectedItem(null)}
+        >
+          <div
+            className="w-full max-w-lg overflow-y-auto"
+            style={{ maxHeight: "90vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DetailPanel
+              item={selectedItem}
+              pickCount={pickStats.get(selectedItem.id)?.pickCount ?? 0}
+              lastPickedTs={pickStats.get(selectedItem.id)?.lastPickedTs ?? null}
+              onClose={() => setSelectedItem(null)}
+              onRemove={() => setSelectedItem(null)}
+              readOnly
+            />
+          </div>
         </div>
       )}
     </Layout>

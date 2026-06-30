@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { getAllConfig, getItems, getLastPicksForUser, getPendingFriendRecommendations, setConfig } from "../../lib/queries";
 import { runCrate, type CrateEngineDeps } from "../../lib/crateEngine";
-import { seedCratesFromConfig, type CrateDefinition, DEFAULT_WEIGHTING } from "../../lib/crates";
+import { seedCratesFromConfig, isSlowStrategy, type CrateDefinition, DEFAULT_WEIGHTING } from "../../lib/crates";
 import { getPoolSuggestions, getSurpriseSuggestion } from "../../lib/claude";
 import { searchAlbums, getBestImageUrl } from "../../lib/spotify";
 import type { SelectionConfig } from "../../lib/selection";
@@ -33,21 +33,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const existingIds = new Set(allItems.map((i) => i.external_id));
 
+  // Spotify IDs aren't enough to dedupe: the same album shows up under multiple
+  // IDs (remasters, deluxe/regional editions). Also key on normalized
+  // title+artist so an album already owned under a different release ID can't be
+  // re-suggested. Strip parentheticals like "(Deluxe Edition)" / "(Remastered)".
+  const normKey = (title: string, artist: string) => {
+    const clean = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/\([^)]*\)|\[[^\]]*\]/g, "") // drop (...) and [...]
+        .replace(/[^a-z0-9]/g, "")            // drop spaces/punctuation
+        .trim();
+    return `${clean(title)}|${clean(artist)}`;
+  };
+  const existingKeys = new Set(allItems.map((i) => normKey(i.title, i.creator)));
+
   const deps: CrateEngineDeps = {
     aiPoolPick: (prompt, pool, count) =>
       getPoolSuggestions(prompt, pool, count, recentPicks, /* weighting */ poolSelectionConfig(crates!, pool)),
     aiNewPick: async (prompt, library, count) => {
       const favorites = library.filter((i) => i.list_type === "favorite");
       const seed = favorites.length > 0 ? favorites : library;
-      const suggestions = await getSurpriseSuggestion(seed);
+      const suggestions = await getSurpriseSuggestion(seed, library, prompt);
       const shuffled = [...suggestions].sort(() => Math.random() - 0.5);
       const searchResults = await Promise.all(
         shuffled.map(({ title, artist }) => searchAlbums(`${title} ${artist}`, 5).catch(() => []))
       );
       const picks: Item[] = [];
+      const chosenKeys = new Set<string>(); // avoid duplicates within this batch
       for (let i = 0; i < shuffled.length && picks.length < count; i++) {
-        const match = searchResults[i].find((r) => !existingIds.has(r.id));
+        const match = searchResults[i].find((r) => {
+          if (existingIds.has(r.id)) return false;
+          const key = normKey(r.name, r.artists[0]?.name || shuffled[i].artist);
+          return !existingKeys.has(key) && !chosenKeys.has(key);
+        });
         if (match) {
+          chosenKeys.add(normKey(match.name, match.artists[0]?.name || shuffled[i].artist));
           picks.push({
             id: 0, user_id: user.id, media_type: "album", list_type: "recommendation",
             title: match.name, creator: match.artists[0]?.name || shuffled[i].artist,
@@ -74,8 +95,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const cratesToRun = requestedCrateId ? crates.filter((c) => c.id === requestedCrateId) : crates;
 
+  // On the full dashboard load, defer slow (AI) crates: they hit Claude + Spotify
+  // and would block the whole response (~5s). The client lazy-loads each deferred
+  // crate via GET /picks/dashboard?crateId=... A single-crate request always runs
+  // fully, so the lazy-load path still works.
+  const isFullLoad = !requestedCrateId;
+
   const results = await Promise.all(
-    cratesToRun.map(async (c) => ({ id: c.id, items: await runCrate(c, allItems, recentPicks, deps) }))
+    cratesToRun.map(async (c) => {
+      if (isFullLoad && isSlowStrategy(c.strategy)) {
+        return { id: c.id, items: [] as Item[], deferred: true };
+      }
+      return { id: c.id, items: await runCrate(c, allItems, recentPicks, deps) };
+    })
   );
 
   res.json({ crates: results, _config: config, _picks: recentPicks });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { ShelfRow } from "../components/library/ShelfRow";
@@ -31,6 +31,7 @@ export function Crates({ onLogout }: CratesProps) {
     cratesData,
     crateDefs,
     dashboardLoaded,
+    deferredCrates,
     loadDashboard,
     refreshCrate,
     saveCrateDefs,
@@ -65,6 +66,18 @@ export function Crates({ onLogout }: CratesProps) {
   useEffect(() => {
     if (!historyLoaded) loadHistory();
   }, [historyLoaded, loadHistory]);
+
+  // Lazy-load AI crates the server deferred. Each is fetched once.
+  const kickedOffRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!dashboardLoaded) return;
+    for (const crateId of deferredCrates) {
+      if (kickedOffRef.current.has(crateId)) continue;
+      kickedOffRef.current.add(crateId);
+      refreshCrateHandler(crateId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardLoaded, deferredCrates]);
 
 
   const refreshCrateHandler = async (crateId: string) => {
@@ -136,6 +149,17 @@ export function Crates({ onLogout }: CratesProps) {
   const handleDeleteCrate = async (id: string) => {
     await saveCrateDefs(crateDefs.filter((c) => c.id !== id));
     setEditingCrate(null);
+  };
+
+  // Reorder via up/down arrows. crateDefs is already sorted by position; swap a
+  // crate with its neighbor and renumber positions so they stay 0..n-1.
+  const handleMoveCrate = async (id: string, dir: -1 | 1) => {
+    const idx = crateDefs.findIndex((c) => c.id === id);
+    const target = idx + dir;
+    if (idx === -1 || target < 0 || target >= crateDefs.length) return;
+    const next = [...crateDefs];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    await saveCrateDefs(next.map((c, i) => ({ ...c, position: i })));
   };
 
   const availableGenres = listsLoaded
@@ -229,9 +253,9 @@ export function Crates({ onLogout }: CratesProps) {
 
       {/* Crate shelves */}
       <div style={{ paddingTop: 18, paddingBottom: 100 }}>
-        {crateDefs.map((crate) => {
+        {crateDefs.map((crate, crateIdx) => {
           const rawItems = cratesData.get(crate.id) ?? [];
-          const isLoading = loading || loadingCrates.has(crate.id);
+          const isLoading = loading || loadingCrates.has(crate.id) || deferredCrates.has(crate.id);
           const isFriendCrate = crate.source === "friends";
           const isAiNewCrate = crate.strategy.type === "ai_new";
 
@@ -250,6 +274,8 @@ export function Crates({ onLogout }: CratesProps) {
               onSelectAlbum={setSelectedAlbumId}
               onRefresh={() => refreshCrateHandler(crate.id)}
               onEdit={() => setEditingCrate(crate)}
+              onMoveUp={crateIdx > 0 ? () => handleMoveCrate(crate.id, -1) : undefined}
+              onMoveDown={crateIdx < crateDefs.length - 1 ? () => handleMoveCrate(crate.id, 1) : undefined}
               onPick={handlePick}
               pickStats={pickStats}
               onFavorite={
@@ -272,7 +298,7 @@ export function Crates({ onLogout }: CratesProps) {
           initial={editingCrate}
           availableGenres={availableGenres}
           onSave={handleSaveCrate}
-          onDelete={editingCrate.name ? handleDeleteCrate : undefined}
+          onDelete={editingCrate.name && editingCrate.source !== "friends" ? handleDeleteCrate : undefined}
           onClose={() => setEditingCrate(null)}
         />
       )}
@@ -292,6 +318,8 @@ interface CrateSectionProps {
   onSelectAlbum: (id: number | null) => void;
   onRefresh: () => void;
   onEdit: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onPick: (item: Item, crateId: string) => void;
   pickStats: Map<number, { pickCount: number; lastPickedTs: number | null }>;
   onFavorite?: (item: Item) => void;
@@ -308,6 +336,8 @@ function CrateSection({
   onSelectAlbum,
   onRefresh,
   onEdit,
+  onMoveUp,
+  onMoveDown,
   onPick,
   pickStats,
   onFavorite,
@@ -349,6 +379,28 @@ function CrateSection({
         <span className="font-mono" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em" }}>
           {items.length}
         </span>
+        <button
+          onClick={onMoveUp}
+          disabled={!onMoveUp}
+          className="flex items-center justify-center cursor-pointer disabled:opacity-25"
+          style={{ width: 20, height: 20, background: "transparent", border: "1px solid #3d2815", color: "#907558", fontSize: 10 }}
+          title="Move crate up"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 15l-6-6-6 6" />
+          </svg>
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={!onMoveDown}
+          className="flex items-center justify-center cursor-pointer disabled:opacity-25"
+          style={{ width: 20, height: 20, background: "transparent", border: "1px solid #3d2815", color: "#907558", fontSize: 10 }}
+          title="Move crate down"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
         <button
           onClick={onEdit}
           className="flex items-center justify-center cursor-pointer"

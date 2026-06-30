@@ -17,7 +17,17 @@ export type CrateStrategy =
   | { type: "weighted"; weighting: Weighting }
   | { type: "random" }
   | { type: "ai_pool"; prompt?: string }
-  | { type: "ai_new"; prompt?: string };
+  | { type: "ai_new"; prompt?: string }
+  | { type: "hybrid"; prompt?: string; weighting: Weighting };
+
+// Strategies that hit Claude (and possibly Spotify) and are slow enough to
+// defer off the initial dashboard load. ai_pool only calls Claude when it has
+// a prompt; without one it's just a weighted pick from the pool.
+export function isSlowStrategy(strategy: CrateStrategy): boolean {
+  if (strategy.type === "ai_new" || strategy.type === "hybrid") return true;
+  if (strategy.type === "ai_pool") return Boolean(strategy.prompt && strategy.prompt.trim());
+  return false;
+}
 
 export interface CrateFilters {
   rules: FilterRule[];

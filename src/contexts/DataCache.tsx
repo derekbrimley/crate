@@ -8,6 +8,9 @@ interface DataCacheState {
   crateDefs: CrateDefinition[];
   dashboardConfig: AppConfig | null;
   dashboardLoaded: boolean;
+  // Crate ids whose results were deferred by the server (AI crates) and still
+  // need a per-crate fetch.
+  deferredCrates: Set<string>;
   loadDashboard: () => Promise<void>;
   refreshCrate: (crateId: string) => Promise<void>;
   saveCrateDefs: (next: CrateDefinition[]) => Promise<void>;
@@ -38,6 +41,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const [crateDefs, setCrateDefs] = useState<CrateDefinition[]>([]);
   const [dashboardConfig, setDashboardConfig] = useState<AppConfig | null>(null);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
+  const [deferredCrates, setDeferredCrates] = useState<Set<string>>(new Set());
   const [rawPickStats, setRawPickStats] = useState<PickStat[]>([]);
 
   // Lists state
@@ -73,8 +77,13 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
       }
       if (result._picks) setRawPickStats(result._picks);
       const map = new Map<string, Item[]>();
-      for (const c of result.crates ?? []) map.set(c.id, c.items);
+      const deferred = new Set<string>();
+      for (const c of result.crates ?? []) {
+        map.set(c.id, c.items);
+        if (c.deferred) deferred.add(c.id);
+      }
       setCratesData(map);
+      setDeferredCrates(deferred);
       setDashboardLoaded(true);
     } catch (err) {
       console.error("Failed to load dashboard:", err);
@@ -85,7 +94,15 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await getDashboardCrate(crateId);
       const got = result.crates?.find((c) => c.id === crateId);
-      if (got) setCratesData((prev) => new Map(prev).set(crateId, got.items));
+      if (got) {
+        setCratesData((prev) => new Map(prev).set(crateId, got.items));
+        setDeferredCrates((prev) => {
+          if (!prev.has(crateId)) return prev;
+          const next = new Set(prev);
+          next.delete(crateId);
+          return next;
+        });
+      }
     } catch (err) {
       console.error("Failed to refresh crate:", err);
     }
@@ -126,6 +143,7 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
         crateDefs,
         dashboardConfig,
         dashboardLoaded,
+        deferredCrates,
         loadDashboard,
         refreshCrate,
         saveCrateDefs,

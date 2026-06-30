@@ -32,7 +32,9 @@ CREATE TABLE public.picks (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   item_id INTEGER NOT NULL REFERENCES public.items(id) ON DELETE CASCADE,
-  mode TEXT NOT NULL CHECK(mode IN ('favorites', 'discover', 'for_right_now', 'surprise')),
+  -- mode is the crate id that produced the pick (free-form). Older installs
+  -- had a CHECK constraint here; see migrations/002_picks_mode_freeform.sql.
+  mode TEXT NOT NULL,
   context TEXT,
   picked_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER
 );

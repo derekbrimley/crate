@@ -68,6 +68,24 @@ export async function runCrate(
       }
     }
 
+    case "hybrid": {
+      // Fixed split: ~1/3 fresh AI suggestions, the rest weighted from the library.
+      const aiCount = Math.max(1, Math.round(crate.count / 3));
+      const libraryCount = crate.count - aiCount;
+      const config: SelectionConfig = crate.strategy.weighting;
+      const libraryPicks = libraryCount > 0 ? selectAlbums(pool, libraryCount, picks, config) : [];
+      let aiPicks: Item[] = [];
+      try {
+        aiPicks = await deps.aiNewPick(crate.strategy.prompt, allItems, aiCount);
+      } catch {
+        // AI half failed — backfill with more library picks so the crate isn't short.
+        const have = new Set(libraryPicks.map((i) => i.id));
+        const extra = selectAlbums(pool.filter((i) => !have.has(i.id)), aiCount, picks, config);
+        return [...libraryPicks, ...extra];
+      }
+      return [...aiPicks, ...libraryPicks];
+    }
+
     default:
       return randomSample(pool, crate.count);
   }

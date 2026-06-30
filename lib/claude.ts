@@ -38,15 +38,18 @@ function resolvePreferGenres(context: string, contextProfile?: RightNowContext):
 }
 
 const SURPRISE_SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crates.
-The user has a set of favorite albums that represent their taste.
-Suggest 5 albums they would love that are NOT already in their library — albums they likely haven't heard but would genuinely enjoy.
+The user has a set of favorite albums that represent their taste, plus a list of albums already in their library.
+Suggest 5 albums they would love that are NOT in their library and NOT by an artist already heavily represented there — albums they likely haven't heard but would genuinely enjoy.
 Make the suggestions varied: different artists, different eras, different moods — but all fitting the taste profile.
 Consider genre overlap, artist style, era, and mood from their favorites.
+Do not suggest any album that appears in the "Already in my library" list.
 Return ONLY a JSON array with 5 objects: [{"title": "Album Title", "artist": "Artist Name"}, ...]
 No explanation, no markdown, just the raw JSON array.`;
 
 export async function getSurpriseSuggestion(
-  favorites: Item[]
+  favorites: Item[],
+  ownedAlbums: Item[] = [],
+  prompt?: string
 ): Promise<{ title: string; artist: string }[]> {
   if (favorites.length === 0) return [];
 
@@ -56,6 +59,16 @@ export async function getSurpriseSuggestion(
     genres: (item.metadata?.genres as string[]) || [],
   }));
 
+  // Give Claude the full set of owned albums (title — artist) to avoid, capped
+  // so we don't blow the token budget on huge libraries.
+  const ownedList = ownedAlbums.slice(0, 200).map((i) => `${i.title} — ${i.creator}`);
+
+  const userMessage =
+    `My favorite albums:\n${JSON.stringify(favoritesPayload)}\n\n` +
+    `Already in my library (do NOT suggest these):\n${ownedList.join("\n")}\n\n` +
+    (prompt && prompt.trim() ? `Vibe to aim for: ${prompt.trim()}\n\n` : "") +
+    `Suggest 5 varied albums I would love that are NOT in my library.`;
+
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -64,7 +77,7 @@ export async function getSurpriseSuggestion(
       messages: [
         {
           role: "user",
-          content: `My favorite albums:\n${JSON.stringify(favoritesPayload)}\n\nSuggest 5 varied albums I would love.`,
+          content: userMessage,
         },
       ],
     });

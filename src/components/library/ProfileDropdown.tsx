@@ -11,7 +11,6 @@ export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
 
   const items = [
     { label: "View History", action: () => { onClose(); navigate("/history"); } },
-    { label: "Settings", action: () => { onClose(); navigate("/settings"); } },
     { label: "Sign Out", action: onLogout, color: "#ff5555" },
   ];
 

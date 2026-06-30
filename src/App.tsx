@@ -10,7 +10,6 @@ import { Crates } from "./pages/Crates";
 import { Lists } from "./pages/Lists";
 import { AddAlbums } from "./pages/AddAlbums";
 import { History } from "./pages/History";
-import { Settings } from "./pages/Settings";
 
 function AppInner() {
   const { user, loading, login, loginWithEmail, signUpWithEmail, logout, needsPasswordReset, resetPasswordForEmail, updatePassword, clearPasswordReset } = useAuth();
@@ -39,7 +38,6 @@ function AppInner() {
           <Route path="/library" element={<Lists onLogout={logout} />} />
           <Route path="/add" element={<AddAlbums />} />
           <Route path="/history" element={<History onLogout={logout} />} />
-          <Route path="/settings" element={<Settings onLogout={logout} />} />
           <Route path="/callback" element={<Crates onLogout={logout} />} />
         </Routes>
       </DataCacheProvider>

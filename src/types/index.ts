@@ -112,7 +112,8 @@ export type CrateStrategy =
   | { type: "weighted"; weighting: Weighting }
   | { type: "random" }
   | { type: "ai_pool"; prompt?: string }
-  | { type: "ai_new"; prompt?: string };
+  | { type: "ai_new"; prompt?: string }
+  | { type: "hybrid"; prompt?: string; weighting: Weighting };
 
 export interface CrateFilters { rules: FilterRule[]; matchMode: "AND" | "OR"; }
 
@@ -135,7 +136,7 @@ export interface PickStat {
 }
 
 export interface DashboardData {
-  crates?: { id: string; items: Item[] }[];
+  crates?: { id: string; items: Item[]; deferred?: boolean }[];
   _config?: AppConfig;
   _picks?: PickStat[];
 }
