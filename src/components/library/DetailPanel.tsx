@@ -59,6 +59,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
     return initial;
   });
   const [removeConfirm, setRemoveConfirm] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [promoted, setPromoted] = useState(false);
@@ -203,10 +204,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       removeTimerRef.current = setTimeout(() => setRemoveConfirm(false), 2000);
     } else {
       if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+      setRemoving(true);
       try {
         await deleteAlbum(item.id);
         onRemove(item);
       } catch {
+        setRemoving(false);
         setRemoveConfirm(false);
       }
     }
@@ -432,7 +435,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             {!promoted && !readOnly && (
               <button
                 onClick={handleRemoveClick}
-                className="font-mono cursor-pointer"
+                disabled={removing}
+                className="font-mono cursor-pointer disabled:opacity-60"
                 style={{
                   fontSize: 10,
                   padding: "6px 10px",
@@ -441,7 +445,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                   background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
                 }}
               >
-                {isFriendRec ? "DISMISS" : removeConfirm ? "REMOVE?" : "REMOVE"}
+                {removing ? "…" : isFriendRec ? "DISMISS" : removeConfirm ? "REMOVE?" : "REMOVE"}
               </button>
             )}
           </>
