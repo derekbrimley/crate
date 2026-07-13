@@ -5,17 +5,19 @@ interface CurrentTrack { name: string; artist: string; image_url: string | null;
 
 interface PlayerContextValue {
   available: boolean;
-  // True when in-app playback should be attempted (desktop, SDK not failed).
-  // Unlike `available`, this is true during the SDK's 1-2s startup window so
-  // an early click waits for the device instead of falling back to the web app.
   canPlay: boolean;
   deviceId: string | null;
   currentTrack: CurrentTrack | null;
   paused: boolean;
-  playAlbum(uri: string): Promise<void>;
+  position: number;
+  duration: number;
+  volume: number;
+  playAlbum(uri: string, offset?: number): Promise<void>;
   togglePlay(): Promise<void>;
   next(): Promise<void>;
   previous(): Promise<void>;
+  seek(positionMs: number): Promise<void>;
+  setVolume(v: number): Promise<void>;
 }
 
 const noop = async () => {};
@@ -25,10 +27,15 @@ const PlayerContext = createContext<PlayerContextValue>({
   deviceId: null,
   currentTrack: null,
   paused: true,
+  position: 0,
+  duration: 0,
+  volume: 1,
   playAlbum: noop,
   togglePlay: noop,
   next: noop,
   previous: noop,
+  seek: noop,
+  setVolume: noop,
 });
 
 const SDK_SRC = "https://sdk.scdn.co/spotify-player.js";
@@ -41,6 +48,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [currentTrack, setCurrentTrack] = useState<CurrentTrack | null>(null);
   const [paused, setPaused] = useState(true);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState(1);
   const playerRef = useRef<Spotify.Player | null>(null);
   // Refs mirror device/SDK state so playAlbum can poll for readiness without
   // capturing a stale closure value (the SDK fires `ready` ~1-2s after load).
@@ -80,6 +90,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           uri: t.uri,
         });
         setPaused(state.paused);
+        setPosition(state.position);
+        setDuration(state.duration);
       });
       const fail = (label: string) => (e: Spotify.Error) => {
         console.warn(`Spotify ${label}:`, e.message);
@@ -123,6 +135,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // While playing, advance the position locally between SDK state events so the
+  // seek bar moves smoothly. Re-synced on every player_state_changed.
+  useEffect(() => {
+    if (paused) return;
+    const started = performance.now();
+    const base = position;
+    const timer = setInterval(() => {
+      setPosition(Math.min(base + (performance.now() - started), duration || Infinity));
+    }, 500);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused, duration, currentTrack?.uri]);
+
   // Wait up to ~5s for the SDK to register a device. The `ready` event fires
   // 1-2s after page load, so a click immediately after load would otherwise
   // see no device and fall through to opening the Spotify web app.
@@ -139,17 +164,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return deviceIdRef.current;
   }, []);
 
-  const playAlbum = useCallback(async (uri: string) => {
+  const playAlbum = useCallback(async (uri: string, offset?: number) => {
     const id = await waitForDevice();
-    await playOnSpotify(uri, id);
+    await playOnSpotify(uri, id, offset);
   }, [waitForDevice]);
 
   const togglePlay = useCallback(async () => { await playerRef.current?.togglePlay(); }, []);
   const next = useCallback(async () => { await playerRef.current?.nextTrack(); }, []);
   const previous = useCallback(async () => { await playerRef.current?.previousTrack(); }, []);
 
+  const seek = useCallback(async (positionMs: number) => {
+    await playerRef.current?.seek(positionMs);
+    setPosition(positionMs);
+  }, []);
+
+  const setVolume = useCallback(async (v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    await playerRef.current?.setVolume(clamped);
+    setVolumeState(clamped);
+  }, []);
+
   return (
-    <PlayerContext.Provider value={{ available, canPlay, deviceId, currentTrack, paused, playAlbum, togglePlay, next, previous }}>
+    <PlayerContext.Provider value={{ available, canPlay, deviceId, currentTrack, paused, position, duration, volume, playAlbum, togglePlay, next, previous, seek, setVolume }}>
       {children}
     </PlayerContext.Provider>
   );
