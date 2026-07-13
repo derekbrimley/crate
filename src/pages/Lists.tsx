@@ -357,6 +357,10 @@ export function Lists({ onLogout }: ListsProps) {
               ))}
             </select>
             <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.08em" }}>
+              {ruleFiltered.length} {ruleFiltered.length === 1 ? "ALBUM" : "ALBUMS"}
+            </span>
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
             <button
               onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); setShowCoverage(false); return !v; })}
               className="font-mono shrink-0 cursor-pointer"
