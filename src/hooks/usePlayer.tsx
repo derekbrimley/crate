@@ -5,6 +5,9 @@ interface CurrentTrack { name: string; artist: string; image_url: string | null;
 
 interface PlayerContextValue {
   available: boolean;
+  // canPlay is true when in-app playback should be attempted (desktop, SDK not
+  // failed) and — unlike `available` — stays true during the SDK's 1–2s startup
+  // window so an early click waits for the device instead of falling back.
   canPlay: boolean;
   deviceId: string | null;
   currentTrack: CurrentTrack | null;
@@ -56,6 +59,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // capturing a stale closure value (the SDK fires `ready` ~1-2s after load).
   const deviceIdRef = useRef<string | null>(null);
   const sdkFailedRef = useRef(false);
+  // Baseline for the position-advance interval: { position, at } where `at` is
+  // performance.now(). Updated on player_state_changed and on manual seek so
+  // the interval can continue from the latest authoritative position.
+  const positionBaseRef = useRef<{ position: number; at: number }>({ position: 0, at: 0 });
 
   useEffect(() => {
     if (isMobile()) return; // desktop only
@@ -75,6 +82,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         deviceIdRef.current = device_id;
         setDeviceId(device_id);
         setAvailable(true);
+        // Seed volume from SDK.
+        player.getVolume().then(v => {
+          if (typeof v === "number") setVolumeState(v);
+        }).catch(() => {});
       });
       player.addListener("not_ready", () => {
         deviceIdRef.current = null;
@@ -92,6 +103,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setPaused(state.paused);
         setPosition(state.position);
         setDuration(state.duration);
+        // Re-baseline the position-advance interval from this new authoritative position.
+        positionBaseRef.current = { position: state.position, at: performance.now() };
       });
       const fail = (label: string) => (e: Spotify.Error) => {
         console.warn(`Spotify ${label}:`, e.message);
@@ -139,14 +152,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // seek bar moves smoothly. Re-synced on every player_state_changed.
   useEffect(() => {
     if (paused) return;
-    const started = performance.now();
-    const base = position;
     const timer = setInterval(() => {
-      setPosition(Math.min(base + (performance.now() - started), duration || Infinity));
+      const { position: base, at } = positionBaseRef.current;
+      const elapsed = performance.now() - at;
+      setPosition(Math.min(base + elapsed, duration || Infinity));
     }, 500);
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, duration, currentTrack?.uri]);
+  }, [paused, duration]);
 
   // Wait up to ~5s for the SDK to register a device. The `ready` event fires
   // 1-2s after page load, so a click immediately after load would otherwise
@@ -176,6 +188,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const seek = useCallback(async (positionMs: number) => {
     await playerRef.current?.seek(positionMs);
     setPosition(positionMs);
+    // Re-baseline the position-advance interval from this new authoritative position.
+    positionBaseRef.current = { position: positionMs, at: performance.now() };
   }, []);
 
   const setVolume = useCallback(async (v: number) => {
