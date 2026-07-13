@@ -14,6 +14,7 @@ import { applyFilters, getItemGenres } from "../lib/filters";
 import type { FilterRule } from "../lib/filters";
 import { backfillReleaseDates } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
+import { foldListFilterIntoRules } from "../lib/crateFilters";
 
 const SPINES_PER_ROW = 14;
 
@@ -390,7 +391,7 @@ export function Lists({ onLogout }: ListsProps) {
               GAPS
             </button>
             <button
-              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: { rules, matchMode } })}
+              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: foldListFilterIntoRules(rules, matchMode, listFilter) })}
               className="font-mono shrink-0 cursor-pointer"
               style={{
                 fontSize: 10,
