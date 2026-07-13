@@ -339,9 +339,14 @@ export async function fetchAlbumGenres(albumId: string): Promise<string[]> {
 export async function startPlayback(
   userId: number,
   spotifyUri: string,
-  deviceId?: string
+  deviceId?: string,
+  positionOffset?: number
 ): Promise<void> {
-  const body = JSON.stringify({ context_uri: spotifyUri });
+  const payload: Record<string, unknown> = { context_uri: spotifyUri };
+  if (typeof positionOffset === "number" && positionOffset >= 0) {
+    payload.offset = { position: positionOffset };
+  }
+  const body = JSON.stringify(payload);
   const endpoint = deviceId
     ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}`
     : "/me/player/play";

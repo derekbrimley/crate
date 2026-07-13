@@ -160,10 +160,14 @@ export async function getSpotifyToken(): Promise<{ access_token: string; expires
   return request<{ access_token: string; expires_at: number }>("/spotify/token");
 }
 
-export async function playOnSpotify(spotifyUri: string, deviceId?: string): Promise<void> {
+export async function playOnSpotify(spotifyUri: string, deviceId?: string, positionOffset?: number): Promise<void> {
   await request("/spotify/play", {
     method: "PUT",
-    body: JSON.stringify({ spotify_uri: spotifyUri, ...(deviceId ? { device_id: deviceId } : {}) }),
+    body: JSON.stringify({
+      spotify_uri: spotifyUri,
+      ...(deviceId ? { device_id: deviceId } : {}),
+      ...(typeof positionOffset === "number" ? { offset: positionOffset } : {}),
+    }),
   });
 }
 
