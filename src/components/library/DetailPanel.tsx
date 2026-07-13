@@ -59,6 +59,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
     return initial;
   });
   const [removeConfirm, setRemoveConfirm] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [promoted, setPromoted] = useState(false);
@@ -203,10 +204,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       removeTimerRef.current = setTimeout(() => setRemoveConfirm(false), 2000);
     } else {
       if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+      setRemoving(true);
       try {
         await deleteAlbum(item.id);
         onRemove(item);
       } catch {
+        setRemoving(false);
         setRemoveConfirm(false);
       }
     }
@@ -243,6 +246,25 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const lastPlayedDays = daysAgo(lastPickedTs);
   const isRecent = lastPlayedDays <= 7;
   const multiDisc = tracks.some((t) => t.disc > 1);
+
+  const albumUri = item.external_uri || (item.external_id ? `spotify:album:${item.external_id}` : null);
+
+  const playingUri = player.currentTrack?.uri ?? null;
+
+  const handlePlayTrack = async (trackIndex: number) => {
+    if (!albumUri) return;
+    onPlay?.();
+    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+      const url = item.external_url || albumUri;
+      if (url) window.location.href = url;
+      return;
+    }
+    if (player.canPlay) {
+      try { await player.playAlbum(albumUri, trackIndex); return; } catch { /* fall through */ }
+    }
+    try { await playOnSpotify(albumUri, undefined, trackIndex); return; } catch { /* fall through */ }
+    if (item.external_url) window.open(item.external_url, "_blank");
+  };
 
   return (
     <div
@@ -432,7 +454,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
             {!promoted && !readOnly && (
               <button
                 onClick={handleRemoveClick}
-                className="font-mono cursor-pointer"
+                disabled={removing}
+                className="font-mono cursor-pointer disabled:opacity-60"
                 style={{
                   fontSize: 10,
                   padding: "6px 10px",
@@ -441,7 +464,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                   background: removeConfirm ? "rgba(180,0,0,0.15)" : "transparent",
                 }}
               >
-                {isFriendRec ? "DISMISS" : removeConfirm ? "REMOVE?" : "REMOVE"}
+                {removing ? "…" : isFriendRec ? "DISMISS" : removeConfirm ? "REMOVE?" : "REMOVE"}
               </button>
             )}
           </>
@@ -598,11 +621,18 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                         DISC {track.disc}
                       </div>
                     )}
-                    <div className="flex items-baseline gap-2 py-0.5">
-                      <span className="font-mono shrink-0 text-right" style={{ fontSize: 10, color: "rgba(144,117,88,0.5)", width: 18 }}>
-                        {track.number}
+                    <div
+                      className="flex items-baseline gap-2 py-0.5 cursor-pointer"
+                      onClick={() => handlePlayTrack(i)}
+                      style={{
+                        background: playingUri && track.uri === playingUri ? "rgba(29,185,84,0.12)" : undefined,
+                      }}
+                      title="Play this track"
+                    >
+                      <span className="font-mono shrink-0 text-right" style={{ fontSize: 10, color: playingUri && track.uri === playingUri ? "#1DB954" : "rgba(144,117,88,0.5)", width: 18 }}>
+                        {playingUri && track.uri === playingUri ? "▶" : track.number}
                       </span>
-                      <span className="font-mono truncate flex-1" style={{ fontSize: 10, color: "#f2e8d2" }}>
+                      <span className="font-mono truncate flex-1" style={{ fontSize: 10, color: playingUri && track.uri === playingUri ? "#1DB954" : "#f2e8d2" }}>
                         {track.name}
                       </span>
                       <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgba(144,117,88,0.4)" }}>

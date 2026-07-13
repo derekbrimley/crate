@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
 import { useAuth } from "../hooks/useAuth";
+import { usePlayer } from "../hooks/usePlayer";
 import {
   searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
-  getPlaylistAlbums, bulkAddAlbums,
+  getPlaylistAlbums, bulkAddAlbums, playOnSpotify,
 } from "../services/api";
 import type { SpotifySearchResult, LibraryAlbum, SpotifyPlaylistInfo } from "../types";
 
@@ -32,6 +33,24 @@ function SearchTab() {
   const [addedIds, setAddedIds] = useState<Map<string, ListType>>(new Map());
   const [error, setError]       = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
+  const player = usePlayer();
+
+  const handlePlay = async (album: SpotifySearchResult) => {
+    const uri = album.spotify_uri || (album.spotify_id ? `spotify:album:${album.spotify_id}` : null);
+    const url = album.spotify_url || uri;
+    if (!uri && !url) return;
+    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+      if (url) window.location.href = url;
+      return;
+    }
+    if (uri && player.canPlay) {
+      try { await player.playAlbum(uri); return; } catch { /* fall through */ }
+    }
+    if (uri) {
+      try { await playOnSpotify(uri); return; } catch { /* fall through */ }
+    }
+    if (url) window.open(url, "_blank");
+  };
 
   const handleQuery = (q: string) => {
     setQuery(q);
@@ -91,7 +110,15 @@ function SearchTab() {
                     {album.total_tracks != null && <span className="opacity-50"> · {album.total_tracks} tracks</span>}
                   </p>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
+                <div className="flex gap-1.5 shrink-0 items-center">
+                  <button
+                    onClick={() => handlePlay(album)}
+                    title="Play on Spotify"
+                    className="flex items-center justify-center cursor-pointer"
+                    style={{ width: 28, height: 28, border: "1px solid rgba(29,185,84,0.4)", color: "#1DB954", background: "rgba(29,185,84,0.08)" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  </button>
                   {addedAs ? (
                     <span className="font-mono text-[9px] text-crate-accent px-2 py-1" style={{ letterSpacing: "0.12em" }}>
                       {addedAs === "favorite" ? "★ FAV" : "◈ REC"}

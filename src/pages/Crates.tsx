@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { ShelfRow } from "../components/library/ShelfRow";
 import { DetailPanel } from "../components/library/DetailPanel";
@@ -45,7 +44,6 @@ export function Crates({ onLogout }: CratesProps) {
     loadHistory,
   } = useDataCache();
 
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(!dashboardLoaded);
   const [loadingCrates, setLoadingCrates] = useState<Set<string>>(new Set());
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
@@ -202,30 +200,13 @@ export function Crates({ onLogout }: CratesProps) {
                 background: "#ff5e00",
                 border: "none",
                 color: "#fff",
-                fontSize: 18,
-                fontWeight: 300,
-                lineHeight: 1,
                 boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
               }}
               title="New crate"
             >
-              +
-            </button>
-            <button
-              onClick={() => navigate("/add")}
-              className="flex items-center justify-center cursor-pointer"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #3a2010, #261406)",
-                border: "1px solid #3d2815",
-                color: "#907558",
-              }}
-              title="Add albums"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18l-1.5 12.5a1 1 0 01-1 .5H5.5a1 1 0 01-1-.5L3 7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l2-3h14l2 3M9 11v5M15 11v5" />
               </svg>
             </button>
             <button

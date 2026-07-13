@@ -105,7 +105,7 @@ const sliderStyle = `
 interface CrateEditorModalProps {
   initial: CrateDefinition;
   availableGenres: string[];
-  onSave: (crate: CrateDefinition) => void;
+  onSave: (crate: CrateDefinition) => void | Promise<void>;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
@@ -125,6 +125,7 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
       : ""
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Lock background scroll while the modal is open (#2).
   useEffect(() => {
@@ -147,14 +148,20 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
     return { type: strategyType, prompt: prompt.trim() || undefined };
   }
 
-  function handleSave() {
-    onSave({
-      ...initial,
-      name: name.trim() || "Untitled Crate",
-      count,
-      filters: { rules, matchMode },
-      strategy: buildStrategy(),
-    });
+  async function handleSave() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave({
+        ...initial,
+        name: name.trim() || "Untitled Crate",
+        count,
+        filters: { rules, matchMode },
+        strategy: buildStrategy(),
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const label: React.CSSProperties = {
@@ -316,9 +323,9 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
               style={{ fontSize: 10, padding: "6px 12px", color: "#907558", border: "1px solid #3d2815", background: "transparent", borderRadius: 4 }}>
               CANCEL
             </button>
-            <button onClick={handleSave} className="font-mono cursor-pointer"
+            <button onClick={handleSave} disabled={saving} className="font-mono cursor-pointer disabled:opacity-60"
               style={{ fontSize: 10, padding: "6px 12px", color: "#ff5e00", border: "1px solid rgba(255,94,0,0.6)", background: "rgba(255,94,0,0.12)", borderRadius: 4, letterSpacing: "0.1em" }}>
-              SAVE
+              {saving ? "SAVING…" : "SAVE"}
             </button>
           </div>
         </div>

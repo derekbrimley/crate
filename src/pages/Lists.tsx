@@ -8,10 +8,13 @@ import { useDataCache } from "../contexts/DataCache";
 import type { Item, CrateDefinition } from "../types";
 import AdvancedFilters from "../components/library/AdvancedFilters";
 import DuplicatesPanel from "../components/library/DuplicatesPanel";
+import CoveragePanel from "../components/library/CoveragePanel";
+import { findUncovered } from "../lib/coverage";
 import { applyFilters, getItemGenres } from "../lib/filters";
 import type { FilterRule } from "../lib/filters";
 import { backfillReleaseDates } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
+import { foldListFilterIntoRules } from "../lib/crateFilters";
 
 const SPINES_PER_ROW = 14;
 
@@ -58,6 +61,7 @@ export function Lists({ onLogout }: ListsProps) {
   const [rules, setRules] = useState<FilterRule[]>([]);
   const [matchMode, setMatchMode] = useState<"AND" | "OR">("AND");
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showCoverage, setShowCoverage] = useState(false);
   const [editing, setEditing] = useState<CrateDefinition | null>(null);
 
   useEffect(() => {
@@ -111,6 +115,11 @@ export function Lists({ onLogout }: ListsProps) {
     for (const item of allItems) for (const g of getItemGenres(item)) set.add(g);
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [allItems]);
+
+  const uncovered = useMemo(
+    () => findUncovered(allLibraryItems, crateDefs, pickStats),
+    [allLibraryItems, crateDefs, pickStats]
+  );
 
   const filtered = useMemo(() => {
     if (!search) return allItems;
@@ -223,14 +232,13 @@ export function Lists({ onLogout }: ListsProps) {
                   background: "#ff5e00",
                   border: "none",
                   color: "#fff",
-                  fontSize: 18,
-                  fontWeight: 300,
-                  lineHeight: 1,
                   boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
                 }}
-                title="Add albums"
+                title="Search for new albums"
               >
-                +
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </button>
               <button
                 onClick={() => setShowProfile((v) => !v)}
@@ -349,8 +357,12 @@ export function Lists({ onLogout }: ListsProps) {
               ))}
             </select>
             <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.08em" }}>
+              {ruleFiltered.length} {ruleFiltered.length === 1 ? "ALBUM" : "ALBUMS"}
+            </span>
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
             <button
-              onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); return !v; })}
+              onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); setShowCoverage(false); return !v; })}
               className="font-mono shrink-0 cursor-pointer"
               style={{
                 fontSize: 10,
@@ -364,7 +376,21 @@ export function Lists({ onLogout }: ListsProps) {
               DUPLICATES
             </button>
             <button
-              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: { rules, matchMode } })}
+              onClick={() => setShowCoverage((v) => { setSelectedAlbumId(null); setShowDuplicates(false); return !v; })}
+              className="font-mono shrink-0 cursor-pointer"
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                letterSpacing: "0.08em",
+                border: showCoverage ? "1px solid #ff5e00" : "1px solid #3d2815",
+                background: showCoverage ? "rgba(255,94,0,0.1)" : "transparent",
+                color: showCoverage ? "#ff5e00" : "#907558",
+              }}
+            >
+              GAPS
+            </button>
+            <button
+              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: foldListFilterIntoRules(rules, matchMode, listFilter) })}
               className="font-mono shrink-0 cursor-pointer"
               style={{
                 fontSize: 10,
@@ -391,7 +417,9 @@ export function Lists({ onLogout }: ListsProps) {
 
       {/* Shelf content */}
       <div style={{ paddingTop: 18, paddingBottom: 20 }}>
-        {showDuplicates ? (
+        {showCoverage ? (
+          <CoveragePanel albums={uncovered.albums} genres={uncovered.genres} onClose={() => setShowCoverage(false)} />
+        ) : showDuplicates ? (
           <DuplicatesPanel
             items={allLibraryItems}
             pickStats={pickStats}

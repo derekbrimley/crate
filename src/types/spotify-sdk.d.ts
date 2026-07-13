@@ -27,6 +27,8 @@ declare global {
 
     interface PlaybackState {
       paused: boolean;
+      position: number;
+      duration: number;
       track_window: { current_track: Track };
     }
 
@@ -51,6 +53,9 @@ declare global {
       togglePlay(): Promise<void>;
       nextTrack(): Promise<void>;
       previousTrack(): Promise<void>;
+      seek(positionMs: number): Promise<void>;
+      setVolume(volume: number): Promise<void>;
+      getVolume(): Promise<number>;
     }
   }
 }
