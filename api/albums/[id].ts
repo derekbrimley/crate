@@ -98,6 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           name: t.name,
           duration_ms: t.duration_ms,
           artists: t.artists.map((a) => a.name).join(", "),
+          uri: t.uri,
         }));
 
         const sentTo = await getSentRecommendationsForAlbum(user.id, spotifyId);

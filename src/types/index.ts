@@ -66,6 +66,7 @@ export interface AlbumTrack {
   name: string;
   duration_ms: number;
   artists: string;
+  uri: string;
 }
 
 export interface ArtistAlbum {

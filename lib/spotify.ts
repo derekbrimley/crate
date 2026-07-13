@@ -265,6 +265,7 @@ export interface SpotifyTrack {
   disc_number: number;
   duration_ms: number;
   artists: { name: string }[];
+  uri: string;
 }
 
 export async function getAlbumTracks(
