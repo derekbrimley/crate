@@ -66,7 +66,9 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const [addingToList, setAddingToList] = useState<"favorite" | "recommendation" | null>(null);
   const [addedToList, setAddedToList] = useState<"favorite" | "recommendation" | null>(null);
 
-  const isAiSuggested = item.id === 0 && (() => {
+  // AI-suggested items arrive with id 0 from the server, but Crates.tsx reassigns
+  // them to negative synthetic ids to avoid key collisions — so check id <= 0.
+  const isAiSuggested = item.id <= 0 && (() => {
     const m = item.metadata;
     if (!m) return false;
     if (typeof m === "object") return (m as Record<string, unknown>)._ai_suggested === true;
