@@ -41,7 +41,10 @@ Single Vercel project: React client (static) + serverless API functions in `api/
     - `GET /api/spotify/library` — albums from user's Spotify library
     - `GET /api/spotify/playlists` — user's Spotify playlists
     - `GET /api/spotify/playlists/:id/albums` — albums from a specific playlist
-    - `PUT /api/spotify/play` — trigger playback on active Spotify device
+    - `GET /api/spotify/devices` — available Spotify Connect devices
+    - `GET /api/spotify/state` — current playback state (track + device)
+    - `PUT /api/spotify/play` — start an album on a device
+    - `PUT /api/spotify/control` — transport commands (resume/pause/next/previous/seek/volume)
   - `api/picks/dashboard.ts` — GET picks for all modes
   - `api/picks/index.ts` — GET pick history, POST record a pick
   - `api/config/index.ts` — GET/PATCH user config
@@ -66,6 +69,8 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 Row Level Security is enabled on all tables. API routes use the service role key (bypasses RLS).
 
 ### Key design notes
+- **Playback is remote-only (Spotify Connect).** Crate never renders audio itself. `usePlayer` resolves a target device via `GET /api/spotify/devices`, starts the album there, and then acts as a remote control — polling `GET /api/spotify/state` and issuing `PUT /api/spotify/control` commands. This is deliberate: the Web Playback SDK caps at 256 kbps, so playing through a real Spotify client (phone/tablet/desktop app) is what allows the device's own quality setting — including lossless — to apply. Browser "Web Player" devices are filtered out of the device list, and there are no `open.spotify.com` fallbacks.
+- **Device selection** prefers the remembered device (`crate.spotify_device_id` in localStorage), then the active device, then the sole available one; anything ambiguous opens `DevicePicker`. A play requested with no device resolved is held and fires once the user picks.
 - **Spotify tokens** are stored in `public.users` and refreshed server-side by `lib/spotify.ts`. Supabase only provides the provider token at initial sign-in; after that, the server manages refresh independently.
 - **No in-memory caches** — serverless functions are stateless; config and Claude suggestion caches from the old Express server were removed.
 - **`selectAlbums`** in `lib/selection.ts` takes a `SelectionConfig` parameter instead of fetching config internally; callers fetch config once via `getAllConfig()` and pass values in.

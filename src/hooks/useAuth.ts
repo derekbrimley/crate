@@ -78,8 +78,10 @@ export function useAuth() {
     supabase.auth.signInWithOAuth({
       provider: "spotify",
       options: {
+        // No `streaming` scope: playback is remote-controlled over Spotify
+        // Connect and never rendered in the browser.
         scopes:
-          "user-library-read playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state streaming",
+          "user-library-read playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state",
         redirectTo: `${window.location.origin}/callback`,
         queryParams: { show_dialog: "true" },
       },

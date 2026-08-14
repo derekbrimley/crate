@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "../VinylDisc";
-import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation, getRecentRecipients, playOnSpotify } from "../../services/api";
+import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendation, getRecentRecipients } from "../../services/api";
 import type { Item, AlbumTrack, ArtistAlbum, SentRecommendation } from "../../types";
 import { usePlayer } from "../../hooks/usePlayer";
 
@@ -256,16 +256,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const handlePlayTrack = async (trackIndex: number) => {
     if (!albumUri) return;
     onPlay?.();
-    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
-      const url = item.external_url || albumUri;
-      if (url) window.location.href = url;
-      return;
-    }
-    if (player.canPlay) {
-      try { await player.playAlbum(albumUri, trackIndex); return; } catch { /* fall through */ }
-    }
-    try { await playOnSpotify(albumUri, undefined, trackIndex); return; } catch { /* fall through */ }
-    if (item.external_url) window.open(item.external_url, "_blank");
+    await player.playAlbum(albumUri, trackIndex);
   };
 
   return (
@@ -369,26 +360,9 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         <button
           onClick={async () => {
             const uri = item.external_uri || (item.external_id ? `spotify:album:${item.external_id}` : null);
-            const url = item.external_url || uri;
-            if (!url && !uri) return;
+            if (!uri) return;
             onPlay?.();
-            if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
-              if (url) window.location.href = url;
-              return;
-            }
-            if (uri && player.canPlay) {
-              try {
-                await player.playAlbum(uri);
-                return;
-              } catch { /* fall through */ }
-            }
-            if (uri) {
-              try {
-                await playOnSpotify(uri);
-                return;
-              } catch { /* fall through */ }
-            }
-            if (url) window.open(url, "_blank");
+            await player.playAlbum(uri);
           }}
           className="flex-1 flex items-center justify-center gap-1 text-center font-mono cursor-pointer"
           style={{
@@ -743,9 +717,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                         ◈
                       </button>
                       <a
-                        href={album.spotify_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={album.spotify_uri}
                         className="flex items-center justify-center no-underline"
                         style={{ padding: "1px 4px", border: "1px solid rgba(29,185,84,0.3)", color: "#1DB954", background: "rgba(29,185,84,0.06)" }}
                         onClick={(e) => e.stopPropagation()}
@@ -757,9 +729,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                     </div>
                   ) : added ? (
                     <a
-                      href={album.spotify_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={album.spotify_uri}
                       className="flex items-center gap-1 font-mono no-underline mt-1"
                       style={{ fontSize: 10, color: "#1DB954" }}
                       onClick={(e) => e.stopPropagation()}

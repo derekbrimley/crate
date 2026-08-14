@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { usePlayer } from "../hooks/usePlayer";
 import {
   searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
-  getPlaylistAlbums, bulkAddAlbums, playOnSpotify,
+  getPlaylistAlbums, bulkAddAlbums,
 } from "../services/api";
 import type { SpotifySearchResult, LibraryAlbum, SpotifyPlaylistInfo } from "../types";
 
@@ -37,19 +37,12 @@ function SearchTab() {
 
   const handlePlay = async (album: SpotifySearchResult) => {
     const uri = album.spotify_uri || (album.spotify_id ? `spotify:album:${album.spotify_id}` : null);
-    const url = album.spotify_url || uri;
-    if (!uri && !url) return;
-    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
-      if (url) window.location.href = url;
-      return;
+    if (!uri) return;
+    try {
+      await player.playAlbum(uri);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Playback failed");
     }
-    if (uri && player.canPlay) {
-      try { await player.playAlbum(uri); return; } catch { /* fall through */ }
-    }
-    if (uri) {
-      try { await playOnSpotify(uri); return; } catch { /* fall through */ }
-    }
-    if (url) window.open(url, "_blank");
   };
 
   const handleQuery = (q: string) => {

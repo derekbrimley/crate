@@ -337,6 +337,55 @@ export async function fetchAlbumGenres(albumId: string): Promise<string[]> {
   return (await fetchAlbumMeta(albumId)).genres;
 }
 
+export interface SpotifyDevice {
+  id: string | null;
+  is_active: boolean;
+  is_restricted: boolean;
+  name: string;
+  type: string;
+  volume_percent: number | null;
+  supports_volume: boolean;
+}
+
+export interface SpotifyPlaybackState {
+  is_playing: boolean;
+  progress_ms: number | null;
+  device: SpotifyDevice | null;
+  item: {
+    uri: string;
+    name: string;
+    duration_ms: number;
+    artists: { name: string }[];
+    album: { images: { url: string; width: number; height: number }[] };
+  } | null;
+}
+
+/** Thrown when playback needs a device but none is available on the account. */
+export class NoDeviceError extends Error {
+  code = "NO_DEVICE" as const;
+  constructor() {
+    super("No Spotify device found. Open Spotify on your phone, tablet, or desktop app, then try again.");
+  }
+}
+
+export async function getDevices(userId: number): Promise<SpotifyDevice[]> {
+  const res = await spotifyFetch(userId, "/me/player/devices");
+  if (!res.ok) throw new Error(`Spotify devices fetch failed: ${res.status}`);
+  const data = (await res.json()) as { devices?: SpotifyDevice[] };
+  // Restricted devices reject Web API commands, and id-less devices can't be targeted.
+  return (data.devices ?? []).filter((d) => d.id && !d.is_restricted);
+}
+
+export async function getPlaybackState(
+  userId: number
+): Promise<SpotifyPlaybackState | null> {
+  const res = await spotifyFetch(userId, "/me/player");
+  // 204 = nothing is playing and no device is active.
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`Spotify playback state failed: ${res.status}`);
+  return (await res.json()) as SpotifyPlaybackState;
+}
+
 export async function startPlayback(
   userId: number,
   spotifyUri: string,
@@ -356,21 +405,58 @@ export async function startPlayback(
     body,
   });
   if (res.status === 404) {
-    throw new Error("No active Spotify device found. Open Spotify on any device first.");
+    throw new NoDeviceError();
   }
   if (!res.ok && res.status !== 204) {
     throw new Error(`Failed to start playback: ${res.status}`);
   }
 }
 
-export async function getValidAccessToken(
-  userId: number
-): Promise<{ access_token: string; expires_at: number }> {
-  // getAccessToken refreshes if the stored token is within 60s of expiry.
-  const access_token = await getAccessToken(userId);
-  const user = await getUserById(userId);
-  const expires_at = user?.token_expires_at ?? Math.floor(Date.now() / 1000) + 3600;
-  return { access_token, expires_at };
+export type PlayerAction = "resume" | "pause" | "next" | "previous" | "seek" | "volume";
+
+const PLAYER_COMMANDS: Record<PlayerAction, { method: string; path: string; param?: string }> = {
+  resume:   { method: "PUT",  path: "/me/player/play" },
+  pause:    { method: "PUT",  path: "/me/player/pause" },
+  next:     { method: "POST", path: "/me/player/next" },
+  previous: { method: "POST", path: "/me/player/previous" },
+  seek:     { method: "PUT",  path: "/me/player/seek",   param: "position_ms" },
+  volume:   { method: "PUT",  path: "/me/player/volume", param: "volume_percent" },
+};
+
+/**
+ * Send a transport command to a Spotify device. Unlike the old Web Playback SDK
+ * path, these are remote-control calls — the audio is rendered by the target
+ * device (phone/tablet/desktop app), which is what allows lossless playback.
+ */
+export async function controlPlayback(
+  userId: number,
+  action: PlayerAction,
+  deviceId?: string,
+  value?: number
+): Promise<void> {
+  const command = PLAYER_COMMANDS[action];
+  if (!command) throw new Error(`Unknown player action: ${action}`);
+
+  const params = new URLSearchParams();
+  if (command.param) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`${action} requires a numeric value`);
+    }
+    params.set(command.param, String(Math.round(value)));
+  }
+  if (deviceId) params.set("device_id", deviceId);
+  const query = params.toString();
+
+  const res = await spotifyFetch(userId, `${command.path}${query ? `?${query}` : ""}`, {
+    method: command.method,
+  });
+  if (res.status === 404) throw new NoDeviceError();
+  // 403 covers "already playing/paused" and devices that disallow the command
+  // (iOS rejects remote volume changes). Neither is worth failing the click over.
+  if (res.status === 403) return;
+  if (!res.ok && res.status !== 204) {
+    throw new Error(`Failed to ${action}: ${res.status}`);
+  }
 }
 
 export async function getArtistGenres(artistIds: string[]): Promise<string[]> {
