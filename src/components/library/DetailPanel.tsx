@@ -84,6 +84,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const isFriendRec = parsedMeta?._friend_rec === true;
   const friendSenderName = isFriendRec ? (parsedMeta?._sender_name as string | null) : null;
 
+  // An album already on the favorites list has nothing to promote to. Recommendations
+  // — including friend recs, which arrive as list_type "recommendation" — keep the button.
+  // Not every caller filters this (Crates passes onPromote for whatever is selected), so
+  // the check lives here rather than at the call sites.
+  const alreadyFavorite = item.list_type === "favorite";
+
   const [sendFormOpen, setSendFormOpen] = useState(false);
   const [sendEmail, setSendEmail] = useState("");
   const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -409,7 +415,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           )
         ) : (
           <>
-            {onPromote && (
+            {onPromote && (!alreadyFavorite || promoted) && (
               <button
                 onClick={handlePromote}
                 disabled={promoting || promoted}
