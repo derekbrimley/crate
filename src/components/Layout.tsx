@@ -9,8 +9,8 @@ interface LayoutProps {
 }
 
 export function Layout({ children, title, headerRight }: LayoutProps) {
-  const { available, currentTrack } = usePlayer();
-  const barVisible = available && !!currentTrack;
+  const { currentTrack } = usePlayer();
+  const barVisible = !!currentTrack;
 
   return (
     <div className="min-h-screen bg-crate-bg flex flex-col">

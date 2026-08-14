@@ -183,6 +183,35 @@ export interface AppConfig {
   crates?: CrateDefinition[];
 }
 
+/** A Spotify Connect target — a phone, tablet, desktop app, speaker, etc. */
+export interface SpotifyDevice {
+  id: string;
+  name: string;
+  type: string;
+  is_active: boolean;
+  volume_percent: number | null;
+  supports_volume: boolean;
+}
+
+export interface PlaybackState {
+  playing: {
+    uri: string;
+    name: string;
+    artist: string;
+    image_url: string | null;
+    duration: number;
+    position: number;
+    paused: boolean;
+  } | null;
+  device: {
+    id: string;
+    name: string;
+    type: string;
+    volume_percent: number | null;
+    supports_volume: boolean;
+  } | null;
+}
+
 export const CONTEXT_LABELS: Record<string, { label: string; emoji: string }> = {
   driving: { label: "Driving", emoji: "🚗" },
   gym: { label: "Gym / Workout", emoji: "💪" },

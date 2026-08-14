@@ -4,6 +4,7 @@ import { useAuth } from "./hooks/useAuth";
 import { DataCacheProvider } from "./contexts/DataCache";
 import { PlayerProvider } from "./hooks/usePlayer";
 import { PlayerBar } from "./components/PlayerBar";
+import { DevicePicker } from "./components/DevicePicker";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
 import { Crates } from "./pages/Crates";
@@ -42,6 +43,7 @@ function AppInner() {
         </Routes>
       </DataCacheProvider>
       <PlayerBar />
+      <DevicePicker />
     </PlayerProvider>
   );
 }

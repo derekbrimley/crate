@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { VinylDisc } from "./VinylDisc";
-import { getAlbumDetails, addAlbum, deleteAlbum, moveAlbum, playOnSpotify } from "../services/api";
+import { getAlbumDetails, addAlbum, deleteAlbum, moveAlbum } from "../services/api";
 import type { Item, AlbumTrack, ArtistAlbum } from "../types";
 import { usePlayer } from "../hooks/usePlayer";
 
@@ -355,26 +355,10 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
           {/* Play on Spotify button */}
           <button
             onClick={async () => {
-              onPlay?.();
               const uri = item.external_uri || (item.external_id ? `spotify:album:${item.external_id}` : null);
-              const url = item.external_url || uri;
-              if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
-                if (url) window.location.href = url;
-                return;
-              }
-              if (uri && player.canPlay) {
-                try {
-                  await player.playAlbum(uri);
-                  return;
-                } catch { /* fall through */ }
-              }
-              if (uri) {
-                try {
-                  await playOnSpotify(uri);
-                  return;
-                } catch { /* fall through */ }
-              }
-              if (url) window.open(url, "_blank");
+              if (!uri) return;
+              onPlay?.();
+              await player.playAlbum(uri);
             }}
             className="mt-3 flex items-center gap-2 px-4 py-2 border border-[#1DB954]/40
                        text-[11px] font-mono tracking-widest uppercase cursor-pointer
@@ -554,9 +538,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                       {album.total_tracks} tracks
                     </p>
                     <a
-                      href={album.spotify_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={album.spotify_uri}
                       className="mt-1 flex items-center gap-1 text-[9px] font-mono tracking-wider"
                       style={{ color: "#1DB954" }}
                       onClick={(e) => e.stopPropagation()}

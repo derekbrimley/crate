@@ -8,6 +8,8 @@ import type {
   AppConfig,
   AlbumDetails,
   CrateDefinition,
+  SpotifyDevice,
+  PlaybackState,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -32,7 +34,16 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`API error ${res.status}: ${body}`);
+    // Surface the server's structured error (message + code) when there is one so
+    // callers can branch on cases like NO_DEVICE instead of matching strings.
+    let message = `API error ${res.status}: ${body}`;
+    let code: string | undefined;
+    try {
+      const parsed = JSON.parse(body) as { error?: string; code?: string };
+      if (parsed.error) message = parsed.error;
+      code = parsed.code;
+    } catch { /* non-JSON body — keep the raw text */ }
+    throw Object.assign(new Error(message), { status: res.status, code });
   }
 
   if (res.status === 204) return undefined as T;
@@ -156,10 +167,6 @@ export async function getDashboardCrate(crateId: string): Promise<DashboardData>
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
-export async function getSpotifyToken(): Promise<{ access_token: string; expires_at: number }> {
-  return request<{ access_token: string; expires_at: number }>("/spotify/token");
-}
-
 export async function playOnSpotify(spotifyUri: string, deviceId?: string, positionOffset?: number): Promise<void> {
   await request("/spotify/play", {
     method: "PUT",
@@ -167,6 +174,29 @@ export async function playOnSpotify(spotifyUri: string, deviceId?: string, posit
       spotify_uri: spotifyUri,
       ...(deviceId ? { device_id: deviceId } : {}),
       ...(typeof positionOffset === "number" ? { offset: positionOffset } : {}),
+    }),
+  });
+}
+
+export async function getSpotifyDevices(): Promise<{ devices: SpotifyDevice[] }> {
+  return request<{ devices: SpotifyDevice[] }>("/spotify/devices");
+}
+
+export async function getPlaybackState(): Promise<PlaybackState> {
+  return request<PlaybackState>("/spotify/state");
+}
+
+export async function controlPlayback(
+  action: "resume" | "pause" | "next" | "previous" | "seek" | "volume",
+  deviceId?: string,
+  value?: number
+): Promise<void> {
+  await request("/spotify/control", {
+    method: "PUT",
+    body: JSON.stringify({
+      action,
+      ...(deviceId ? { device_id: deviceId } : {}),
+      ...(typeof value === "number" ? { value } : {}),
     }),
   });
 }
