@@ -412,6 +412,72 @@ export async function startPlayback(
   }
 }
 
+/**
+ * Start an album once a usable device shows up, waiting up to `timeoutMs`.
+ *
+ * Spotify only lists devices whose app is currently open, so a phone with
+ * Spotify closed has nothing to play on. The client deep-links into the Spotify
+ * app to wake it and calls this in parallel; a second or two later the app
+ * registers as a device and playback starts on it. Waiting here rather than in
+ * the browser matters because the browser is backgrounded the moment the
+ * Spotify app comes to the foreground, which suspends its timers.
+ */
+export async function startPlaybackWhenReady(
+  userId: number,
+  spotifyUri: string,
+  positionOffset?: number,
+  timeoutMs = 8000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown = null;
+
+  const listDevices = async (): Promise<SpotifyDevice[]> => {
+    try {
+      return (await getDevices(userId)).filter((d) => !isWebPlayerDevice(d));
+    } catch (err) {
+      lastError = err;
+      return [];
+    }
+  };
+
+  // Devices already online before the app was woken. A device that appears
+  // after this snapshot is the one the user just deep-linked into, which is a
+  // far better target than, say, a desktop Spotify idling at home.
+  const known = new Set((await listDevices()).map((d) => d.id));
+  let devices: SpotifyDevice[] = [];
+
+  for (;;) {
+    devices = await listDevices();
+    const target =
+      devices.find((d) => d.id && !known.has(d.id)) ?? devices.find((d) => d.is_active);
+    if (target?.id) {
+      try {
+        await startPlayback(userId, spotifyUri, target.id, positionOffset);
+        return;
+      } catch (err) {
+        // The app registered but isn't ready to accept playback yet; keep trying.
+        lastError = err;
+      }
+    }
+    if (Date.now() >= deadline) break;
+    await new Promise((r) => setTimeout(r, 600));
+  }
+
+  // Nothing woke up and nothing is active. Only fall back to an idle device when
+  // it's unambiguous — guessing among several risks playing in the wrong room.
+  if (devices.length === 1 && devices[0].id) {
+    return startPlayback(userId, spotifyUri, devices[0].id, positionOffset);
+  }
+
+  if (lastError === null || lastError instanceof NoDeviceError) throw new NoDeviceError();
+  throw lastError;
+}
+
+/** Browser-tab players cap at 256kbps, so they're never a playback target. */
+export function isWebPlayerDevice(device: { name: string }): boolean {
+  return /web player/i.test(device.name ?? "");
+}
+
 export type PlayerAction = "resume" | "pause" | "next" | "previous" | "seek" | "volume";
 
 const PLAYER_COMMANDS: Record<PlayerAction, { method: string; path: string; param?: string }> = {

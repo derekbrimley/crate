@@ -167,13 +167,22 @@ export async function getDashboardCrate(crateId: string): Promise<DashboardData>
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
-export async function playOnSpotify(spotifyUri: string, deviceId?: string, positionOffset?: number): Promise<void> {
+export async function playOnSpotify(
+  spotifyUri: string,
+  deviceId?: string,
+  positionOffset?: number,
+  opts: { waitForDevice?: boolean } = {}
+): Promise<void> {
   await request("/spotify/play", {
     method: "PUT",
+    // keepalive lets the request survive the page being backgrounded, which is
+    // exactly what happens when we deep-link into the Spotify app alongside it.
+    keepalive: opts.waitForDevice,
     body: JSON.stringify({
       spotify_uri: spotifyUri,
       ...(deviceId ? { device_id: deviceId } : {}),
       ...(typeof positionOffset === "number" ? { offset: positionOffset } : {}),
+      ...(opts.waitForDevice ? { wait_for_device: true } : {}),
     }),
   });
 }
