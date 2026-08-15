@@ -6,12 +6,17 @@ import {
   getPlaylistAlbums,
   getBestImageUrl,
   startPlayback,
+  startPlaybackWhenReady,
   getDevices,
   getPlaybackState,
   controlPlayback,
   type PlayerAction,
 } from "../../lib/spotify";
 import { getItems } from "../../lib/queries";
+
+// wait_for_device holds the request open while a woken Spotify app registers,
+// so this needs more than the default 10s ceiling.
+export const config = { maxDuration: 15 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -30,11 +35,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // applies. Nothing here renders audio in the browser.
 
   // PUT /api/spotify/play
+  // With wait_for_device the request holds open for a few seconds while the
+  // Spotify app the client just deep-linked into comes online, then plays there.
   if (route === "play" && req.method === "PUT") {
-    const { spotify_uri, device_id, offset } = req.body as { spotify_uri?: string; device_id?: string; offset?: number };
+    const { spotify_uri, device_id, offset, wait_for_device } = req.body as {
+      spotify_uri?: string; device_id?: string; offset?: number; wait_for_device?: boolean;
+    };
     if (!spotify_uri) return res.status(400).json({ error: "spotify_uri is required" });
+    const position = typeof offset === "number" ? offset : undefined;
     try {
-      await startPlayback(user.id, spotify_uri, device_id, typeof offset === "number" ? offset : undefined);
+      if (wait_for_device) {
+        await startPlaybackWhenReady(user.id, spotify_uri, position);
+      } else {
+        await startPlayback(user.id, spotify_uri, device_id, position);
+      }
       return res.status(204).end();
     } catch (err: unknown) {
       return sendPlayerError(res, err);

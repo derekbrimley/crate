@@ -12,7 +12,7 @@ function fmt(ms: number): string {
 export function PlayerBar() {
   const {
     currentTrack, paused, togglePlay, next, previous, position, duration,
-    volume, seek, setVolume, deviceName, supportsVolume, openPicker,
+    volume, seek, setVolume, deviceName, supportsVolume,
   } = usePlayer();
 
   if (!currentTrack) return null;
@@ -34,18 +34,18 @@ export function PlayerBar() {
           <p className="truncate font-mono text-[10px] text-crate-muted">{currentTrack.artist}</p>
         </div>
 
-        {/* Connect target — click to move playback to another device */}
-        <button
-          onClick={openPicker}
-          className="hidden sm:flex items-center gap-1.5 max-w-[140px] shrink-0 cursor-pointer"
-          style={{ color: "#907558" }}
-          title="Change playback device"
-        >
-          <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 6h16v10H4zm0 12h16v2H4zM6 8v6h12V8z" opacity="0.9" />
-          </svg>
-          <span className="truncate font-mono text-[10px]">{deviceName ?? "Device"}</span>
-        </button>
+        {/* Which Spotify device this is playing on — informational only. */}
+        {deviceName && (
+          <div
+            className="hidden sm:flex items-center gap-1.5 max-w-[140px] shrink-0"
+            style={{ color: "#907558" }}
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 6h16v10H4zm0 12h16v2H4zM6 8v6h12V8z" opacity="0.9" />
+            </svg>
+            <span className="truncate font-mono text-[10px]">{deviceName}</span>
+          </div>
+        )}
 
         {/* Volume — hidden on devices that reject remote volume (e.g. iOS) */}
         {supportsVolume && (
