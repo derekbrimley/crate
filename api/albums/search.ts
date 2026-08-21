@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { searchAlbums, getBestImageUrl } from "../../lib/spotify";
+import { getItems } from "../../lib/queries";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
@@ -19,6 +20,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(502).json({ error: "Spotify search failed", detail: message });
   }
 
+  const existingItems = await getItems(user.id);
+  const existingMap = new Map(existingItems.map((item) => [item.external_id, item.list_type]));
+
   const albums = results.map((album) => ({
     spotify_id: album.id,
     title: album.name,
@@ -27,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     spotify_uri: album.uri,
     spotify_url: album.external_urls.spotify,
     total_tracks: album.total_tracks,
+    already_added: existingMap.get(album.id) ?? null,
   }));
 
   res.json({ albums });
