@@ -92,8 +92,8 @@ export async function moveAlbum(
 
 export async function searchSpotify(
   query: string
-): Promise<{ albums: SpotifySearchResult[] }> {
-  return request<{ albums: SpotifySearchResult[] }>(
+): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(
     `/albums/search?q=${encodeURIComponent(query)}`
   );
 }

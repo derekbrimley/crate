@@ -7,7 +7,7 @@ import {
   searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
   getPlaylistAlbums, bulkAddAlbums,
 } from "../services/api";
-import type { SpotifySearchResult, LibraryAlbum, SpotifyPlaylistInfo } from "../types";
+import type { LibraryAlbum, SpotifyPlaylistInfo } from "../types";
 
 type ListType = "favorite" | "recommendation";
 type Tab = "search" | "library" | "playlists";
@@ -27,7 +27,7 @@ function SleeveArt({ url, title, size = 48 }: { url: string | null; title: strin
 
 function SearchTab() {
   const [query, setQuery]       = useState("");
-  const [results, setResults]   = useState<SpotifySearchResult[]>([]);
+  const [results, setResults]   = useState<LibraryAlbum[]>([]);
   const [searching, setSearching] = useState(false);
   const [adding, setAdding]     = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Map<string, ListType>>(new Map());
@@ -35,7 +35,7 @@ function SearchTab() {
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const player = usePlayer();
 
-  const handlePlay = async (album: SpotifySearchResult) => {
+  const handlePlay = async (album: LibraryAlbum) => {
     const uri = album.spotify_uri || (album.spotify_id ? `spotify:album:${album.spotify_id}` : null);
     if (!uri) return;
     try {
@@ -57,7 +57,7 @@ function SearchTab() {
     }, 400);
   };
 
-  const handleAdd = async (album: SpotifySearchResult, listType: ListType) => {
+  const handleAdd = async (album: LibraryAlbum, listType: ListType) => {
     const key = `${album.spotify_id}:${listType}`;
     setAdding(key);
     try {
@@ -90,7 +90,9 @@ function SearchTab() {
       {results.length > 0 && (
         <ul>
           {results.map((album) => {
-            const addedAs = addedIds.get(album.spotify_id);
+            // Albums already filed show only their label; the server marks them
+            // via already_added, and addedIds covers ones filed in this session.
+            const addedAs = addedIds.get(album.spotify_id) ?? album.already_added;
             const addingFav = adding === `${album.spotify_id}:favorite`;
             const addingRec = adding === `${album.spotify_id}:recommendation`;
             return (
@@ -113,8 +115,9 @@ function SearchTab() {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                   </button>
                   {addedAs ? (
-                    <span className="font-mono text-[9px] text-crate-accent px-2 py-1" style={{ letterSpacing: "0.12em" }}>
-                      {addedAs === "favorite" ? "★ FAV" : "◈ REC"}
+                    <span className="font-mono text-[9px] px-2 py-1"
+                      style={{ color: addedAs === "favorite" ? "#ff5e00" : "#00b4c8", letterSpacing: "0.12em" }}>
+                      {addedAs === "favorite" ? "★ IN FAVS" : "◈ IN RECS"}
                     </span>
                   ) : (
                     <>
