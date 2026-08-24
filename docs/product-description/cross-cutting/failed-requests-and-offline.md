@@ -2,7 +2,7 @@
 
 ## Summary
 
-Crate's default response to a failed request is to say nothing. There is no offline indicator, no retry button, no toast, no queue, and no service worker; nothing is cached for offline use and nothing is ever tried a second time. What the user sees depends entirely on which screen they are on, and in most places it is a screen that looks like an ordinary, successful, empty result.
+Crate's default response to a failed request is to say nothing. There is no offline indicator, no retry button, no toast, no queue, and no service worker; nothing is cached for offline use, and nothing retries on its own or offers the user a way to ask again. What the user sees depends entirely on which screen they are on, and in most places it is a screen that looks like an ordinary, successful, empty result.
 
 Across the whole product there are exactly **three** ways a failure reaches the user: a red box on the add screen and the two account screens, a per-row `delete failed — try again` in the DUPLICATES panel, and — everywhere else — nothing at all, with the reason written to the browser's developer console where no user will see it. Several screens go further and render a **cheerful empty state** on failure: the [listening log](../history/the-listening-log.md) tells a user whose log failed to load to start picking records.
 
@@ -55,7 +55,7 @@ The one screen that reports load failures properly is the add screen. Its two im
 
 A failure leaves no residue. Nothing is queued for later, nothing is marked as needing a retry, and nothing is stored. Leaving a screen after a failed load and coming back re-runs the load — which is the only retry mechanism in the product, and it exists by accident, because [the session cache](../foundations/navigation-and-loading.md) only remembers successes.
 
-That accident is uneven. The crate wall, the library, and the log each load once per session, so a first failure means an empty screen for the rest of the session unless the user reloads the page; a screen whose load failed does not re-request when it is revisited within the same session, because nothing distinguishes "not loaded" from "loaded and empty". Reloading the browser is the reliable repair, and nothing suggests it.
+That accident works, as far as it goes. Each of the three cached loads marks itself loaded only when it succeeds, so a failure leaves it unmarked and the next screen that needs it asks again. Going from a failed library to the crate wall and back really does retry, and so does opening the log after the wall's own load of it failed. What does not happen is a retry **on the same screen**: nothing re-requests while the user stays put, and no screen offers a button to ask again. So the repair is a navigation the user has no reason to think of, or a page reload, and neither is suggested.
 
 ### First change
 
@@ -139,7 +139,7 @@ There is nothing to commit. A failed write did not happen, and the only durable 
 - **The reset-link request reports success when it failed.** See [resetting a password](../account/resetting-a-password.md).
 - **A failed re-sync after the session check hangs the app on its spinner forever.**
 - **There is no offline detection.** No banner, no disabled controls, nothing.
-- **Nothing is ever retried automatically,** and the only retry available to the user is leaving the screen and coming back — which does not work within a session for the three cached loads, because the cache cannot tell a failed load from an empty one. Reloading the page is the only reliable repair and is never suggested.
+- **Nothing is ever retried automatically, and no screen has a retry button.** Leaving a screen and coming back does retry the three cached loads, because each marks itself loaded only on success — but nothing says so, and a user staring at an empty library has no reason to think navigating away and back would fix it.
 - **The server sends a retry-after hint on rate-limited Spotify requests and the client ignores it entirely.** See [Spotify dependence](spotify-dependence.md).
 - **The import tabs show raw error text,** status code and JSON body included.
 - **No request has a timeout,** so a hanging request spins forever with nothing to cancel.
@@ -151,7 +151,7 @@ There is nothing to commit. A failed write did not happen, and the only durable 
 ## Open questions and verification
 
 - The full inventory above is read from the source and is believed complete: nine writes, four load paths, three visible failure mechanisms. It should be confirmed by walking the product with the network throttled to offline, which is the single most valuable verification pass in this repo.
-- Whether a screen whose load failed really does not re-request on a second visit within the session needs confirming; it follows from the cache storing only successes, but the exact guard has not been traced for all three loads.
+- That a failed load is retried on the next visit is read from the guards — each screen's effect depends on the loaded flag, which is set only on success — and has not been watched. It is worth confirming, because it is the difference between a session-long empty screen and one that repairs itself.
 - What the raw error text on the import tabs actually looks like on screen, and whether it overflows its box, has not been observed.
 - Whether the browser's own request timeout ever fires in practice, and what the user sees when it does, is unknown.
 - Whether a 429 from Spotify surfaces differently from a 502 anywhere the user can see has not been checked.
