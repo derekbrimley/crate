@@ -188,7 +188,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | history/the-listening-log.md | drafted |
 | account/signing-in.md | drafted |
 | account/resetting-a-password.md | drafted |
-| player/the-player-bar.md | not started |
+| player/the-player-bar.md | drafted |
 | cross-cutting/failed-requests-and-offline.md | not started |
 | cross-cutting/stale-data-and-second-tabs.md | not started |
 | cross-cutting/spotify-dependence.md | not started |

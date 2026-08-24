@@ -104,7 +104,7 @@ Picks cannot be deleted here or anywhere else. The only way an entry leaves the 
 
 | Event | Before the first change | While working |
 | --- | --- | --- |
-| Escape, Cancel, Close, or a tap on the backdrop | Nothing to cancel. **Escape does nothing** on this screen. | With the panel open, a tap on the backdrop closes it and so does its ✕. Escape still does nothing: this modal has a backdrop that closes it and no keyboard equivalent. |
+| Escape, Cancel, Close, or a tap on the backdrop | Nothing to cancel. **Escape does nothing** on this screen. | With the panel open, a tap on the backdrop closes it and so does its ✕. Escape still does nothing — no modal a user can open in Crate responds to it, so every one of them needs a pointer or a tab to the ✕. |
 | Navigating inside the app: the bottom nav, another route, or a second panel or modal | Free. Nothing is lost. | The panel and the scroll position are discarded. The profile menu can be opened over the list but not over the panel. |
 | Browser back or forward | Returns to the previous route, which is usually the screen the profile menu was opened from. | Back does **not** close the panel — it is not a route — so it leaves the screen with the panel open, and coming forward again gives a fresh log with no panel. |
 | Reload, or the tab is closed | Nothing is lost. | Nothing is lost, and the reload is the only way to see picks made since the log was first loaded. |
