@@ -181,7 +181,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | library/the-album-detail-panel.md | not started |
 | library/saving-a-crate-from-the-library.md | not started |
 | library/duplicates-and-gaps.md | not started |
-| add/search-and-add.md | not started |
+| add/search-and-add.md | drafted |
 | add/importing-from-your-spotify-library.md | not started |
 | add/importing-from-a-playlist.md | not started |
 | history/the-listening-log.md | not started |
