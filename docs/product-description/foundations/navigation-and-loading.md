@@ -21,16 +21,17 @@ They spend ten minutes filing records, editing crates, and picking albums. Nothi
 ```mermaid
 stateDiagram-v2
     [*] --> cold
-    cold --> loading : the crate wall or the library is opened
-    loading --> warm : the fetch answers
-    loading --> warm_but_empty : the fetch fails
+    cold --> loading : a screen that needs data is opened
+    loading --> warm : the fetch succeeds
+    loading --> failed : the fetch fails
+    failed --> failed : staying on the screen; nothing retries
+    failed --> loading : the screen is opened again
     warm --> warm : any navigation between screens
-    warm_but_empty --> warm_but_empty : any navigation; nothing retries
     warm --> cold : reload, or sign out
-    warm_but_empty --> cold : reload
+    failed --> cold : reload, or sign out
 ```
 
-There is no state between `warm` and `cold`. A screen is loaded or it is not, and "loaded" is decided by whether the fetch finished, not by whether it succeeded.
+There is no state between `warm` and `cold`. A screen is loaded or it is not, and "loaded" means the fetch *succeeded*: a failed fetch leaves the screen exactly as cold as it was, which is why leaving and coming back tries again.
 
 ### Arrive
 
@@ -93,8 +94,8 @@ Navigation has no commit. Every write in Crate belongs to a screen and is descri
 | Navigating inside the app: the bottom nav, another route, or a second panel or modal | Free and instant. The bottom navigation has two items — CRATES and LIBRARY — and there is no back button anywhere in the app, on any screen, including the add screen and the listening log. | Same. Nothing is lost from the cache; everything is lost from the screen. |
 | Browser back or forward | Works normally between routes. Back from the first screen of the session leaves Crate. | The cache survives back and forward, because they do not reload the page. Screen state does not: going back to the library finds it re-sorted to its default with no filter rules. |
 | Reload, or the tab is closed | Nothing to lose. | The cache is destroyed and rebuilt. This is the only way to make every screen agree with the server, and the only way to recover from a failed load. The once-per-session backfill flag survives a reload in the same tab, so the backfill does not re-run. |
-| Network lost, or the request fails or times out | Nothing loaded yet. Every screen will fail and show its empty state. | A failed load still counts as loaded: the skeletons clear, the screen renders as though the account were empty, nothing is said, and **nothing will retry for the rest of the session**. The user cannot tell an empty library from a failed one, and the only fix is a reload. See [failed requests and offline](../cross-cutting/failed-requests-and-offline.md). |
-| The session expires, or Spotify rejects the token | Nothing loaded yet. | Every fetch fails, so every not-yet-loaded screen ends up permanently empty and every already-loaded screen keeps showing data that may be arbitrarily old. Nothing announces either. |
+| Network lost, or the request fails or times out | Nothing loaded yet. Every screen will fail and show its empty state — except the crate wall, which shows nothing at all. | The skeletons clear, the screen renders as though the account were empty, and nothing is said. Nothing retries while the user stays there, but the screen is still marked *not* loaded, so leaving and coming back tries again. The user cannot tell an empty library from a failed one, and the retry is invisible: it looks like the same empty screen until it happens to work. See [failed requests and offline](../cross-cutting/failed-requests-and-offline.md). |
+| The session expires, or Spotify rejects the token | Nothing loaded yet. | Every fetch fails, so every screen the user visits looks empty and tries again on each visit, failing each time. Already-loaded screens keep showing data that may be arbitrarily old. Nothing announces either. |
 | The same account in a second tab, or the library changed elsewhere | No effect. | No effect, and that is the point: the cache has no idea another tab exists. Two tabs drift apart from the moment they are both open. See [stale data and second tabs](../cross-cutting/stale-data-and-second-tabs.md). |
 | The album in hand is deleted, or Spotify no longer returns it | No effect. | A record deleted on one screen stays in the other screen's copy of the cache until something reloads it. Deleting from the crate wall's detail panel is the clearest case: the server deletes it, the panel closes, and the spine stays on the shelf, tappable, until that crate is refreshed. |
 | Playback moved to another device, or the tab is backgrounded | No effect. | A backgrounded tab keeps everything and loads nothing new. Coming back to it after hours shows exactly what it showed when it was backgrounded, with no indication of age. |
@@ -103,7 +104,7 @@ Navigation has no commit. Every write in Crate belongs to a screen and is descri
 
 **Authentication and account state.** The cache is created when the app renders for a signed-in user and destroyed when it stops — so signing out empties it and signing in fills it from scratch. The sign-in screen, the reset-password screen, and the first full-page session check all sit outside it and have no cache of their own. See [account and session](account-and-session.md).
 
-**The session cache and freshness.** This document owns it. Two facts other documents lean on: **loaded means the fetch finished, not that it succeeded**, and **the crate wall is the only screen that loads more than its own data**.
+**The session cache and freshness.** This document owns it. Two facts other documents lean on: **loaded means the fetch succeeded, so a failed screen retries the next time it is opened and only then**, and **the crate wall is the only screen that loads more than its own data**.
 
 **Pick history.** The cache holds two different things derived from picks and loads them from two different places. The listening log's entries come from the log's own fetch. The per-record play counts and last-played dates come with the *crate wall's* fetch. A screen that never loaded the crate wall therefore shows every record as never played, which is not a failure state anyone would recognise as one.
 
@@ -111,7 +112,7 @@ Navigation has no commit. Every write in Crate belongs to a screen and is descri
 
 **Configuration and crate definitions.** The definitions arrive with the crate wall's fetch and are held in the cache. Two screens write them — the crate wall and the library's SAVE AS CRATE button — and both write the whole set. A screen that holds an empty set and writes it destroys the user's crates; see [edge cases](#edge-cases).
 
-**Offline and failed requests.** Every load in the product fails the same way: silently, once, permanently for the session. The cache is what makes "permanently" true, because a screen marked loaded is never fetched again. See [failed requests and offline](../cross-cutting/failed-requests-and-offline.md).
+**Offline and failed requests.** Every load in the product fails the same way: silently, with no message, and with no retry while the user is looking at it. The cache is what limits the damage — a failed screen is not marked loaded, so opening it again re-fetches — and also what hides it, because there is no way to tell a screen that failed from a screen that is empty. See [failed requests and offline](../cross-cutting/failed-requests-and-offline.md).
 
 **Multiple tabs and the Spotify app.** Nothing is shared between tabs except the session and the server. Each tab has its own cache, loaded at its own moment, and neither ever notices the other. The one-shot backfill flag is per tab, so a second tab runs the backfill again.
 
@@ -125,14 +126,15 @@ Navigation has no commit. Every write in Crate belongs to a screen and is descri
 
 - **Landing directly on `/library` breaks four things quietly.** Because that screen never loads the crate wall's data, it has no play counts and no crate definitions. Every record shows "never" and no plays; the PLAYS and RECENT sorts do nothing; the `plays` and `last played` filter rules match as though nothing had ever been played; and the GAPS panel reports the entire library as uncovered.
 - **Landing directly on `/library` and then tapping SAVE AS CRATE destroys every crate.** The button saves "the definitions I know about, plus this new one", and the definitions it knows about are none — so the account is left with exactly one crate and the other thirteen are gone, with no warning and no undo. This is the most damaging bug found in the product. See [saving a crate from the library](../library/saving-a-crate-from-the-library.md).
-- **A failed first load looks like an empty account** and never retries. On the crate wall that means rows that say "crate empty — add some records"; on the library, "no albums yet — add some records".
+- **A failed first load looks like an empty account.** On the library it reads "no albums yet — add some records"; on the listening log, its own empty state. **On the crate wall it shows nothing at all** — not even empty rows — because the crate definitions arrive with the same fetch, so there is nothing to draw rows for. The header sits above blank space with no explanation.
+- **Leaving a failed screen and coming back retries it,** because a failed load does not count as loaded. Nothing tells the user this, and there is no visible difference between the retry succeeding on the second visit and the screen having been empty all along.
 - **Records filed on the add screen are invisible everywhere else until a reload.** The add screen does not touch the cache.
 - **A record deleted from the crate wall stays on the shelf.** The deletion happens, the panel closes, and the spine remains until that crate is refreshed or the page is reloaded. Tapping it again opens a panel for a record that no longer exists.
 - **Scroll position carries across navigation.** Nothing resets it, so arriving at a short screen from a scrolled-down long one can look like an empty page.
 - **An unknown URL renders nothing** — no content, no bottom navigation, no way back except the browser. There is no not-found route.
 - **`/callback` is the crate wall.** A user who bookmarks it gets the crate wall with a URL that will be reused by the next Spotify sign-in.
 - **The backfill runs once per tab, not once per account.** Opening a second tab runs it again; it is harmless but it is a real request that pages through every record missing metadata.
-- **A crate row's refresh button is disabled while that crate is loading,** including during the whole first load of the wall, so it cannot be used to retry a wall that failed.
+- **A crate row's refresh button cannot retry a failed wall.** It is disabled while that crate is loading, and a wall whose load failed has no rows at all and therefore no buttons. Navigating to the library and back is the only retry short of a reload.
 - **The detail panel's own cache never expires.** Reopening the same album an hour later shows the tracks and artist albums fetched an hour ago, and an album whose detail fetch failed shows an empty panel that will retry — that one cache does not record failures.
 
 ## Open questions and verification
@@ -141,6 +143,7 @@ Navigation has no commit. Every write in Crate belongs to a screen and is descri
 - Scroll behavior across route changes is inferred from the absence of any scroll handling; it should be watched directly, because React Router's default depends on how the navigation happened.
 - The blank page on an unknown route follows from there being no catch-all route and has not been confirmed by hand.
 - How long the first load of the crate wall takes on a real account, and how much of that is the three parallel fetches versus the crate engine, has not been measured. The code defers slow crates specifically because the whole response would otherwise take around five seconds.
+- The retry-on-re-entry behavior is read from the code — every screen's load effect checks its loaded flag on mount, and the flag is only set on success — and has not been watched by hand. It matters because it is the only retry the product offers, and because a user who does it has no way to know whether it happened.
 - Whether a fetch that is in flight when its screen unmounts reliably lands in the cache has not been tested. It should, because the cache is above the routes, but React's development-mode double-mounting makes this the kind of thing that behaves differently in production.
 - Nothing verifies that the once-per-session backfill flag is actually respected across a reload in the same tab; it is written before the request rather than after, so a failed backfill is never retried in that tab either.
 

@@ -114,7 +114,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **The session cache.** The store that holds what has been loaded this session: the crate wall's crates, the library's records, the listening log's entries, the crate definitions, and the per-record play counts. Each of the three screens loads once per session and then never again on its own. Nothing expires and nothing polls. Only an explicit action refreshes anything, and the actions that do are listed in [navigation and loading](foundations/navigation-and-loading.md).
 
-**Loaded.** A screen is loaded once its first fetch has finished — whether it succeeded or failed. A screen whose load failed counts as loaded and will not try again for the rest of the session.
+**Loaded.** A screen is loaded once its first fetch has *succeeded*. A fetch that fails leaves the screen not loaded: its skeleton clears and it renders as though the account were empty, and nothing retries for as long as the user stays on it — but the next time that screen is opened, it tries again from scratch. Navigating away and back is therefore a retry, and the only one the product offers besides reloading.
 
 **Session flag.** A one-shot marker in the browser's session storage. There is exactly one: `crate_backfill_done`, which stops the library from asking the server to fill in missing release dates and track counts more than once per session.
 
