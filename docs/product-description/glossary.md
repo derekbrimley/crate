@@ -52,7 +52,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Position.** A crate's place on the wall, top to bottom, numbered from 0. Positions are renumbered whenever a crate is moved or deleted, and are what the wall sorts by.
 
-**Slow crate.** A crate whose strategy has to ask Claude: `ai_new` and `hybrid` always, and `ai_pool` only when its prompt is not blank. Slow crates are left out of the first load of the crate wall and fetched one at a time afterwards, so the rest of the wall does not wait for them. See [AI crates](crates/ai-crates.md).
+**Slow crate.** A crate whose strategy has to ask Claude: `ai_new` and `hybrid` always, and `ai_pool` only when its prompt is not blank. Slow crates are left out of the first load of the crate wall and fetched afterwards, one request each and all at once, so the rest of the wall does not wait for them. See [AI crates](crates/ai-crates.md).
 
 **Suggestion.** A record on the wall that is not in the library — something Claude proposed. A suggestion looks like a record but has a negative id, a cyan bar along the bottom of its spine, and no *pick* recorded when it is chosen. Suggestions cannot be favorited, removed, or promoted, and vanish on the next load.
 

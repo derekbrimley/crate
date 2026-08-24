@@ -177,7 +177,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | crates/the-crate-wall.md | drafted |
 | crates/picking-a-record.md | drafted |
 | crates/the-crate-editor.md | drafted |
-| crates/ai-crates.md | not started |
+| crates/ai-crates.md | drafted |
 | library/the-library-shelf.md | not started |
 | library/the-album-detail-panel.md | not started |
 | library/saving-a-crate-from-the-library.md | not started |

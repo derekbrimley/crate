@@ -10,7 +10,7 @@ This document owns the wall's own states: what loads on arrival, what each contr
 
 ## The simple case
 
-The user opens Crate. A neon-green CRATES sits at the top of a dark screen. Below it, thirteen shelves' worth of grey pulsing blocks. A second or two later they fill in: FAVORITES with two broad spines showing sleeve art and titles, DISCOVER with two more, then SURPRISE ME still loading, then nine shelves named for a time of day or an activity — MORNING, GYM, DEEP WORK — and FROM FRIENDS at the bottom.
+The user opens Crate. A neon-green CRATES sits at the top of a dark screen. Below it, thirteen shelves' worth of grey pulsing blocks. A second or two later they fill in: FAVORITES with two broad spines showing sleeve art and titles, DISCOVER with two more, then SURPRISE ME still loading, then nine shelves named for a time of day or an activity — MORNING, GYM / WORKOUT, DEEP WORK — and FROM FRIENDS at the bottom.
 
 They scroll, see something on the DEEP WORK shelf they had forgotten owning, and tap it. The spine lifts out of the row and a panel opens under the shelf with the tracks, the play button, and how long ago they last heard it. They press PLAY ON SPOTIFY and the album starts.
 
@@ -35,7 +35,7 @@ The wall is what `/` shows, and also what `/callback` shows, so it is where a Sp
 
 While the wall's fetch is in flight, **every crate shows the same skeleton**: three stacked pulsing bars in the shape of a shelf — the lip, the body, the base. The rows are already named and already counted, because the names come from the same answer, so in practice the whole wall appears at once rather than filling in row by row.
 
-Two things happen on arrival that the user is not told about. On a brand-new account, the server **creates thirteen crate definitions and saves them**, so a first visit writes to the account. And any crate whose strategy has to ask Claude is deliberately left out of this first answer and fetched afterwards, one request per crate — those rows keep their skeleton for several more seconds. [AI crates](ai-crates.md) owns that.
+Two things happen on arrival that the user is not told about. On a brand-new account, the server **creates thirteen crate definitions and saves them**, so a first visit writes to the account. And any crate whose strategy has to ask Claude is deliberately left out of this first answer and fetched afterwards, one request per crate and all of them at once — those rows keep their skeleton for several more seconds. [AI crates](ai-crates.md) owns that.
 
 The header is sticky and holds three things: the title CRATES in neon green with a glow, a round orange button with a crate icon that opens the editor on a new crate, and a round profile button. The profile button opens a small menu with exactly two items — View History and Sign Out — and tapping anywhere else closes it. That menu is the only way to reach the [listening log](../history/the-listening-log.md) from anywhere in the product.
 
