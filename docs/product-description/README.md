@@ -183,8 +183,8 @@ Status is one of `not started`, `drafted`, or `verified`.
 | library/saving-a-crate-from-the-library.md | drafted |
 | library/duplicates-and-gaps.md | drafted |
 | add/search-and-add.md | drafted |
-| add/importing-from-your-spotify-library.md | not started |
-| add/importing-from-a-playlist.md | not started |
+| add/importing-from-your-spotify-library.md | drafted |
+| add/importing-from-a-playlist.md | drafted |
 | history/the-listening-log.md | not started |
 | account/signing-in.md | not started |
 | account/resetting-a-password.md | not started |
