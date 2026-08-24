@@ -173,7 +173,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | foundations/navigation-and-loading.md | drafted |
 | foundations/selection-engine.md | drafted |
 | foundations/playback.md | drafted |
-| crates/the-crate-wall.md | not started |
+| crates/the-crate-wall.md | drafted |
 | crates/picking-a-record.md | not started |
 | crates/the-crate-editor.md | not started |
 | crates/ai-crates.md | not started |
