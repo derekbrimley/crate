@@ -124,7 +124,8 @@ foundations/
 crates/
   the-crate-wall.md              the home screen: rows of crates, refresh, reordering, adding a crate
   picking-a-record.md            choosing a spine, what opens, and what is recorded as a pick
-  the-crate-editor.md            creating and editing a crate: name, source, strategy, sliders, count, delete
+  the-crate-editor.md            creating and editing a crate: name, count, filter rules, strategy,
+                                   the four sliders, and delete — the product's only settings surface
   ai-crates.md                   the crates Claude fills: why they arrive late, what a suggestion is,
                                    and what happens when the suggestion cannot be acted on
 
@@ -175,7 +176,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | foundations/playback.md | drafted |
 | crates/the-crate-wall.md | drafted |
 | crates/picking-a-record.md | drafted |
-| crates/the-crate-editor.md | not started |
+| crates/the-crate-editor.md | drafted |
 | crates/ai-crates.md | not started |
 | library/the-library-shelf.md | not started |
 | library/the-album-detail-panel.md | not started |
