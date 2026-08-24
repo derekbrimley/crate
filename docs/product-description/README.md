@@ -185,7 +185,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | add/search-and-add.md | drafted |
 | add/importing-from-your-spotify-library.md | drafted |
 | add/importing-from-a-playlist.md | drafted |
-| history/the-listening-log.md | not started |
+| history/the-listening-log.md | drafted |
 | account/signing-in.md | not started |
 | account/resetting-a-password.md | not started |
 | player/the-player-bar.md | not started |
