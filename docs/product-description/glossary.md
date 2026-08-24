@@ -32,7 +32,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Release year.** The first four characters of `release_date`, read as a number. A record with no release date has no year and is excluded by every year rule, including a rule as loose as "after 1000".
 
-**Track.** One song on an album. Tracks are fetched from Spotify when the album detail panel opens and are not stored. Tapping a track plays the album from that track onward.
+**Track.** One song on an album. Tracks are fetched from Spotify when the album detail panel opens and are not stored. Tapping a track plays the album from that track onward — except on a phone or tablet, where the hand-off to the Spotify app can only carry the album and it starts from the beginning.
 
 ## Crates
 
@@ -60,9 +60,9 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Pick.** A durable record that the user chose an album at a moment in time, saved with the crate that produced it. Picks are what the *listening log* lists and what the *selection engine* reads to decide what is overexposed. One pick is written each time the user chooses a real record from the crate wall — including when the playback that was attempted alongside it fails.
 
-**Play count.** How many picks a record has. Shown as "N plays" in the library and the detail panel. It counts choices made in Crate, not listens; playing an album in the Spotify app does not raise it.
+**Play count.** How many picks a record has. Shown as `×3` under the word PLAYS in the *album detail panel*, and as a small label on a spine when the library is sorted by PLAYS. A record with no picks shows `—` in the panel and no label at all in the library. It counts choices made in Crate, not listens; playing an album in the Spotify app does not raise it.
 
-**Last played.** The most recent pick's time, shown as Today, Yesterday, `Nd`, `Nw`, or `Nmo`, and coloured green when it is within the last seven days. A record with no picks reads "never".
+**Last played.** The most recent pick's time. The *album detail panel* shows it under the words LAST PLAYED as Today, Yesterday, `3d ago`, `2w ago`, or `5mo ago`, coloured green when it is within the last seven days. A record with no picks reads `—` — not "never". The library shows a shorter form (`0d`, `3d`, `2w`, `5mo`) on the spine when it is sorted by RECENT, and nothing at all for a record with no picks.
 
 **Cooldown.** The number of days after a pick during which a record is ineligible for a weighted crate — its weight is zero, so it cannot be drawn at all. Three days by default. Cooldown does not affect random, AI, or hybrid-AI draws, so a record can reappear the day after it was picked from a crate with a different strategy.
 
@@ -122,7 +122,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Signed in.** Authenticated to Crate. Two ways in: email and password, or Spotify. Either way a user can use the library, the crate wall, the listening log, and filter rules.
 
-**Linked to Spotify.** Signed in *and* holding Spotify tokens on the account. Everything that reaches outside Crate needs this: searching for albums, importing from the Spotify library or a playlist, fetching an album's tracks, and playing anything. A user who signed up with email and password is signed in but not linked, and the add screen tells them so and offers a Spotify sign-in.
+**Linked to Spotify.** Signed in *and* holding Spotify tokens on the account. Anything that acts *as the user* on Spotify needs this: importing from the Spotify library or a playlist, and playing anything. Anything that only reads Spotify's public catalogue does not, because the server asks with Crate's own application credentials instead — the album search, and an album's tracks, genres, and other albums by the same artist all work for any signed-in user. A user who signed up with email and password is signed in but not linked, and the add screen tells them so and offers a Spotify sign-in.
 
 **Premium.** A paid Spotify subscription, required by Spotify for the *web player*. Without it the in-app player refuses to start and Crate falls back to handing playback to whatever Spotify app the user already has open.
 

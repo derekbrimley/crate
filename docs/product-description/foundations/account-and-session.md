@@ -4,9 +4,9 @@
 
 Crate has two independent ideas of who the user is, and almost every account-related surprise in the product comes from the gap between them.
 
-The first is being **signed in**: the browser holds a Crate session, obtained either with an email address and a password or by signing in through Spotify. Being signed in is what gets past the sign-in screen, and it is all that is needed for the library, the crate wall, the crate editor, the listening log, filter rules, and the album search.
+The first is being **signed in**: the browser holds a Crate session, obtained either with an email address and a password or by signing in through Spotify. Being signed in is what gets past the sign-in screen, and it is all that is needed for the library, the crate wall, the crate editor, the listening log, filter rules, the album search, and an album's tracks and related albums.
 
-The second is being **linked to Spotify**: the account also holds Spotify tokens on the server, so Crate can act as the user on Spotify. Linking is what the import screens and playback need. It is set once, when the user signs in through Spotify, and there is no way to add it to an existing email account except by signing in through Spotify instead — and no way to remove it at all.
+The second is being **linked to Spotify**: the account also holds Spotify tokens on the server, so Crate can act as the user on Spotify. Linking is what the import screens and playback need. Reading Spotify's public catalogue — the album search, and an album's tracks and related albums — does not need it, because the server asks with Crate's own application credentials. It is set once, when the user signs in through Spotify, and there is no way to add it to an existing email account except by signing in through Spotify instead — and no way to remove it at all.
 
 There is no account screen, no settings screen, and no "connected to Spotify" indicator. The only place the distinction is ever named is the add screen's two import tabs, which replace themselves with a CONNECT TO IMPORT YOUR LIBRARY prompt. Everywhere else, a user who is not linked meets the difference as an individual feature quietly failing.
 
@@ -74,7 +74,7 @@ Signing out commits immediately and globally — it ends the session everywhere,
 
 | Modifier | Set on arrival | Changed while working |
 | --- | --- | --- |
-| Spotify account state | Decides everything about what the account can reach outside Crate. An account created with an email address has no Spotify id, so the two import tabs show the connect prompt, playback has no device to reach, and the [web player](playback.md) is never built. It has no effect on the crate wall, the library, the editor, the log, or the album search. | Cannot change without signing in again, which ends the session and everything in it. There is no "link Spotify" that keeps the current account: tapping the connect prompt starts a full Spotify sign-in. |
+| Spotify account state | Decides everything about what the account can reach outside Crate. An account created with an email address has no Spotify id, so the two import tabs show the connect prompt, playback has no device to reach, and the [web player](playback.md) is never built. It has no effect on the crate wall, the library, the editor, the log, the album search, or an album's tracks and related albums. | Cannot change without signing in again, which ends the session and everything in it. There is no "link Spotify" that keeps the current account: tapping the connect prompt starts a full Spotify sign-in. |
 | Playback state | No effect. | Signing out while something is playing stops the [web player](playback.md), because the whole app is torn down. Playback on a Spotify app elsewhere keeps going — Crate has no way to stop it. |
 | Library state | No effect on the account. On a *new* account, the first load of the crate wall seeds thirteen crate definitions; this is the only thing that happens once per account rather than once per session. | No effect. |
 | Viewport | No effect. Sign-in, sign-up, and reset are single-column at every width. | No effect. |
@@ -100,7 +100,7 @@ The one destructive interrupt is sign-out, and it is destructive across tabs and
 
 ## Interactions with other systems
 
-**Authentication and account state.** This document owns it. Two facts other documents depend on: being signed in is enough for everything inside Crate, and being linked to Spotify is required for everything outside it. The one exception is the album search, which reaches Spotify using Crate's own application credentials rather than the user's, so it works for every signed-in user — see [search and add](../add/search-and-add.md).
+**Authentication and account state.** This document owns it. Two facts other documents depend on: being signed in is enough for everything inside Crate, and being linked to Spotify is required for anything that acts as the user on Spotify — importing from their library or a playlist, and playing anything. Reading Spotify's public catalogue is not: the album search, and an album's tracks, genres, and other albums by the same artist, are all fetched with Crate's own application credentials rather than the user's, so they work for every signed-in user. See [search and add](../add/search-and-add.md) and [the album detail panel](../library/the-album-detail-panel.md).
 
 **The session cache and freshness.** The session cache is created when the app renders for a signed-in user and destroyed when it stops. Signing out therefore empties it, and signing back in reloads everything from scratch. See [navigation and loading](navigation-and-loading.md).
 
