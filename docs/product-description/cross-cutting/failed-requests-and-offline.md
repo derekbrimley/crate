@@ -63,17 +63,18 @@ A write can fail, and this is where the silence is most expensive, because the s
 
 | Action | Where | On failure |
 | --- | --- | --- |
-| ★ FAVORITE / promote a record | [the album detail panel](../library/the-album-detail-panel.md) | Logged. **The star stays filled.** The record was not promoted. |
+| The hover ★ on a spine | [the crate wall](../crates/the-crate-wall.md) | Logged. **The star stays filled.** The record was not promoted. This is the one write whose screen actively claims success. |
+| ★ FAVORITE in the album panel | [the album detail panel](../library/the-album-detail-panel.md) | Logged. The button goes back to `★ FAVORITE`, as though it had never been pressed, and nothing is said. |
 | Recording a pick | [picking a record](../crates/picking-a-record.md) | Logged. The album still plays. The pick is lost and the log will never show it. |
-| Saving a crate from the crate editor | [the crate editor](../crates/the-crate-editor.md) | Logged. The modal closes as if it had saved. |
-| SAVE AS CRATE from the library | [saving a crate from the library](../library/saving-a-crate-from-the-library.md) | Logged. The panel closes as if it had saved. |
+| Saving a crate from the crate editor | [the crate editor](../crates/the-crate-editor.md) | **Not even logged** — the failure is an unhandled rejection. The modal stays open with the edit still in it and the button back to SAVE. |
+| SAVE AS CRATE from the library | [saving a crate from the library](../library/saving-a-crate-from-the-library.md) | Logged. The editor stays open with everything the user typed still in it, and the button comes back. |
 | Filing a record from search | [search and add](../add/search-and-add.md) | Red: `Failed to add.` |
 | Filing many records from an import tab | [the two import tabs](../add/importing-from-your-spotify-library.md) | Red: `Failed. Try again.` Nothing was written — the write is all-or-nothing. |
 | Deleting duplicates | [duplicates and gaps](../library/duplicates-and-gaps.md) | Per row: `delete failed — try again`. The one place in Crate that reports a failed write next to the thing that failed. |
 | Setting a new password | [resetting a password](../account/resetting-a-password.md) | Red, in the authentication service's own words. |
 | Requesting a reset link | [resetting a password](../account/resetting-a-password.md) | **Green.** The answer is discarded, so a failure is reported as success. |
 
-Nine writes, four of which are silent, one of which lies.
+Ten writes. Five of them say nothing at all — the two promotes, the pick, and the two crate saves — and one reports success when it failed. The five silent ones are not equally bad. Only the hover ★ leaves the screen claiming the write happened; the panel's ★ FAVORITE and both crate saves leave the user's work visible and unwritten, which is the most recoverable failure behavior in the product and is entirely accidental, a consequence of the success handler sitting after the request in the same block rather than of any decision.
 
 ### While working
 
@@ -85,7 +86,7 @@ Requests are given no timeout of Crate's own, so a hanging request hangs for as 
 
 ### Commit
 
-There is nothing to commit. A failed write did not happen, and the only durable consequence of a failure is what the screen has already told the user: a filled star for a record that was not promoted, a closed editor for a crate that was not saved, a played album with no pick behind it.
+There is nothing to commit. A failed write did not happen, and the only durable consequence of a failure is what the screen has already told the user: a filled star on a spine for a record that was not promoted, a played album with no pick behind it, a log that will never show that listen.
 
 ## Modifiers
 
@@ -121,7 +122,7 @@ There is nothing to commit. A failed write did not happen, and the only durable 
 
 **Playback.** Playback failures are the one place with a deliberate fallback chain rather than a message: the in-tab player, then Spotify's active device, then a new browser tab. Each step swallows its error and tries the next, and the last step cannot report anything because it has left. See [playback](../foundations/playback.md).
 
-**Configuration and crate definitions.** A settings load that fails silently substitutes the defaults. A crate save that fails silently leaves the user believing a crate exists. Neither is reported.
+**Configuration and crate definitions.** A settings load that fails silently substitutes the defaults, and nothing is reported. A crate save that fails leaves the editor open with the work still in it, so the user at least still has the crate they were making — but the failure of the crate editor's save is not reported anywhere at all, not even to the console, and the only clue is that the modal did not close.
 
 **Offline and failed requests.** This document.
 
@@ -135,7 +136,8 @@ There is nothing to commit. A failed write did not happen, and the only durable 
 
 - **Three screens show a friendly empty state when their load failed:** the listening log, the library shelf, and the crate wall. Two of them log the reason to the console; the log does not even do that.
 - **A failed settings load silently substitutes the defaults,** so the selection engine can be running on numbers the user never chose.
-- **Four writes fail silently with the screen already showing success:** promote, pick, save a crate from the editor, and save a crate from the library.
+- **Five writes fail with nothing said on screen:** the hover ★, the panel's ★ FAVORITE, a pick, and the two crate saves. Only the hover ★ leaves the screen claiming success; the other four leave it looking untouched.
+- **One failure is not reported anywhere at all.** The crate editor's save has no error handling of any kind, so its failure does not even reach the console — it becomes an unhandled rejection.
 - **The reset-link request reports success when it failed.** See [resetting a password](../account/resetting-a-password.md).
 - **A failed re-sync after the session check hangs the app on its spinner forever.**
 - **There is no offline detection.** No banner, no disabled controls, nothing.
@@ -150,7 +152,9 @@ There is nothing to commit. A failed write did not happen, and the only durable 
 
 ## Open questions and verification
 
-- The full inventory above is read from the source and is believed complete: nine writes, four load paths, three visible failure mechanisms. It should be confirmed by walking the product with the network throttled to offline, which is the single most valuable verification pass in this repo.
+- That the two promote surfaces behave differently on failure — the spine's hover ★ stays filled, the panel's ★ FAVORITE reverts — is read from the two components and has not been watched side by side. It is worth doing in one pass, because the difference is the difference between a lie and a shrug.
+- Whether the crate editor's unhandled rejection produces anything visible in the browser — a console warning of its own, a devtools pause — has not been observed. From the product's side there is nothing.
+- The full inventory above is read from the source and is believed complete: ten writes, four load paths, three visible failure mechanisms. It should be confirmed by walking the product with the network throttled to offline, which is the single most valuable verification pass in this repo.
 - That a failed load is retried on the next visit is read from the guards — each screen's effect depends on the loaded flag, which is set only on success — and has not been watched. It is worth confirming, because it is the difference between a session-long empty screen and one that repairs itself.
 - What the raw error text on the import tabs actually looks like on screen, and whether it overflows its box, has not been observed.
 - Whether the browser's own request timeout ever fires in practice, and what the user sees when it does, is unknown.

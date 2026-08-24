@@ -189,7 +189,7 @@ Not checkable by hand:
 Not checkable by hand:
 
 - What the server does with a definition it considers malformed (a count outside 1–7) cannot be produced through the editor.
-- Whether a failed save leaves the modal open with the edit intact needs a request that fails at exactly the right moment; `FAIL-08` covers the visible half.
+- Whether a failed save leaves the modal open with the edit intact is checkable offline rather than by timing a request; `FAIL-08` in [account-player-and-cross-cutting.md](account-player-and-cross-cutting.md) covers it.
 - Focus management: there is none, so there is nothing to observe beyond confirming that focus stays where it was.
 
 ## crates/ai-crates.md
