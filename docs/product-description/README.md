@@ -168,7 +168,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | --- | --- |
 | glossary.md | drafted |
 | bug-triage.md | not started |
-| verification/ (4 checklists) | not started |
+| verification/ (4 checklists) | drafted |
 | foundations/data-model.md | drafted |
 | foundations/account-and-session.md | drafted |
 | foundations/navigation-and-loading.md | drafted |
