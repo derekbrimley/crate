@@ -167,7 +167,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | Document | Status |
 | --- | --- |
 | glossary.md | drafted |
-| bug-triage.md | not started |
+| bug-triage.md | drafted |
 | verification/ (4 checklists) | drafted |
 | foundations/data-model.md | drafted |
 | foundations/account-and-session.md | drafted |
