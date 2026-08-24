@@ -8,7 +8,15 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Screen.** One of the five routes the app can be at: the *crate wall* (`/`), the *library* (`/library`), the *add screen* (`/add`), the *listening log* (`/history`), and `/callback`, which renders the crate wall and exists only to catch the return from Spotify sign-in. There is no separate settings screen; every setting a user can change lives inside a *crate*.
 
-**Panel.** A block that expands in place, in the flow of the page, pushing content below it down. The *album detail panel* and the two *audit panels* are panels. A panel does not dim the page behind it and does not trap scrolling.
+**The crate wall.** The screen at `/`: a stack of *crate* rows, one per *crate definition*, with the profile menu in its header. It is the screen the product expects to be entered by, and the only one that loads more than its own data, which is why a great deal depends on whether the user has visited it. See [the crate wall](crates/the-crate-wall.md).
+
+**The library screen.** The screen at `/library`: the whole *library* drawn as shelves of *spines*, with sorting, grouping, a search box, *filter rules*, and the two *audit panels*. These documents also call it "the shelf". See [the library shelf](library/the-library-shelf.md).
+
+**The add screen.** The screen at `/add`: three tabs — album search, the user's Spotify library, and a Spotify playlist. It is the only screen that loads nothing on arrival, and the only one whose writes are invisible to the rest of the app until a reload. See [search and add](add/search-and-add.md).
+
+**The listening log.** The screen at `/history`: every *pick* the user has made, newest first, one row each. Reached from the profile menu, not from the bottom navigation. See [the listening log](history/the-listening-log.md).
+
+**Panel.** A block that appears in the flow of the page rather than over it. The *album detail panel* expands in place, pushing the content below it down; the two *audit panels* replace the shelves entirely. Neither dims the page behind it and neither traps scrolling.
 
 **Modal.** An overlay that dims the page behind it, locks the page's scrolling, and closes when the dimmed area (the *backdrop*) is tapped. The *crate editor* is a modal; so is the album detail panel when it is opened from the listening log.
 
@@ -18,15 +26,23 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Record.** One album in the user's collection. The UI calls it a record; the database calls it an item. A record has a title, an artist, sleeve art, a Spotify id, the moment it was *filed*, and *metadata*. Every record is in exactly one of the two *lists*.
 
-**The library.** All of the user's records, both lists together. "In the library" means the user has filed it; an album that only exists in Spotify search results is not in the library. The library is what the *library screen* shows and what every *library-source crate* draws from.
+**The library.** All of the user's records, both lists together. "In the library" means the user has filed it; an album that only exists in Spotify search results is not in the library. The library is what the *library screen* shows and what every crate whose *source* is the library draws from.
+
+**List.** One of the two halves the *library* is divided into: *favorites* and *recommendations*. Every record is in exactly one, chosen when it is *filed* and changeable afterwards only by *promoting* a recommendation or by filing the album again. "The two lists" means the library as the app stores it: two separate fetches, kept separately in memory, shown together on the shelves.
 
 **Favorite.** A record in the first of the two lists — something the user already loves and wants to be reminded of. Marked with a star (★) and the app's orange. Nothing about a favorite makes it more likely to be picked except that the seeded Favorites crate only draws from favorites.
 
 **Recommendation.** A record in the second list — something the user has been told to listen to but has not committed to. Marked with a diamond (◈) and cyan. A recommendation can be *promoted* to a favorite, which is a one-way move made from the album detail panel; there is no button anywhere that turns a favorite back into a recommendation, although the underlying route accepts one.
 
-**Spotify id.** The album's id on Spotify. It is what identifies a record for the purpose of "is this already in the library" — the add screens compare by Spotify id, and the database refuses two records with the same Spotify id for the same user. It is not the same as the record's own id, which is a number the database assigns and which the *detail panel*, *picks*, and *duplicate marking* all use.
+**File.** To add an album to the *library*, choosing one of the two *lists* as you do it. The word is the product's own: the add screen says FILED, and these documents say "filed" for the moment a record was created. Filing the same album twice does not make a second record: it overwrites the one already there, resetting its filed-at time and moving it to whichever list was chosen the second time. [The data model](foundations/data-model.md) owns what filing writes.
+
+**Promote.** To move a record from *recommendation* to *favorite*. One way only, one record at a time, from the *album detail panel*.
+
+**Spotify id.** The album's id on Spotify. It is what identifies a record for the purpose of "is this already in the library" — the add screens compare by Spotify id, and the database refuses two records with the same Spotify id for the same user. It is not the same as the record's own id, which is a number the database assigns and which the *album detail panel*, *picks*, and the DUPLICATES panel's marking all use.
 
 **Metadata.** A bag of extra facts about a record, filled in from Spotify when the record is filed: `genres` (taken from the album's artists, not the album), `release_date`, and `total_tracks`. Metadata is best-effort — if Spotify does not answer when a record is filed, the record is still filed, without it. Missing release dates and track counts can be filled in later by the *backfill*. Genres cannot: nothing backfills them, so a record filed in bulk by an import — which never asks Spotify about the artists — has no genres for as long as it exists.
+
+**Backfill.** A request the *library screen* makes on its own, once per browser tab, when it notices records missing a release date or a track count: the server fetches them from Spotify and fills them in. It never fills in *genres*. It is invisible — no message, no indicator — and is guarded by a *session flag*, so it runs again in a second tab and not again in this one. See [the library shelf](library/the-library-shelf.md).
 
 **Genre.** A string from Spotify's artist genres, like `indie pop` or `classic rock`. Genres are the only thing filter rules can match against besides year, artist, list, plays, and last played, and they are the reason the nine seeded *context crates* have any contents at all. A record whose metadata never arrived has no genres and therefore falls out of every genre-filtered crate silently.
 
@@ -52,11 +68,17 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Position.** A crate's place on the wall, top to bottom, numbered from 0. Positions are renumbered whenever a crate is moved or deleted, and are what the wall sorts by.
 
+**The crate editor.** The *modal* that creates and edits a *crate definition*: its name, *source*, *strategy*, *filter rules*, *count*, and four weighting sliders. Reached from + NEW CRATE or a crate's ✎ on the *crate wall*, and the only place in Crate where a crate can be deleted. Every save writes all the definitions. See [the crate editor](crates/the-crate-editor.md).
+
+**Context crate.** One of the nine crates Crate seeds named after a listening context — Morning, Gym / Workout, Driving, Deep Work, Cooking, Hosting / Party, Walking / Errands, Chill / Background, and Winding Down. Each is an ordinary *weighted* crate whose *filter rules* are that context's preferred *genres*, combined with OR. They are not AI crates and they ask Claude nothing; because they are made entirely of genre rules, they are empty for any library built by importing, which stores no genres.
+
 **Slow crate.** A crate whose strategy has to ask Claude: `ai_new` and `hybrid` always, and `ai_pool` only when its prompt is not blank. Slow crates are left out of the first load of the crate wall and fetched afterwards, one request each and all at once, so the rest of the wall does not wait for them. See [AI crates](crates/ai-crates.md).
 
 **Suggestion.** A record on the wall that is not in the library — something Claude proposed. A suggestion looks like a record but has a negative id, a cyan bar along the bottom of its spine, and no *pick* recorded when it is chosen. Suggestions cannot be favorited, removed, or promoted, and vanish on the next load.
 
 ## Selection and picks
+
+**The selection engine.** The part of the server that turns a *crate definition* into the few records on its row: it applies the *filter rules* to get the *pool*, gives every record in the pool a *weight*, drops anything inside its *cooldown*, and draws without replacement. It runs on every load of the *crate wall*, freshly, for every crate. [The selection engine](foundations/selection-engine.md) owns every number in it; no other document restates them.
 
 **Pick.** A durable record that the user chose an album at a moment in time, saved with the crate that produced it. Picks are what the *listening log* lists and what the *selection engine* reads to decide what is overexposed. One pick is written each time the user chooses a real record from the crate wall — including when the playback that was attempted alongside it fails.
 
@@ -100,7 +122,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 ## Events that end or interrupt
 
-**Dismiss.** Closing something without deciding anything: tapping Close, tapping the backdrop, or tapping the same spine again. A dismiss discards nothing that was not already discarded, because in Crate everything a panel can change is committed the instant it is changed rather than at the end.
+**Dismiss.** Closing something without deciding anything: tapping Close, tapping the backdrop, or tapping the same spine again. A dismiss discards nothing that was not already discarded, because in Crate everything a panel can change is committed the instant it is changed rather than at the end. **The Escape key is not a dismiss:** nothing a user can open in Crate responds to it, so every panel and modal has to be closed with a tap.
 
 **Commit.** Writing the change. Named as a phase above; used as an event here for the moment the request is sent.
 
@@ -116,7 +138,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Loaded.** A screen is loaded once its first fetch has *succeeded*. A fetch that fails leaves the screen not loaded: its skeleton clears and it renders as though the account were empty, and nothing retries for as long as the user stays on it — but the next time that screen is opened, it tries again from scratch. Navigating away and back is therefore a retry, and the only one the product offers besides reloading.
 
-**Session flag.** A one-shot marker in the browser's session storage. There is exactly one: `crate_backfill_done`, which stops the library from asking the server to fill in missing release dates and track counts more than once per session.
+**Session flag.** A one-shot marker in the browser's session storage. There is exactly one: `crate_backfill_done`, which stops the library from asking the server to fill in missing release dates and track counts more than once. It is per *tab* rather than per *session*: it survives a reload, so it is the only thing in Crate a reload does not reset, and a second tab has its own.
 
 ## Account and Spotify
 
@@ -137,6 +159,12 @@ The vocabulary used across these documents. When a document uses one of these wo
 **Spine.** A record drawn edge-on: a narrow vertical block, 46 px wide, 170 px tall (212 px in a wide row), tinted a colour derived from the record's id so the same record is always the same colour. Selected spines lift 24 px; hovered spines lift 7 px and widen. A recommendation carries a ◈ badge; a *suggestion* carries a cyan bar along the bottom.
 
 **Sleeve.** The album's cover art. Shown inside a spine when it is wide enough, in the detail panel, in the listening log, and in the add screens' result rows. When there is no art, a drawn vinyl disc stands in.
+
+**The album detail panel.** The one place a single record is shown in full: sleeve, title, artist, year, *genres*, *play count*, *last played*, the track list, MORE BY the artist, and the buttons that play, *promote*, and remove it. It opens in place under a *spine* on the *crate wall* and the *library screen*, and as a *modal* from the *listening log*. These documents also call it "the detail panel". See [the album detail panel](library/the-album-detail-panel.md).
+
+**The audit panels.** The two panels the *library screen* can open over the whole library: DUPLICATES, which groups records that look like the same album and lets them be *marked* and deleted together, and GAPS, which lists records no *crate* would ever draw and genres no crate covers. Both ignore the shelves' own search, list buttons, and *filter rules*. See [duplicates and gaps](library/duplicates-and-gaps.md).
+
+**Marked.** A duplicate row armed for deletion in the DUPLICATES panel: tapping its DELETE marks it with a red ✕ rather than deleting it, tapping again unmarks it, and one confirmation deletes everything marked. It is the only bulk destructive action in Crate and the only one that uses the browser's own confirmation dialog.
 
 **The player bar.** A fixed bar just above the bottom navigation, present only when the web player is available *and* something is playing. It holds the sleeve, the track and artist, a seek bar, previous/play/next, and — on wide viewports only — a volume slider.
 

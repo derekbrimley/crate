@@ -128,7 +128,7 @@ Playback is not a write at all. It is handed to Spotify and forgotten, which is 
 - **CONNECT SPOTIFY does not link an existing account.** For an email account it signs the user into a different account, and it returns to the crate wall rather than the tab they were on.
 - **A revoked Spotify link is indistinguishable from a network failure,** and nothing offers to reconnect.
 - **The useful "open Spotify on any device first" message is never shown,** because the fallback chain swallows it.
-- **An album with more than fifty tracks shows only its first fifty,** silently.
+- **An album with more than fifty tracks shows only its first fifty,** silently. See [the album detail panel](../library/the-album-detail-panel.md#edge-cases).
 - **Singles are filtered out of search results,** so searching for a single by name returns nothing with no explanation.
 - **Genres are stored only by the single-add path.** Bulk imports have none, nothing backfills them, and every genre rule — including the nine seeded context crates — therefore matches nothing in a bulk-built library.
 - **The panel's genre badges are fetched live and are not the genres the crate engine filters on,** so a panel can show three genres for a record the engine considers genre-less.

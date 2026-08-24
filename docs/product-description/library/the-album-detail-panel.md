@@ -154,6 +154,7 @@ Nothing is written when the panel closes.
 - **The genres in the panel and the genres a filter rule matches are not the same data.** The panel fetches them live; a rule reads what was stored when the record was filed, which for a bulk-imported record is nothing. A record can therefore show three genre badges here and be excluded by a rule naming one of them.
 - **MORE BY shows at most ten albums** out of however many the artist has, with no indication that it is a subset, and it includes the album currently open when Spotify lists it.
 - **A MORE BY release year can be blank.** It is the first four characters of whatever Spotify returned as a release date, so an album with no date shows nothing where the year goes.
+- **The track list stops at fifty.** Spotify is asked for fifty tracks and nothing pages past them, so a box set or a long compilation shows its first fifty and no more, with nothing to say the list is cut short. Nothing else in Crate depends on that list, so the only consequence is that the last tracks of a long album cannot be tapped.
 - **Multi-disc albums get DISC 1 / DISC 2 headers,** and only when some track's disc number is above one — a single-disc album shows no header at all.
 - **The panel's title is a single truncated line,** so two albums whose names differ only after 30-odd characters are indistinguishable at the top of the panel.
 - **Filing an album from MORE BY that is already in the library overwrites it,** resetting its list and its filed-at time and keeping its picks. See [the data model](../foundations/data-model.md).
@@ -167,6 +168,6 @@ Nothing is written when the panel closes.
 - The behavior of a track tap on a tablet has not been checked. The user-agent test names iPad, so a tablet hands off like a phone even though it may be able to run the in-tab player.
 - Whether a `spotify:` URI handed to the browser's address bar reliably opens the app on both iOS and Android is unverified; the code prefers the web URL and falls back to the URI.
 - What Spotify returns for MORE BY has not been characterised — whether it is albums only, whether it is sorted, and whether it includes the open album — beyond knowing that singles are not filtered out here.
-- Nothing has been checked about a very long track list. All tracks are rendered, so a 40-track compilation makes a very tall panel with no internal scroll on the shelf screens.
+- Nothing has been checked about a very long track list. Every track returned is rendered, so a 40-track compilation makes a very tall panel with no internal scroll on the shelf screens — and an album of more than fifty tracks should stop at fifty, which a box set would show plainly.
 
 Verified against Crate commit `8301127`.
