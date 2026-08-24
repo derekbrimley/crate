@@ -171,8 +171,8 @@ Status is one of `not started`, `drafted`, or `verified`.
 | foundations/data-model.md | drafted |
 | foundations/account-and-session.md | drafted |
 | foundations/navigation-and-loading.md | drafted |
-| foundations/selection-engine.md | not started |
-| foundations/playback.md | not started |
+| foundations/selection-engine.md | drafted |
+| foundations/playback.md | drafted |
 | crates/the-crate-wall.md | not started |
 | crates/picking-a-record.md | not started |
 | crates/the-crate-editor.md | not started |

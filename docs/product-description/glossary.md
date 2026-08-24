@@ -96,7 +96,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Debounce.** Waiting for the user to stop typing before acting. The album search waits 400 ms after the last keystroke. Nothing else in Crate debounces: filter rules, sorting, and the genre picker's own filter box all re-run on every keystroke against data already in the browser.
 
-**Slider stop.** The crate editor's four sliders do not take arbitrary values. Each has five stops, and dragging snaps to the nearest one. [The crate editor](crates/the-crate-editor.md) lists them.
+**Slider stop.** The crate editor's four sliders do not take arbitrary values. Each has five stops, and dragging snaps to the nearest one. [The selection engine](foundations/selection-engine.md#what-the-editor-can-set-and-what-it-cannot) lists the stops and their labels; [the crate editor](crates/the-crate-editor.md) describes using them.
 
 ## Events that end or interrupt
 
@@ -130,7 +130,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **The web player.** Crate's own Spotify player, registered with Spotify under the device name "Crate Web Player". It only exists on desktop-width browsers with a Premium account; where it exists, the *player bar* appears and playback happens in the tab.
 
-**Device.** Somewhere Spotify can play. Crate's web player is one; the user's phone or desktop Spotify app is another. Playback started by Crate goes to the web player when it is ready and to whatever device Spotify considers active otherwise — and if Spotify considers none active, the attempt fails with a message saying to open Spotify first.
+**Device.** Somewhere Spotify can play. Crate's web player is one; the user's phone or desktop Spotify app is another. Playback started by Crate goes to the web player when it is ready and to whatever device Spotify considers active otherwise — and if Spotify considers none active, the attempt fails with a message saying to open Spotify first, which [is never shown to the user](foundations/playback.md).
 
 ## The interface
 
@@ -152,6 +152,6 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Seconds versus milliseconds.** Everything durable is in whole seconds since the epoch: when a record was filed, when a pick happened, when a Spotify token expires. Everything about playback is in milliseconds: track length, the position in a track, the seek step. Days are computed from seconds and truncated, so "3 days ago" means at least 72 hours ago.
 
-**Days since.** Whole days, floored, between a past moment and now, computed in the browser's local time zone on the client and in the server's zone on the server. The two can disagree by a day near midnight; nothing in Crate depends on the difference except the *cooldown* boundary, which is computed only on the server.
+**Days since.** The number of days between a past moment and now. Every *decision* uses it fractionally, to the second: the *cooldown* boundary, the recency tiers, and the `plays` and `last played` filter rules all compare a fractional number of days, so "3 days" means exactly 72 hours. Every *display* floors it, so the library and the detail panel say "3d ago" for anything between three and four days. Both are computed by subtracting and dividing rather than by calendar date, so time zones never enter into it.
 
 **Viewport width.** Two thresholds matter and they are not the same. The player hook decides a browser is mobile — and refuses to build the web player — from the user agent, not the width. The layout switches to wide spines when a *row* measures at least 600 px, and shows the volume slider at Tailwind's `sm` breakpoint (640 px). A narrow desktop window therefore gets the web player but the mobile layout.
