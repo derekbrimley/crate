@@ -178,10 +178,10 @@ Status is one of `not started`, `drafted`, or `verified`.
 | crates/picking-a-record.md | drafted |
 | crates/the-crate-editor.md | drafted |
 | crates/ai-crates.md | drafted |
-| library/the-library-shelf.md | not started |
-| library/the-album-detail-panel.md | not started |
-| library/saving-a-crate-from-the-library.md | not started |
-| library/duplicates-and-gaps.md | not started |
+| library/the-library-shelf.md | drafted |
+| library/the-album-detail-panel.md | drafted |
+| library/saving-a-crate-from-the-library.md | drafted |
+| library/duplicates-and-gaps.md | drafted |
 | add/search-and-add.md | drafted |
 | add/importing-from-your-spotify-library.md | not started |
 | add/importing-from-a-playlist.md | not started |
