@@ -168,9 +168,9 @@ Status is one of `not started`, `drafted`, or `verified`.
 | glossary.md | drafted |
 | bug-triage.md | not started |
 | verification/ (4 checklists) | not started |
-| foundations/data-model.md | not started |
-| foundations/account-and-session.md | not started |
-| foundations/navigation-and-loading.md | not started |
+| foundations/data-model.md | drafted |
+| foundations/account-and-session.md | drafted |
+| foundations/navigation-and-loading.md | drafted |
 | foundations/selection-engine.md | not started |
 | foundations/playback.md | not started |
 | crates/the-crate-wall.md | not started |
