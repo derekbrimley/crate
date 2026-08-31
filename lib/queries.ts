@@ -186,6 +186,22 @@ export async function getItems(
   return (data ?? []) as Item[];
 }
 
+/** Looks up a single library row by its Spotify album id, if the user has it. */
+export async function getItemByExternalId(
+  userId: number,
+  externalId: string
+): Promise<Item | null> {
+  const { data } = await supabaseAdmin
+    .from("items")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("external_id", externalId)
+    .limit(1)
+    .maybeSingle();
+
+  return (data as Item | null) ?? null;
+}
+
 export async function deleteItem(userId: number, itemId: number): Promise<void> {
   await supabaseAdmin
     .from("items")

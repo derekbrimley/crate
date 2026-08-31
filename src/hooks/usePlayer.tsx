@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import type { PlayingAlbum } from "../types";
 import {
   getSpotifyDevices,
   getPlaybackState,
@@ -14,7 +15,14 @@ import {
  * including lossless — applies.
  */
 
-interface CurrentTrack { name: string; artist: string; image_url: string | null; uri: string }
+interface CurrentTrack {
+  name: string;
+  artist: string;
+  image_url: string | null;
+  uri: string;
+  /** The album this track is from — null for podcast episodes. */
+  album: PlayingAlbum | null;
+}
 
 interface PlayerContextValue {
   deviceName: string | null;
@@ -83,6 +91,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         artist: state.playing.artist,
         image_url: state.playing.image_url,
         uri: state.playing.uri,
+        album: state.playing.album ?? null,
       });
       setPaused(state.playing.paused);
       setPosition(state.playing.position);

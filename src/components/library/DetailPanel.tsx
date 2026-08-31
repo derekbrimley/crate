@@ -12,6 +12,9 @@ interface DetailPanelProps {
   onRemove: (item: Item) => void;
   onPlay?: () => void;
   onPromote?: (item: Item) => void;
+  // Fired with the freshly created library row after an "add to library" —
+  // lets a caller holding a not-yet-saved item swap in the real one.
+  onAdd?: (item: Item) => void;
   // When true, hide library-mutating actions (remove / favorite / send).
   // Used when opened from a read-only context like the History log.
   readOnly?: boolean;
@@ -40,7 +43,7 @@ function daysAgo(ts: number | null): number {
 
 const detailsCache = new Map<string, { genres: string[]; artistAlbums: ArtistAlbum[]; tracks: AlbumTrack[]; sentTo: SentRecommendation[] }>();
 
-export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote, readOnly = false }: DetailPanelProps) {
+export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, onPromote, onAdd, readOnly = false }: DetailPanelProps) {
   const player = usePlayer();
   const cached = detailsCache.get(item.external_id);
   const [genres, setGenres] = useState<string[]>(cached?.genres || []);
@@ -66,14 +69,11 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const [addingToList, setAddingToList] = useState<"favorite" | "recommendation" | null>(null);
   const [addedToList, setAddedToList] = useState<"favorite" | "recommendation" | null>(null);
 
-  // AI-suggested items arrive with id 0 from the server, but Crates.tsx reassigns
-  // them to negative synthetic ids to avoid key collisions — so check id <= 0.
-  const isAiSuggested = item.id <= 0 && (() => {
-    const m = item.metadata;
-    if (!m) return false;
-    if (typeof m === "object") return (m as Record<string, unknown>)._ai_suggested === true;
-    try { return (JSON.parse(m) as Record<string, unknown>)._ai_suggested === true; } catch { return false; }
-  })();
+  // Anything with a non-positive id isn't a library row: AI suggestions arrive
+  // with id 0 (Crates.tsx reassigns them to negative synthetic ids to avoid key
+  // collisions), and so does whatever is playing on Spotify but isn't saved yet.
+  // Those get "add to library" buttons instead of the library-mutating ones.
+  const inLibrary = item.id > 0;
 
   const parsedMeta = (() => {
     const m = item.metadata;
@@ -237,7 +237,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   const handleAddToLibrary = async (targetList: "favorite" | "recommendation") => {
     setAddingToList(targetList);
     try {
-      await addAlbum({
+      const { item: created } = await addAlbum({
         spotify_id: item.external_id,
         title: item.title,
         artist: item.creator,
@@ -247,6 +247,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         list_type: targetList,
       });
       setAddedToList(targetList);
+      onAdd?.(created);
     } catch {}
     setAddingToList(null);
   };
@@ -385,7 +386,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           </svg>
           PLAY ON SPOTIFY
         </button>
-        {isAiSuggested ? (
+        {!inLibrary ? (
           addedToList ? (
             <span
               className="font-mono flex items-center px-2"
@@ -453,7 +454,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         )}
       </div>
       {/* Send to Friend */}
-      {!isFriendRec && !isAiSuggested && !readOnly && (
+      {!isFriendRec && inLibrary && !readOnly && (
         <div style={{ marginBottom: 10 }}>
           {!sendFormOpen ? (
             <button
@@ -530,7 +531,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       )}
 
       {/* Sent to */}
-      {!isFriendRec && !isAiSuggested && sentTo.length > 0 && (
+      {!isFriendRec && inLibrary && sentTo.length > 0 && (
         <div style={{ marginBottom: 10 }}>
           <div className="font-mono uppercase" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em", marginBottom: 4 }}>
             SENT TO

@@ -57,6 +57,11 @@ export async function getAlbums(listType?: "favorite" | "recommendation"): Promi
   return request<{ items: Item[] }>(`/albums${query}`);
 }
 
+/** Returns the user's library row for a Spotify album id, or null if they don't have it. */
+export async function lookupAlbum(externalId: string): Promise<{ item: Item | null }> {
+  return request<{ item: Item | null }>(`/albums?external_id=${encodeURIComponent(externalId)}`);
+}
+
 export async function addAlbum(data: {
   spotify_id: string;
   title: string;

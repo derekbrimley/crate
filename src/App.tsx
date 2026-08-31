@@ -40,8 +40,10 @@ function AppInner() {
           <Route path="/history" element={<History onLogout={logout} />} />
           <Route path="/callback" element={<Crates onLogout={logout} />} />
         </Routes>
+        {/* Inside the cache provider: the player bar's album details pane edits
+            the library, and the cached lists have to follow. */}
+        <PlayerBar />
       </DataCacheProvider>
-      <PlayerBar />
     </PlayerProvider>
   );
 }
