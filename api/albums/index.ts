@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getItems, addItem } from "../../lib/queries";
+import { getItems, addItem, getItemByExternalId } from "../../lib/queries";
 import { fetchAlbumMeta } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -8,6 +8,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {
+    // ?external_id= looks up a single album by its Spotify id — used to tell
+    // whether something (e.g. whatever is currently playing) is in the library.
+    const externalId = req.query.external_id as string | undefined;
+    if (externalId) {
+      const item = await getItemByExternalId(user.id, externalId);
+      return res.json({ item });
+    }
+
     const listType = req.query.list_type as "favorite" | "recommendation" | undefined;
     const items = await getItems(user.id, listType);
     return res.json({ items });

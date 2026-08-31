@@ -80,6 +80,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               duration: state.item.duration_ms,
               position: state.progress_ms ?? 0,
               paused: !state.is_playing,
+              // The album the track belongs to, so the client can open its
+              // details pane straight from the player bar.
+              album: state.item.album
+                ? {
+                    id: state.item.album.id,
+                    name: state.item.album.name,
+                    artist: state.item.album.artists.map((a) => a.name).join(", "),
+                    image_url: getBestImageUrl(state.item.album.images ?? []),
+                    uri: state.item.album.uri,
+                    url: state.item.album.external_urls?.spotify ?? null,
+                  }
+                : null,
             }
           : null,
         device: state.device

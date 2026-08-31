@@ -193,6 +193,16 @@ export interface SpotifyDevice {
   supports_volume: boolean;
 }
 
+/** The album a currently-playing track belongs to, as reported by Spotify. */
+export interface PlayingAlbum {
+  id: string;
+  name: string;
+  artist: string;
+  image_url: string | null;
+  uri: string;
+  url: string | null;
+}
+
 export interface PlaybackState {
   playing: {
     uri: string;
@@ -202,6 +212,8 @@ export interface PlaybackState {
     duration: number;
     position: number;
     paused: boolean;
+    // The album this track belongs to — null for podcast episodes.
+    album: PlayingAlbum | null;
   } | null;
   device: {
     id: string;

@@ -356,7 +356,15 @@ export interface SpotifyPlaybackState {
     name: string;
     duration_ms: number;
     artists: { name: string }[];
-    album: { images: { url: string; width: number; height: number }[] };
+    // Absent for podcast episodes, which carry a `show` instead.
+    album?: {
+      id: string;
+      name: string;
+      uri: string;
+      artists: { name: string }[];
+      external_urls: { spotify: string };
+      images: { url: string; width: number; height: number }[];
+    };
   } | null;
 }
 
