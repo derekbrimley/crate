@@ -100,6 +100,12 @@ export function Crates({ onLogout }: CratesProps) {
     }
   };
 
+  // DetailPanel already deletes the album server-side before calling onRemove;
+  // just refresh this one crate so the stale item drops out of view.
+  const handleRemoveAlbum = (_item: Item, crateId: string) => {
+    refreshCrateHandler(crateId);
+  };
+
   const handleAcceptFriendRec = async (item: Item, crateId: string) => {
     const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
     const recId = meta?._rec_id;
@@ -267,7 +273,9 @@ export function Crates({ onLogout }: CratesProps) {
                   : (item) => handlePromote(item, crate.id)
               }
               onRemoveAlbum={
-                isFriendCrate ? (item) => handleDismissFriendRec(item, crate.id) : undefined
+                isFriendCrate
+                  ? (item) => handleDismissFriendRec(item, crate.id)
+                  : (item) => handleRemoveAlbum(item, crate.id)
               }
             />
           );
