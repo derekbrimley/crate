@@ -4,9 +4,11 @@ interface GenrePickerProps {
   selected: string[];
   onChange: (genres: string[]) => void;
   available: string[];
+  /** Touch-sized input and chips. */
+  large?: boolean;
 }
 
-export function GenrePicker({ selected, onChange, available }: GenrePickerProps) {
+export function GenrePicker({ selected, onChange, available, large = false }: GenrePickerProps) {
   const [filter, setFilter] = useState("");
 
   const toggle = (genre: string) => {
@@ -38,8 +40,8 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
           borderRadius: 4,
           color: "rgb(var(--c-text))",
           fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: 11,
-          padding: "5px 9px",
+          fontSize: large ? 16 : 11,
+          padding: large ? "9px 12px" : "5px 9px",
           width: "100%",
           outline: "none",
           marginBottom: 8,
@@ -61,7 +63,7 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
       ) : (
         <div
           className="flex flex-wrap gap-1.5 overflow-y-auto"
-          style={{ maxHeight: 160 }}
+          style={{ maxHeight: large ? 220 : 160 }}
         >
           {sorted.map((genre) => {
             const isActive = selected.includes(genre);
@@ -71,9 +73,9 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
                 type="button"
                 onClick={() => toggle(genre)}
                 style={{
-                  padding: "3px 8px",
+                  padding: large ? "8px 12px" : "3px 8px",
                   fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: 10,
+                  fontSize: large ? 13 : 10,
                   letterSpacing: "0.1em",
                   border: isActive ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
                   background: isActive ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",

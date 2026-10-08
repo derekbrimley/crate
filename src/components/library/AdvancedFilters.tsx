@@ -10,7 +10,15 @@ interface AdvancedFiltersProps {
   onChangeRules: (rules: FilterRule[]) => void;
   onChangeMatchMode: (m: "AND" | "OR") => void;
   defaultOpen?: boolean;
+  /** Fields not offered (e.g. "list" in the crate editor, which has its own toggle). */
+  hiddenFields?: FieldKey[];
+  /** "large" gives touch-sized controls; the Library's inline filters stay compact. */
+  size?: "compact" | "large";
+  /** Show the rules without the collapsible "Advanced filters" toggle. */
+  alwaysOpen?: boolean;
 }
+
+const largeControl: React.CSSProperties = { fontSize: 14, padding: "8px 10px", minHeight: 40 };
 
 const selectStyle: React.CSSProperties = {
   fontSize: 10,
@@ -41,11 +49,24 @@ export default function AdvancedFilters({
   onChangeRules,
   onChangeMatchMode,
   defaultOpen = false,
+  hiddenFields = [],
+  size = "compact",
+  alwaysOpen = false,
 }: AdvancedFiltersProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [openState, setOpen] = useState(defaultOpen);
+  const open = alwaysOpen || openState;
+  const large = size === "large";
+  const fieldKeys = (Object.keys(FIELD_DEFS) as FieldKey[]).filter((k) => !hiddenFields.includes(k));
+  const sel = large ? { ...selectStyle, ...largeControl } : selectStyle;
+  const inp = large ? { ...inputStyle, ...largeControl, width: 90 } : inputStyle;
+  const genreInp = large ? { ...genreInputStyle, ...largeControl, width: "100%", maxWidth: 220 } : genreInputStyle;
+  const textSize = large ? 13 : 10;
+  const smallButton: React.CSSProperties = large
+    ? { fontSize: 13, padding: "8px 12px", minHeight: 40 }
+    : { fontSize: 10, padding: "2px 6px" };
 
   function addRule() {
-    const field: FieldKey = "year";
+    const field: FieldKey = fieldKeys.includes("genre") ? "genre" : fieldKeys[0];
     const rule: FilterRule = {
       id: makeRuleId(Date.now() + rules.length),
       field,
@@ -79,8 +100,8 @@ export default function AdvancedFilters({
   }
 
   return (
-    <div style={{ marginTop: 6 }}>
-      <button
+    <div style={{ marginTop: alwaysOpen ? 0 : 6 }}>
+      {!alwaysOpen && <button
         onClick={() => setOpen((v) => !v)}
         className="font-mono cursor-pointer"
         style={{
@@ -94,10 +115,10 @@ export default function AdvancedFilters({
       >
         ADVANCED FILTERS {open ? "▴" : "▾"}
         {rules.length > 0 ? ` (${rules.length})` : ""}
-      </button>
+      </button>}
 
       {open && (
-        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ marginTop: alwaysOpen ? 0 : 8, display: "flex", flexDirection: "column", gap: large ? 10 : 6 }}>
           {rules.map((rule) => {
             const def = FIELD_DEFS[rule.field];
             const needsV2 = def.needsValue2?.(rule.operator) ?? false;
@@ -108,14 +129,14 @@ export default function AdvancedFilters({
               : [];
             return (
               <div key={rule.id} className="flex flex-col gap-1" style={{ borderLeft: "1px solid rgb(var(--c-border))", paddingLeft: 8 }}>
-                <div className="flex items-center gap-1 flex-wrap">
+                <div className={`flex items-center flex-wrap ${large ? "gap-2" : "gap-1"}`}>
                   <select
                     value={rule.field}
                     onChange={(e) => changeField(rule.id, e.target.value as FieldKey)}
-                    style={selectStyle}
+                    style={sel}
                     className="font-mono cursor-pointer"
                   >
-                    {(Object.keys(FIELD_DEFS) as FieldKey[]).map((k) => (
+                    {fieldKeys.map((k) => (
                       <option key={k} value={k}>{FIELD_DEFS[k].label}</option>
                     ))}
                   </select>
@@ -123,7 +144,7 @@ export default function AdvancedFilters({
                   <select
                     value={rule.operator}
                     onChange={(e) => updateRule(rule.id, { operator: e.target.value, value: isAnyOfToggle(rule, e.target.value), value2: undefined })}
-                    style={selectStyle}
+                    style={sel}
                     className="font-mono cursor-pointer"
                   >
                     {def.operators.map((op) => (
@@ -132,14 +153,14 @@ export default function AdvancedFilters({
                   </select>
 
                   {!showValue ? null : isMultiGenre ? (
-                    <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+                    <span className="font-mono" style={{ fontSize: textSize, color: "rgb(var(--c-muted))" }}>
                       {multiSelected.length > 0 ? `${multiSelected.length} selected` : "choose below"}
                     </span>
                   ) : def.valueType === "list" ? (
                     <select
                       value={rule.value}
                       onChange={(e) => updateRule(rule.id, { value: e.target.value })}
-                      style={selectStyle}
+                      style={sel}
                       className="font-mono cursor-pointer"
                     >
                       <option value="">—</option>
@@ -152,7 +173,7 @@ export default function AdvancedFilters({
                       value={rule.value}
                       onChange={(e) => updateRule(rule.id, { value: e.target.value })}
                       placeholder="genre"
-                      style={genreInputStyle}
+                      style={genreInp}
                       className="font-mono"
                     />
                   ) : (
@@ -161,7 +182,7 @@ export default function AdvancedFilters({
                       value={rule.value}
                       onChange={(e) => updateRule(rule.id, { value: e.target.value })}
                       placeholder={def.valueType === "number" ? "0" : "value"}
-                      style={inputStyle}
+                      style={inp}
                       className="font-mono"
                     />
                   )}
@@ -174,7 +195,7 @@ export default function AdvancedFilters({
                         value={rule.value2 ?? ""}
                         onChange={(e) => updateRule(rule.id, { value2: e.target.value })}
                         placeholder="0"
-                        style={inputStyle}
+                        style={inp}
                         className="font-mono"
                       />
                     </>
@@ -183,7 +204,7 @@ export default function AdvancedFilters({
                   <button
                     onClick={() => removeRule(rule.id)}
                     className="cursor-pointer"
-                    style={{ background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: 12 }}
+                    style={{ background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: large ? 22 : 12, minWidth: large ? 40 : undefined, minHeight: large ? 40 : undefined }}
                     title="Remove rule"
                   >
                     ×
@@ -195,6 +216,7 @@ export default function AdvancedFilters({
                     selected={multiSelected}
                     available={availableGenres}
                     onChange={(genres) => updateRule(rule.id, { value: genres.join(MULTI_SEP) })}
+                    large={large}
                   />
                 )}
               </div>
@@ -212,8 +234,7 @@ export default function AdvancedFilters({
               onClick={addRule}
               className="font-mono cursor-pointer"
               style={{
-                fontSize: 10,
-                padding: "2px 6px",
+                ...smallButton,
                 letterSpacing: "0.08em",
                 border: "1px solid rgb(var(--c-border))",
                 background: "transparent",
@@ -225,7 +246,7 @@ export default function AdvancedFilters({
 
             {rules.length > 1 && (
               <div className="flex items-center gap-1">
-                <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
+                <span className="font-mono" style={{ fontSize: textSize, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
                   MATCH
                 </span>
                 {(["AND", "OR"] as const).map((m) => (
@@ -234,8 +255,7 @@ export default function AdvancedFilters({
                     onClick={() => onChangeMatchMode(m)}
                     className="font-mono cursor-pointer"
                     style={{
-                      fontSize: 10,
-                      padding: "2px 6px",
+                      ...smallButton,
                       border: matchMode === m ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                       background: matchMode === m ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
                       color: matchMode === m ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",

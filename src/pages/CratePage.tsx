@@ -8,8 +8,7 @@ import { ItemSheet } from "../components/ItemSheet";
 import { CrateEditorModal } from "../components/CrateEditorModal";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
-import { cratePool, crateWeighting } from "../lib/crateBrowse";
-import { getItemGenres } from "../lib/filters";
+import { cratePool, DEFAULT_WEIGHTING } from "../../lib/crates";
 import type { CrateDefinition, Item } from "../types";
 
 interface CratePageProps {
@@ -33,13 +32,7 @@ export function CratePage({ onLogout }: CratePageProps) {
     () => (ready && crate ? cratePool(crate, allItems, pickStats) : null),
     [ready, crate, allItems, pickStats]
   );
-  const weighting = crate ? crateWeighting(crate) : undefined;
-  const { ranked, resting, reshuffle } = useRankedPool(`crate:${id}`, pool, weighting!);
-
-  const availableGenres = useMemo(
-    () => Array.from(new Set(allItems.flatMap((i) => getItemGenres(i)))).sort(),
-    [allItems]
-  );
+  const { ranked, resting, reshuffle } = useRankedPool(`crate:${id}`, pool, DEFAULT_WEIGHTING);
 
   const handleSave = async (next: CrateDefinition) => {
     // New filters deserve a fresh order, not the old one with additions tacked on.
@@ -91,7 +84,7 @@ export function CratePage({ onLogout }: CratePageProps) {
         ) : ranked.length + resting.length === 0 ? (
           <div className="mt-16 flex flex-col items-center gap-3">
             <VinylDisc size={56} />
-            <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE — TRY EDITING ITS FILTERS</p>
+            <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE YET — EDIT IT, OR ADD RECORDS WITH "ADD TO CRATE"</p>
           </div>
         ) : (
           <>
@@ -118,7 +111,6 @@ export function CratePage({ onLogout }: CratePageProps) {
       {editing && (
         <CrateEditorModal
           initial={editing}
-          availableGenres={availableGenres}
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={() => setEditing(null)}

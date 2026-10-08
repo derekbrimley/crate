@@ -4,6 +4,7 @@ import { getAlbumDetails, deleteAlbum, addAlbum, promoteAlbum, sendRecommendatio
 import type { Item, AlbumTrack, ArtistAlbum, SentRecommendation, PlaylistInfo } from "../../types";
 import { usePlayer } from "../../hooks/usePlayer";
 import { mediaTypeOf, spotifyUriOf } from "../../lib/media";
+import { CrateMembershipSheet } from "../CrateMembershipSheet";
 
 interface DetailPanelProps {
   item: Item;
@@ -105,6 +106,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
   // the check lives here rather than at the call sites.
   const alreadyFavorite = item.list_type === "favorite";
 
+  const [showCrates, setShowCrates] = useState(false);
   const [sendFormOpen, setSendFormOpen] = useState(false);
   const [sendEmail, setSendEmail] = useState("");
   const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -478,6 +480,26 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           </>
         )}
       </div>
+      {/* Crates — check this record into or out of any crate. */}
+      {!isFriendRec && inLibrary && !readOnly && (
+        <button
+          onClick={() => setShowCrates(true)}
+          className="font-mono cursor-pointer w-full"
+          style={{
+            fontSize: 12,
+            padding: "9px 0",
+            marginBottom: 8,
+            border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))",
+            color: "rgb(var(--c-accent))",
+            background: "transparent",
+            letterSpacing: "0.1em",
+          }}
+        >
+          ＋ ADD TO CRATE
+        </button>
+      )}
+      {showCrates && <CrateMembershipSheet item={item} onClose={() => setShowCrates(false)} />}
+
       {/* Send to Friend — friend recommendations only carry albums. */}
       {!isFriendRec && inLibrary && !readOnly && !isPlaylistItem && (
         <div style={{ marginBottom: 10 }}>

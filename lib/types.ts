@@ -40,14 +40,6 @@ export interface LastPickInfo {
   pick_count: number;
 }
 
-export interface RightNowContext {
-  key: string;
-  label: string;
-  emoji: string;
-  prefer_genres: string[];
-  prompt_hints: string;
-}
-
 export interface FriendRecommendation {
   id: number;
   sender_id: number;

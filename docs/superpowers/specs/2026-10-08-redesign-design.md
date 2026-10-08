@@ -1,6 +1,6 @@
 # Crates redesign: home, crates, search, discover
 
-Status: in progress. Steps 1 and 1b shipped ([#15](https://github.com/derekbrimley/crate/pull/15), [#16](https://github.com/derekbrimley/crate/pull/16)). Step 2 is the first UI step.
+Status: in progress. Steps 1–3 shipped; step 4 (universal search) and step 5 (cleanup) remain.
 
 ## Goal
 
@@ -40,11 +40,12 @@ The library also holds Spotify **playlists**, not only albums.
 | --- | --- | --- |
 | 1 | Playlists in the data layer, playback, details pane; picks recorded on play | Done (#15) |
 | 1b | Search only your own playlists, Albums / My Playlists toggle | Done (#16) |
-| 2 | Home page with three tiles, crates index, crate page (full ranked list), Discover page with friends row; retire the shelf dashboard | In progress |
-| 3 | Crate editor: drop the weighting and AI options, add `include_recommendations`, items added or excluded by hand ("Add to crate…" sheet), convert existing crates, delete the AI code | |
+| 2 | Home page with three tiles, crates index, crate page (full ranked list), Discover page with friends row; retire the shelf dashboard | Done (#17, #18) |
+| 3 | Crate editor: drop the weighting and AI options, add `include_recommendations`, items added or excluded by hand ("Add to crate…" sheet), convert existing crates, delete the AI code | Done |
 | 4 | Universal search page (`/search?q=`): library and Spotify results, albums / artists / playlists; replaces the Add page | |
 | 5 | Cleanup: remove the dead dashboard endpoint paths, `NowPlayingModal`, stale config keys | |
 
 ## Implementation notes
-- Ranking is done on the client (`lib/ranking.ts`, shared with the server), from the cached library and play stats. `GET /api/picks/dashboard?meta=1` returns crate definitions and play stats without running any crates.
+- Ranking is done on the client (`lib/ranking.ts`), from the cached library and play stats. `GET /api/picks/dashboard` returns crate definitions and play stats.
+- Crate shape (`lib/crates.ts`): `{ id, name, position, use_filters, filters, include_recommendations, include_ids, exclude_ids }`. The old `source`, `count` and `strategy` fields are converted by `normalizeCrates` the first time the dashboard endpoint reads them.
 - Hobby plan: 12 serverless functions max, and 11 are used. New endpoints go into existing catch-alls.

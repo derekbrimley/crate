@@ -183,7 +183,7 @@ export async function getAlbumDetails(
 
 /** Crate definitions and play stats, without running any crates. */
 export async function getCrateMeta(): Promise<DashboardData> {
-  return request<DashboardData>("/picks/dashboard?meta=1");
+  return request<DashboardData>("/picks/dashboard");
 }
 
 /**

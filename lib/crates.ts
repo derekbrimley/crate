@@ -1,49 +1,34 @@
-import type { FilterRule } from "./filters";
+import { applyFilters, MULTI_SEP, type FilterRule, type PickStat } from "./filters";
+import type { SelectionConfig } from "./selection";
+import type { Item } from "./types";
 
-export interface Weighting {
-  cooldown_days: number;
-  weight_recent_days: number;
-  weight_medium_days: number;
-  weight_low: number;
-  weight_medium: number;
-  weight_high: number;
-  weight_never_picked_bonus: number;
-  recently_added_days: number;
-  recently_added_bonus: number;
-  randomness_factor: number;
-}
-
-export type CrateStrategy =
-  | { type: "weighted"; weighting: Weighting }
-  | { type: "random" }
-  | { type: "ai_pool"; prompt?: string }
-  | { type: "ai_new"; prompt?: string }
-  | { type: "hybrid"; prompt?: string; weighting: Weighting };
-
-// Strategies that hit Claude (and possibly Spotify) and are slow enough to
-// defer off the initial dashboard load. ai_pool only calls Claude when it has
-// a prompt; without one it's just a weighted pick from the pool.
-export function isSlowStrategy(strategy: CrateStrategy): boolean {
-  if (strategy.type === "ai_new" || strategy.type === "hybrid") return true;
-  if (strategy.type === "ai_pool") return Boolean(strategy.prompt && strategy.prompt.trim());
-  return false;
-}
+export type Weighting = SelectionConfig;
 
 export interface CrateFilters {
   rules: FilterRule[];
   matchMode: "AND" | "OR";
 }
 
+/**
+ * A crate's contents are
+ *   (library items matching its filters, if use_filters)
+ *   + (items added by hand) − (items left out by hand).
+ * Added-by-hand items always appear, recommendations included. With
+ * use_filters off, a crate is a hand-picked list.
+ */
 export interface CrateDefinition {
   id: string;
   name: string;
   position: number;
-  source: "library" | "friends";
-  count: number;
+  use_filters: boolean;
   filters: CrateFilters;
-  strategy: CrateStrategy;
+  /** Whether filter matches may include recommendations, not only favorites. */
+  include_recommendations: boolean;
+  include_ids: number[];
+  exclude_ids: number[];
 }
 
+/** The one weighting every crate is ranked with. */
 export const DEFAULT_WEIGHTING: Weighting = {
   cooldown_days: 3,
   weight_recent_days: 14,
@@ -57,102 +42,164 @@ export const DEFAULT_WEIGHTING: Weighting = {
   randomness_factor: 1.0,
 };
 
-function num(config: Record<string, unknown>, key: string, fallback: number): number {
-  const v = config[key];
-  return typeof v === "number" ? v : fallback;
+// ── Contents ──────────────────────────────────────────────────────────────────
+
+function matchesFilters(crate: CrateDefinition, items: Item[], pickStats: Map<number, PickStat>): Item[] {
+  if (!crate.use_filters) return [];
+  const base = crate.include_recommendations ? items : items.filter((i) => i.list_type === "favorite");
+  return applyFilters(base, crate.filters.rules, crate.filters.matchMode, pickStats);
 }
 
-function weightingFromConfig(config: Record<string, unknown>): Weighting {
-  return {
-    cooldown_days: num(config, "cooldown_days", DEFAULT_WEIGHTING.cooldown_days),
-    weight_recent_days: num(config, "weight_recent_days", DEFAULT_WEIGHTING.weight_recent_days),
-    weight_medium_days: num(config, "weight_medium_days", DEFAULT_WEIGHTING.weight_medium_days),
-    weight_low: num(config, "weight_low", DEFAULT_WEIGHTING.weight_low),
-    weight_medium: num(config, "weight_medium", DEFAULT_WEIGHTING.weight_medium),
-    weight_high: num(config, "weight_high", DEFAULT_WEIGHTING.weight_high),
-    weight_never_picked_bonus: num(config, "weight_never_picked_bonus", DEFAULT_WEIGHTING.weight_never_picked_bonus),
-    recently_added_days: DEFAULT_WEIGHTING.recently_added_days,
-    recently_added_bonus: DEFAULT_WEIGHTING.recently_added_bonus,
-    randomness_factor: num(config, "randomness_factor", DEFAULT_WEIGHTING.randomness_factor),
-  };
+/** Every library item in the crate: filter matches not left out, then hand-added ones. */
+export function cratePool(crate: CrateDefinition, items: Item[], pickStats: Map<number, PickStat>): Item[] {
+  const excluded = new Set(crate.exclude_ids);
+  const matched = matchesFilters(crate, items, pickStats).filter((i) => !excluded.has(i.id));
+  const seen = new Set(matched.map((i) => i.id));
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const added = crate.include_ids
+    .map((id) => byId.get(id))
+    .filter((i): i is Item => i !== undefined && !seen.has(i.id));
+  return [...matched, ...added];
 }
+
+export type Membership = "filter" | "hand" | "excluded" | "none";
+
+/** How (or whether) an item is in a crate. */
+export function crateMembership(crate: CrateDefinition, item: Item, pickStats: Map<number, PickStat>): Membership {
+  if (crate.include_ids.includes(item.id)) return "hand";
+  if (crate.exclude_ids.includes(item.id)) return "excluded";
+  return matchesFilters(crate, [item], pickStats).length > 0 ? "filter" : "none";
+}
+
+/**
+ * Flips an item in or out of a crate: adds it by hand, takes a hand-added one
+ * back out, leaves out a filter match, or puts a left-out one back.
+ */
+export function toggleMembership(crate: CrateDefinition, item: Item, pickStats: Map<number, PickStat>): CrateDefinition {
+  const without = (ids: number[]) => ids.filter((id) => id !== item.id);
+  switch (crateMembership(crate, item, pickStats)) {
+    case "hand":
+      return { ...crate, include_ids: without(crate.include_ids) };
+    case "excluded":
+      return { ...crate, exclude_ids: without(crate.exclude_ids) };
+    case "filter":
+      return { ...crate, exclude_ids: [...crate.exclude_ids, item.id] };
+    case "none":
+      return { ...crate, include_ids: [...crate.include_ids, item.id] };
+  }
+}
+
+// ── Seeding and conversion ────────────────────────────────────────────────────
 
 let seq = 0;
-function makeId(): string {
-  // Deterministic within one process call sequence; uniqueness across the seeded set is all we need.
+export function makeCrateId(): string {
   seq += 1;
-  return `crate_seed_${seq}_${Math.floor(Math.random() * 1e6)}`;
+  return `crate_${Date.now()}_${seq}_${Math.floor(Math.random() * 1e6)}`;
 }
 
-interface SeedContext {
-  key: string;
-  label: string;
-  emoji: string;
-  prefer_genres: string[];
-}
-
-export function seedCratesFromConfig(config: Record<string, unknown>): CrateDefinition[] {
-  const count = num(config, "cards_per_mode", 4);
-  const weighting = weightingFromConfig(config);
-  const crates: CrateDefinition[] = [];
-  let position = 0;
-
-  const push = (c: Omit<CrateDefinition, "position">) => {
-    crates.push({ ...c, position: position++ });
-  };
-
-  push({
-    id: makeId(),
-    name: "Favorites",
-    source: "library",
-    count,
-    filters: { rules: [{ id: "r1", field: "list", operator: "is", value: "favorite" }], matchMode: "AND" },
-    strategy: { type: "weighted", weighting: { ...weighting } },
-  });
-
-  push({
-    id: makeId(),
-    name: "Discover",
-    source: "library",
-    count,
-    filters: { rules: [{ id: "r1", field: "list", operator: "is", value: "recommendation" }], matchMode: "AND" },
-    strategy: { type: "weighted", weighting: { ...weighting } },
-  });
-
-  push({
-    id: makeId(),
-    name: "Surprise Me",
-    source: "library",
-    count,
+export function makeEmptyCrate(position: number): CrateDefinition {
+  return {
+    id: makeCrateId(),
+    name: "",
+    position,
+    use_filters: true,
     filters: { rules: [], matchMode: "AND" },
-    strategy: { type: "ai_new" },
-  });
+    include_recommendations: false,
+    include_ids: [],
+    exclude_ids: [],
+  };
+}
 
-  const rightNow = (config.right_now_contexts as SeedContext[] | undefined) ?? [];
-  const activeKeys = (config.contexts as string[] | undefined) ?? rightNow.map((c) => c.key);
-  for (const ctx of rightNow) {
-    if (!activeKeys.includes(ctx.key)) continue;
-    push({
-      id: makeId(),
-      name: ctx.label,
-      source: "library",
-      count,
+const SEED_GENRE_CRATES: { name: string; genres: string[] }[] = [
+  { name: "Morning", genres: ["indie pop", "folk", "acoustic", "singer-songwriter", "jazz", "soul"] },
+  { name: "Deep Work", genres: ["ambient", "electronic", "post-rock", "classical", "instrumental", "lo-fi", "neo-classical"] },
+  { name: "Cooking", genres: ["soul", "r&b", "jazz", "funk", "bossa nova", "latin", "indie pop"] },
+  { name: "Hosting", genres: ["pop", "indie pop", "soul", "r&b", "funk", "dance", "latin"] },
+  { name: "Winding Down", genres: ["ambient", "folk", "acoustic", "indie folk", "classical", "lo-fi", "neo-soul"] },
+];
+
+/** First-run crates: all favorites, plus a few genre-based moods. */
+export function seedCrates(): CrateDefinition[] {
+  const crates: CrateDefinition[] = [{ ...makeEmptyCrate(0), name: "Favorites" }];
+  for (const seed of SEED_GENRE_CRATES) {
+    crates.push({
+      ...makeEmptyCrate(crates.length),
+      name: seed.name,
       filters: {
-        rules: ctx.prefer_genres.map((g, i) => ({ id: `r${i + 1}`, field: "genre" as const, operator: "is", value: g })),
-        matchMode: "OR",
+        rules: [{ id: "r1", field: "genre", operator: "is_any_of", value: seed.genres.join(MULTI_SEP) }],
+        matchMode: "AND",
       },
-      strategy: { type: "weighted", weighting: { ...weighting } },
+      include_recommendations: true,
+    });
+  }
+  return crates;
+}
+
+function numberArray(v: unknown): number[] {
+  return Array.isArray(v) ? v.filter((n): n is number => typeof n === "number") : [];
+}
+
+/**
+ * Brings stored crates to the current shape. Older crates carried a source,
+ * a count and a pick strategy (weighted, random or AI); those go away:
+ * - the friends crate and AI "new music" crates are dropped (friend recs live
+ *   on Discover now);
+ * - a "List is favorite" rule becomes include_recommendations: false;
+ * - a crate whose only rule was "List is recommendation" is dropped, since
+ *   Discover is that list; alongside other rules it just becomes
+ *   include_recommendations: true.
+ * Idempotent: current-shape crates come back unchanged, and `changed` says
+ * whether anything needs saving.
+ */
+export function normalizeCrates(raw: unknown): { crates: CrateDefinition[]; changed: boolean } {
+  if (!Array.isArray(raw)) return { crates: [], changed: raw !== undefined };
+  const out: CrateDefinition[] = [];
+
+  const sorted = [...raw]
+    .filter((c): c is Record<string, unknown> => typeof c === "object" && c !== null)
+    .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+
+  for (const c of sorted) {
+    if (c.source === "friends") continue;
+    const strategy = c.strategy as { type?: string } | undefined;
+    if (strategy?.type === "ai_new") continue;
+
+    const filters = (c.filters ?? {}) as Partial<CrateFilters>;
+    const allRules = Array.isArray(filters.rules) ? filters.rules : [];
+    const isList = (r: FilterRule, v: string) => r.field === "list" && r.value === v;
+    const hasFavRule = allRules.some((r) => isList(r, "favorite"));
+    const hasRecRule = allRules.some((r) => isList(r, "recommendation"));
+    const rules = allRules.filter((r) => r.field !== "list");
+    if (hasRecRule && rules.length === 0 && !("include_ids" in c)) continue;
+
+    out.push({
+      id: typeof c.id === "string" ? c.id : makeCrateId(),
+      name: typeof c.name === "string" ? c.name : "",
+      position: out.length,
+      use_filters: typeof c.use_filters === "boolean" ? c.use_filters : true,
+      filters: { rules, matchMode: filters.matchMode === "OR" ? "OR" : "AND" },
+      include_recommendations:
+        typeof c.include_recommendations === "boolean" ? c.include_recommendations : !hasFavRule,
+      include_ids: numberArray(c.include_ids),
+      exclude_ids: numberArray(c.exclude_ids),
     });
   }
 
-  push({
-    id: makeId(),
-    name: "From Friends",
-    source: "friends",
-    count,
-    filters: { rules: [], matchMode: "AND" },
-    strategy: { type: "random" },
-  });
+  return { crates: out, changed: canonical(out) !== canonical(sorted) };
+}
 
-  return crates;
+// JSON with object keys sorted. Stored crates come back from a JSONB column,
+// which doesn't keep key order, so plain JSON.stringify would see a change on
+// every load.
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    return `{${Object.keys(obj)
+      .filter((k) => obj[k] !== undefined)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${canonical(obj[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
