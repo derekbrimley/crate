@@ -46,7 +46,7 @@ export function Lists({ onLogout }: ListsProps) {
     recommendations, setRecommendations,
     listsLoaded, loadLists,
     pickStats,
-    crateDefs, saveCrateDefs,
+    crateDefs, saveCrateDefs, crateMetaLoaded, loadCrateMeta,
   } = useDataCache();
 
   const navigate = useNavigate();
@@ -63,6 +63,11 @@ export function Lists({ onLogout }: ListsProps) {
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [showCoverage, setShowCoverage] = useState(false);
   const [editing, setEditing] = useState<CrateDefinition | null>(null);
+
+  // Crate definitions feed the coverage panel and "save as crate".
+  useEffect(() => {
+    if (!crateMetaLoaded) loadCrateMeta();
+  }, [crateMetaLoaded, loadCrateMeta]);
 
   useEffect(() => {
     if (!listsLoaded) {

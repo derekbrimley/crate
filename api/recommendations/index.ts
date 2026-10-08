@@ -19,7 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const recipients = await getRecentRecipients(user.id);
       return res.json({ recipients });
     }
-    const recommendations = await getPendingFriendRecommendations(user.id);
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || "4", 10) || 4, 1), 50);
+    const recommendations = await getPendingFriendRecommendations(user.id, limit);
     return res.json({ recommendations });
   }
 

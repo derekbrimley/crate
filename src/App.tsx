@@ -6,7 +6,10 @@ import { PlayerProvider } from "./hooks/usePlayer";
 import { PlayerBar } from "./components/PlayerBar";
 import { Login } from "./pages/Login";
 import { ResetPassword } from "./pages/ResetPassword";
-import { Crates } from "./pages/Crates";
+import { Home } from "./pages/Home";
+import { CratesIndex } from "./pages/CratesIndex";
+import { CratePage } from "./pages/CratePage";
+import { Discover } from "./pages/Discover";
 import { Lists } from "./pages/Lists";
 import { AddAlbums } from "./pages/AddAlbums";
 import { History } from "./pages/History";
@@ -34,11 +37,14 @@ function AppInner() {
     <PlayerProvider>
       <DataCacheProvider>
         <Routes>
-          <Route path="/" element={<Crates onLogout={logout} />} />
+          <Route path="/" element={<Home onLogout={logout} />} />
+          <Route path="/crates" element={<CratesIndex onLogout={logout} />} />
+          <Route path="/crates/:id" element={<CratePage onLogout={logout} />} />
+          <Route path="/discover" element={<Discover onLogout={logout} />} />
           <Route path="/library" element={<Lists onLogout={logout} />} />
           <Route path="/add" element={<AddAlbums />} />
           <Route path="/history" element={<History onLogout={logout} />} />
-          <Route path="/callback" element={<Crates onLogout={logout} />} />
+          <Route path="/callback" element={<Home onLogout={logout} />} />
         </Routes>
         {/* Inside the cache provider: the player bar's album details pane edits
             the library, and the cached lists have to follow. */}

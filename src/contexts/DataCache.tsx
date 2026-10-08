@@ -1,23 +1,28 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { getDashboard, getDashboardCrate, getAlbums, getHistory, getConfig, saveCrates } from "../services/api";
-import type { Item, DashboardData, AppConfig, PickHistoryEntry, PickStat, CrateDefinition } from "../types";
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
+import { getCrateMeta, getAlbums, getHistory, saveCrates } from "../services/api";
+import type { Item, PickHistoryEntry, PickStat, CrateDefinition } from "../types";
+
+/** A frozen browse order: item ids, playable first, then resting (in cooldown). */
+export interface RankOrder {
+  ranked: number[];
+  resting: number[];
+}
 
 interface DataCacheState {
-  // Dashboard
-  cratesData: Map<string, Item[]>;
+  // Crate definitions + all-time play stats (GET /picks/dashboard?meta=1)
   crateDefs: CrateDefinition[];
-  dashboardConfig: AppConfig | null;
-  dashboardLoaded: boolean;
-  // Crate ids whose results were deferred by the server (AI crates) and still
-  // need a per-crate fetch.
-  deferredCrates: Set<string>;
-  loadDashboard: () => Promise<void>;
-  refreshCrate: (crateId: string) => Promise<void>;
+  crateMetaLoaded: boolean;
+  loadCrateMeta: () => Promise<void>;
   saveCrateDefs: (next: CrateDefinition[]) => Promise<void>;
-  loadConfig: () => Promise<void>;
 
-  // Pick stats (all-time, from dashboard _picks)
+  // Pick stats keyed by item id, plus the raw rows the ranking takes.
   pickStats: Map<number, { pickCount: number; lastPickedTs: number | null }>;
+  pickInfos: PickStat[];
+
+  // Browse orders for the crate and Discover pages, keyed by page. Kept for
+  // the session so going back and forth doesn't reshuffle a list.
+  getRankOrder: (key: string) => RankOrder | undefined;
+  setRankOrder: (key: string, order: RankOrder | undefined) => void;
 
   // Lists
   favorites: Item[];
@@ -35,14 +40,18 @@ interface DataCacheState {
 
 const DataCacheContext = createContext<DataCacheState | null>(null);
 
+function sortByPosition(crates: CrateDefinition[] | undefined): CrateDefinition[] {
+  return (crates ?? []).slice().sort((a, b) => a.position - b.position);
+}
+
 export function DataCacheProvider({ children }: { children: React.ReactNode }) {
-  // Dashboard state
-  const [cratesData, setCratesData] = useState<Map<string, Item[]>>(new Map());
   const [crateDefs, setCrateDefs] = useState<CrateDefinition[]>([]);
-  const [dashboardConfig, setDashboardConfig] = useState<AppConfig | null>(null);
-  const [dashboardLoaded, setDashboardLoaded] = useState(false);
-  const [deferredCrates, setDeferredCrates] = useState<Set<string>>(new Set());
-  const [rawPickStats, setRawPickStats] = useState<PickStat[]>([]);
+  const [crateMetaLoaded, setCrateMetaLoaded] = useState(false);
+  const [pickInfos, setPickInfos] = useState<PickStat[]>([]);
+
+  // A ref, not state: orders are written while rendering a list and read back
+  // on the next visit, so changing one must not re-render anything.
+  const rankOrders = useRef(new Map<string, RankOrder>());
 
   // Lists state
   const [favorites, setFavorites] = useState<Item[]>([]);
@@ -53,65 +62,34 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<PickHistoryEntry[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  const loadConfig = useCallback(async () => {
-    try {
-      const { config } = await getConfig();
-      setDashboardConfig(config);
-    } catch {}
-  }, []);
-
   const pickStats = useMemo(() => {
     const map = new Map<number, { pickCount: number; lastPickedTs: number | null }>();
-    for (const p of rawPickStats) {
+    for (const p of pickInfos) {
       map.set(p.item_id, { pickCount: Number(p.pick_count), lastPickedTs: p.picked_at });
     }
     return map;
-  }, [rawPickStats]);
+  }, [pickInfos]);
 
-  const loadDashboard = useCallback(async () => {
+  const loadCrateMeta = useCallback(async () => {
     try {
-      const result = await getDashboard();
-      if (result._config) {
-        setDashboardConfig(result._config);
-        setCrateDefs((result._config.crates ?? []).slice().sort((a, b) => a.position - b.position));
-      }
-      if (result._picks) setRawPickStats(result._picks);
-      const map = new Map<string, Item[]>();
-      const deferred = new Set<string>();
-      for (const c of result.crates ?? []) {
-        map.set(c.id, c.items);
-        if (c.deferred) deferred.add(c.id);
-      }
-      setCratesData(map);
-      setDeferredCrates(deferred);
-      setDashboardLoaded(true);
+      const result = await getCrateMeta();
+      if (result._config) setCrateDefs(sortByPosition(result._config.crates));
+      if (result._picks) setPickInfos(result._picks);
+      setCrateMetaLoaded(true);
     } catch (err) {
-      console.error("Failed to load dashboard:", err);
-    }
-  }, []);
-
-  const refreshCrate = useCallback(async (crateId: string) => {
-    try {
-      const result = await getDashboardCrate(crateId);
-      const got = result.crates?.find((c) => c.id === crateId);
-      if (got) {
-        setCratesData((prev) => new Map(prev).set(crateId, got.items));
-        setDeferredCrates((prev) => {
-          if (!prev.has(crateId)) return prev;
-          const next = new Set(prev);
-          next.delete(crateId);
-          return next;
-        });
-      }
-    } catch (err) {
-      console.error("Failed to refresh crate:", err);
+      console.error("Failed to load crates:", err);
     }
   }, []);
 
   const saveCrateDefs = useCallback(async (next: CrateDefinition[]) => {
     const { config } = await saveCrates(next);
-    setDashboardConfig(config);
-    setCrateDefs((config.crates ?? []).slice().sort((a, b) => a.position - b.position));
+    setCrateDefs(sortByPosition(config.crates));
+  }, []);
+
+  const getRankOrder = useCallback((key: string) => rankOrders.current.get(key), []);
+  const setRankOrder = useCallback((key: string, order: RankOrder | undefined) => {
+    if (order) rankOrders.current.set(key, order);
+    else rankOrders.current.delete(key);
   }, []);
 
   const loadLists = useCallback(async () => {
@@ -139,16 +117,14 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   return (
     <DataCacheContext.Provider
       value={{
-        cratesData,
         crateDefs,
-        dashboardConfig,
-        dashboardLoaded,
-        deferredCrates,
-        loadDashboard,
-        refreshCrate,
+        crateMetaLoaded,
+        loadCrateMeta,
         saveCrateDefs,
-        loadConfig,
         pickStats,
+        pickInfos,
+        getRankOrder,
+        setRankOrder,
         favorites,
         recommendations,
         listsLoaded,

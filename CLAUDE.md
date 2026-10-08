@@ -25,7 +25,8 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - Supabase client in `src/lib/supabase.ts` (uses `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`)
 - `useAuth` hook manages Supabase session state, calls `POST /api/auth/sync` after Spotify OAuth
 - `services/api.ts` attaches `Authorization: Bearer <token>` to every request (token from Supabase session)
-- Pages: Dashboard, AddAlbums, Lists, History, Login
+- Pages: Home (`/`: Crates / Search / Discover tiles), CratesIndex (`/crates`), CratePage (`/crates/:id`), Discover (`/discover`), AddAlbums (`/add`), Lists (`/library`), History, Login
+- Crate and Discover pages show the **whole** pool, ranked on the client (`lib/ranking.ts` → `useRankedPool`): playable items in weighted-random order, then items still in cooldown ("Recently played"). The order is frozen per page in `DataCache` for the session, until reshuffled.
 
 ### API (`api/`)
 - Vercel serverless functions — each file exports a default `handler(req, res)`
@@ -45,7 +46,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
     - `GET /api/spotify/state` — current playback state (track + device)
     - `PUT /api/spotify/play` — start an album or playlist on a device, and record the pick (see below)
     - `PUT /api/spotify/control` — transport commands (resume/pause/next/previous/seek/volume)
-  - `api/picks/dashboard.ts` — GET picks for all modes
+  - `api/picks/dashboard.ts` — GET picks for all modes; `?meta=1` returns just crate definitions + play stats (what the client ranks from)
   - `api/picks/index.ts` — GET pick history
   - `api/config/index.ts` — GET/PATCH user config
 
@@ -56,6 +57,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - `spotify.ts` — Spotify API wrapper with automatic token refresh
 - `claude.ts` — Claude Haiku integration for context-aware suggestions
 - `selection.ts` — Weighted random album selection; receives config as a parameter
+- `ranking.ts` — Orders a whole pool for browsing (playable, then resting); `DISCOVER_WEIGHTING`
 - `defaults.ts` — Default user config values
 - `types.ts` — Shared DB row types
 

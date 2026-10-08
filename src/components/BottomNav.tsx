@@ -1,10 +1,10 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 const NAV_ITEMS = [
   {
     to: "/",
-    label: "CRATES",
+    label: "HOME",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round"
@@ -26,7 +26,14 @@ const NAV_ITEMS = [
   },
 ];
 
+// Home stays lit on the pages it leads to (crates, discover, search).
+function isNavActive(to: string, pathname: string): boolean {
+  if (to === "/") return !pathname.startsWith("/library");
+  return pathname.startsWith(to);
+}
+
 export function BottomNav() {
+  const { pathname } = useLocation();
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-crate-border"
@@ -38,41 +45,44 @@ export function BottomNav() {
     >
       <div className="flex max-w-xl lg:max-w-4xl mx-auto">
         {NAV_ITEMS.map(({ to, label, icon }) => (
-          <NavLink key={to} to={to} end={to === "/"} className="flex-1">
-            {({ isActive }) => (
-              <span className="flex flex-col items-center gap-1 pt-3 pb-2 w-full transition-all duration-200">
-                <span
-                  className="transition-all duration-200"
-                  style={{
-                    color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-                    filter: isActive
-                      ? "drop-shadow(0 0 6px rgb(var(--c-accent) / calc(0.7 * var(--tint)))) drop-shadow(0 0 12px rgb(var(--c-accent) / calc(0.4 * var(--tint))))"
-                      : "none",
-                  }}
-                >
-                  {icon}
+          <NavLink key={to} to={to} className="flex-1">
+            {() => {
+              const isActive = isNavActive(to, pathname);
+              return (
+                <span className="flex flex-col items-center gap-1 pt-3 pb-2 w-full transition-all duration-200">
+                  <span
+                    className="transition-all duration-200"
+                    style={{
+                      color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                      filter: isActive
+                        ? "drop-shadow(0 0 6px rgb(var(--c-accent) / calc(0.7 * var(--tint)))) drop-shadow(0 0 12px rgb(var(--c-accent) / calc(0.4 * var(--tint))))"
+                        : "none",
+                    }}
+                  >
+                    {icon}
+                  </span>
+                  <span
+                    className={`font-display text-[11px] transition-all duration-200 ${isActive ? "nav-active-label" : ""}`}
+                    style={{
+                      color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                      letterSpacing: "0.18em",
+                      textShadow: isActive ? "0 0 8px rgb(var(--c-accent) / calc(0.6 * var(--tint)))" : "none",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className={`rounded-full transition-all duration-300 ${isActive ? "nav-indicator" : ""}`}
+                    style={{
+                      width: 3,
+                      height: 3,
+                      background: isActive ? "rgb(var(--c-accent))" : "transparent",
+                      boxShadow: isActive ? "0 0 6px rgb(var(--c-accent)), 0 0 12px rgb(var(--c-accent))" : "none",
+                    }}
+                  />
                 </span>
-                <span
-                  className={`font-display text-[11px] transition-all duration-200 ${isActive ? "nav-active-label" : ""}`}
-                  style={{
-                    color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-                    letterSpacing: "0.18em",
-                    textShadow: isActive ? "0 0 8px rgb(var(--c-accent) / calc(0.6 * var(--tint)))" : "none",
-                  }}
-                >
-                  {label}
-                </span>
-                <span
-                  className={`rounded-full transition-all duration-300 ${isActive ? "nav-indicator" : ""}`}
-                  style={{
-                    width: 3,
-                    height: 3,
-                    background: isActive ? "rgb(var(--c-accent))" : "transparent",
-                    boxShadow: isActive ? "0 0 6px rgb(var(--c-accent)), 0 0 12px rgb(var(--c-accent))" : "none",
-                  }}
-                />
-              </span>
-            )}
+              );
+            }}
           </NavLink>
         ))}
       </div>

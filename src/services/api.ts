@@ -11,6 +11,7 @@ import type {
   SpotifyDevice,
   PlaybackState,
   MediaType,
+  FriendRecommendation,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -180,13 +181,9 @@ export async function getAlbumDetails(
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
 
-export async function getDashboard(): Promise<DashboardData> {
-  return request<DashboardData>("/picks/dashboard");
-}
-
-export async function getDashboardCrate(crateId: string): Promise<DashboardData> {
-  const params = new URLSearchParams({ crateId });
-  return request<DashboardData>(`/picks/dashboard?${params}`);
+/** Crate definitions and play stats, without running any crates. */
+export async function getCrateMeta(): Promise<DashboardData> {
+  return request<DashboardData>("/picks/dashboard?meta=1");
 }
 
 /**
@@ -263,6 +260,10 @@ export async function sendRecommendation(data: {
     method: "POST",
     body: JSON.stringify({ action: "send", ...data }),
   });
+}
+
+export async function getPendingRecommendations(limit = 4): Promise<{ recommendations: FriendRecommendation[] }> {
+  return request<{ recommendations: FriendRecommendation[] }>(`/recommendations?limit=${limit}`);
 }
 
 export async function getRecentRecipients(): Promise<{ recipients: { display_name: string | null; email: string | null }[] }> {
