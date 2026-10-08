@@ -34,7 +34,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - Routes:
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
   - `api/albums/index.ts` — GET/POST library items (albums, or playlists with `media_type: "playlist"`)
-  - `api/albums/search.ts` — GET Spotify search (albums + playlists)
+  - `api/albums/search.ts` — GET Spotify album search. Playlist search covers only the user's own playlists, filtered client-side (`src/lib/playlistSearch.ts`) from `GET /api/spotify/playlists`.
   - `api/albums/bulk.ts` — POST bulk-add albums
   - `api/albums/[id].ts` — DELETE item, POST promote to favorite, GET details (album: tracks + artist albums; `?type=playlist`: tracks + owner/description)
   - `api/spotify/[[...path]].ts` — Catch-all for Spotify routes:
