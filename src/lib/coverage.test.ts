@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { findUncovered } from "./coverage";
-import { makeEmptyCrate } from "../../lib/crates";
+import { makeEmptyCrate, everythingRule } from "../../lib/crates";
 import type { Item, CrateDefinition } from "../types";
 
 function item(id: number, list: "favorite" | "recommendation", genres: string[]): Item {
@@ -19,13 +19,17 @@ function item(id: number, list: "favorite" | "recommendation", genres: string[])
 }
 
 function crate(id: string, partial: Partial<CrateDefinition>): CrateDefinition {
-  return { ...makeEmptyCrate(0), id, name: id, include_recommendations: true, ...partial };
+  return {
+    ...makeEmptyCrate(0), id, name: id, include_recommendations: true,
+    filters: { rules: [everythingRule()], matchMode: "AND" },
+    ...partial,
+  };
 }
 
 const stats = new Map();
 
 describe("findUncovered", () => {
-  it("treats a catch-all (empty rules) library crate as covering everything", () => {
+  it("treats an Everything crate as covering everything", () => {
     const items = [item(1, "favorite", ["rock"]), item(2, "recommendation", ["jazz"])];
     const crates = [crate("c1", {})];
     const { albums, genres } = findUncovered(items, crates, stats);

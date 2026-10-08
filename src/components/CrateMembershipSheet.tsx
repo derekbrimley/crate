@@ -56,7 +56,7 @@ export function CrateMembershipSheet({ item, onClose }: CrateMembershipSheetProp
     setSaving("new");
     setError(null);
     try {
-      const crate = { ...makeEmptyCrate(crateDefs.length), name, use_filters: false, include_ids: [item.id] };
+      const crate = { ...makeEmptyCrate(crateDefs.length), name, include_ids: [item.id] };
       await saveCrateDefs([...crateDefs, crate]);
       setNewName("");
     } catch {

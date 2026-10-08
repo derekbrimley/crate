@@ -10,8 +10,8 @@ import AdvancedFilters from "../components/library/AdvancedFilters";
 import DuplicatesPanel from "../components/library/DuplicatesPanel";
 import CoveragePanel from "../components/library/CoveragePanel";
 import { findUncovered } from "../lib/coverage";
-import { applyFilters, getItemGenres } from "../lib/filters";
-import type { FilterRule } from "../lib/filters";
+import { applyFilters, getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
+import { everythingRule } from "../../lib/crates";
 import { backfillReleaseDates } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 
@@ -48,9 +48,11 @@ function crateFromLibraryView(
 ): CrateDefinition {
   const favoritesOnly =
     listFilter === "favorite" || rules.some((r) => r.field === "list" && r.value === "favorite");
+  const kept = rules.filter((r) => r.field !== "list" && ruleIsComplete(r));
   return {
     ...makeEmptyCrate(position),
-    filters: { rules: rules.filter((r) => r.field !== "list"), matchMode },
+    // An unfiltered view is the whole library, which a crate spells "Everything".
+    filters: { rules: kept.length > 0 ? kept : [everythingRule()], matchMode },
     include_recommendations: !favoritesOnly,
   };
 }
@@ -434,6 +436,7 @@ export function Lists({ onLogout }: ListsProps) {
             availableGenres={availableGenres}
             onChangeRules={(r) => { setRules(r); setSelectedAlbumId(null); }}
             onChangeMatchMode={setMatchMode}
+            hiddenFields={["all"]}
           />
         </div>
         {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}

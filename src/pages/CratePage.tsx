@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout";
 import { PageHeader, HeaderAction } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { CoverGrid, GridHeading } from "../components/CoverGrid";
+import { SuggestionsSection } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { CrateEditorModal } from "../components/CrateEditorModal";
 import { useLibraryData } from "../hooks/useLibraryData";
@@ -81,7 +82,7 @@ export function CratePage({ onLogout }: CratePageProps) {
           <p className="mt-16 text-center font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>
             THIS CRATE NO LONGER EXISTS
           </p>
-        ) : ranked.length + resting.length === 0 ? (
+        ) : ranked.length + resting.length === 0 && !crate.ai_suggestions ? (
           <div className="mt-16 flex flex-col items-center gap-3">
             <VinylDisc size={56} />
             <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE YET — EDIT IT, OR ADD RECORDS WITH "ADD TO CRATE"</p>
@@ -94,6 +95,7 @@ export function CratePage({ onLogout }: CratePageProps) {
                 <CoverGrid items={ranked} onSelect={setSelected} />
               </>
             )}
+            {crate.ai_suggestions && <SuggestionsSection target={crate.id} onSelect={setSelected} />}
             {resting.length > 0 && (
               <>
                 <GridHeading label="RECENTLY PLAYED" count={resting.length} />

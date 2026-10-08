@@ -1,6 +1,6 @@
 import type { Item } from "./types";
 
-export type FieldKey = "year" | "genre" | "artist" | "list" | "plays" | "last_played";
+export type FieldKey = "all" | "year" | "genre" | "artist" | "list" | "plays" | "last_played";
 
 export interface FilterRule {
   id: string;
@@ -29,6 +29,15 @@ interface FieldDef {
 }
 
 export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
+  // Matches every record. A crate's filters let nothing in until they have a
+  // rule, so "Everything" is how a crate takes the whole library (or, with
+  // recommendations off, every favorite).
+  all: {
+    label: "Everything",
+    operators: [{ key: "is", label: "in my library" }],
+    valueType: "text",
+    needsValue: () => false,
+  },
   year: {
     label: "Year",
     operators: [
@@ -112,7 +121,7 @@ export function makeRuleId(seed: number): string {
   return `rule-${seed}`;
 }
 
-function ruleIsComplete(rule: FilterRule): boolean {
+export function ruleIsComplete(rule: FilterRule): boolean {
   const def = FIELD_DEFS[rule.field];
   const valueOptional = def.needsValue ? !def.needsValue(rule.operator) : false;
   if (!valueOptional && rule.value.trim() === "") return false;
@@ -124,6 +133,8 @@ function ruleIsComplete(rule: FilterRule): boolean {
 
 function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>): boolean {
   switch (rule.field) {
+    case "all":
+      return true;
     case "year": {
       const y = getItemYear(item);
       if (y === null) return false;

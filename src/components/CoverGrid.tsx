@@ -50,12 +50,20 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
         ) : (
           <VinylDisc size={64} />
         )}
-        {item.list_type === "recommendation" && (
+        {item.list_type === "recommendation" && (item.metadata as Record<string, unknown> | null)?._ai_suggested !== true && (
           <span
             className="absolute top-1.5 left-2 font-mono pointer-events-none"
             style={{ fontSize: 14, color: "rgb(var(--c-rec))", textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
           >
             ◈
+          </span>
+        )}
+        {(item.metadata as Record<string, unknown> | null)?._ai_suggested === true && (
+          <span
+            className="absolute top-1.5 right-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 10, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
+          >
+            ✦ NEW
           </span>
         )}
         {playlist && (
@@ -83,7 +91,7 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
 }
 
 /** A labelled divider between grid sections. */
-export function GridHeading({ label, count }: { label: string; count?: number }) {
+export function GridHeading({ label, count, action }: { label: string; count?: number; action?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2" style={{ padding: "0 12px", margin: "18px 0 10px" }}>
       <span className="font-display shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-text))", letterSpacing: "0.18em" }}>
@@ -91,8 +99,9 @@ export function GridHeading({ label, count }: { label: string; count?: number })
       </span>
       <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
       {count !== undefined && (
-        <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>{count}</span>
+        <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{count}</span>
       )}
+      {action}
     </div>
   );
 }

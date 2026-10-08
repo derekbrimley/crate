@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import AdvancedFilters from "./library/AdvancedFilters";
 import { VinylDisc } from "./VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
-import { cratePool, makeEmptyCrate } from "../../lib/crates";
-import { getItemGenres, type FilterRule } from "../lib/filters";
+import { cratePool, makeEmptyCrate, everythingRule } from "../../lib/crates";
+import { getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
 import { isPlaylist } from "../lib/media";
 import type { CrateDefinition, Item } from "../types";
 
@@ -28,7 +28,7 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
   const allItems = useMemo(() => [...favorites, ...recommendations], [favorites, recommendations]);
 
   const [name, setName] = useState(initial.name);
-  const [useFilters, setUseFilters] = useState(initial.use_filters);
+  const [aiSuggestions, setAiSuggestions] = useState(initial.ai_suggestions);
   const [includeRecs, setIncludeRecs] = useState(initial.include_recommendations);
   const [rules, setRules] = useState<FilterRule[]>(initial.filters.rules);
   const [matchMode, setMatchMode] = useState<"AND" | "OR">(initial.filters.matchMode);
@@ -48,7 +48,7 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
   const draft: CrateDefinition = {
     ...initial,
     name: name.trim() || "Untitled Crate",
-    use_filters: useFilters,
+    ai_suggestions: aiSuggestions,
     include_recommendations: includeRecs,
     filters: { rules, matchMode },
     include_ids: includeIds,
@@ -129,38 +129,38 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
 
           {/* Filters */}
           <Section>
-            <Switch
-              label="Fill from your library"
-              help="Records matching the filters below join automatically."
-              on={useFilters}
-              onChange={setUseFilters}
-            />
-            {useFilters && (
-              <>
-                <Switch
-                  label="Include recommendations"
-                  help="Off: only your favorites can match."
-                  on={includeRecs}
-                  onChange={setIncludeRecs}
-                />
-                <label style={{ ...labelStyle, marginTop: 14 }}>Filters</label>
-                {rules.length === 0 && (
-                  <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))", marginBottom: 10, lineHeight: 1.5 }}>
-                    No filters: every {includeRecs ? "favorite and recommendation" : "favorite"} is in.
-                  </p>
-                )}
-                <AdvancedFilters
-                  rules={rules}
-                  matchMode={matchMode}
-                  availableGenres={availableGenres}
-                  onChangeRules={setRules}
-                  onChangeMatchMode={setMatchMode}
-                  hiddenFields={["list"]}
-                  size="large"
-                  alwaysOpen
-                />
-              </>
+            <label style={labelStyle}>Filters</label>
+            {!rules.some(ruleIsComplete) && (
+              <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))", marginBottom: 10, lineHeight: 1.5 }}>
+                Records matching a filter join this crate automatically. With no filters, it holds only what you add by hand.{" "}
+                <button
+                  type="button"
+                  onClick={() => setRules([...rules.filter(ruleIsComplete), everythingRule(`r-all-${Date.now()}`)])}
+                  className="font-mono cursor-pointer"
+                  style={{ background: "transparent", border: "none", padding: 0, color: "rgb(var(--c-accent))", fontSize: 13, textDecoration: "underline" }}
+                >
+                  Include everything
+                </button>
+              </p>
             )}
+            <AdvancedFilters
+              rules={rules}
+              matchMode={matchMode}
+              availableGenres={availableGenres}
+              onChangeRules={setRules}
+              onChangeMatchMode={setMatchMode}
+              hiddenFields={["list"]}
+              size="large"
+              alwaysOpen
+            />
+            <div style={{ marginTop: 12 }}>
+              <Switch
+                label="Include recommendations"
+                help="Off: only your favorites can match the filters."
+                on={includeRecs}
+                onChange={setIncludeRecs}
+              />
+            </div>
           </Section>
 
           {/* Added by hand */}
@@ -204,6 +204,16 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
               ))}
             </Section>
           )}
+
+          {/* Claude */}
+          <Section>
+            <Switch
+              label="✦ Claude suggestions"
+              help="Claude suggests new albums that fit this crate, shown on its page."
+              on={aiSuggestions}
+              onChange={setAiSuggestions}
+            />
+          </Section>
         </div>
 
         {/* Footer */}

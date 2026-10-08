@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is s?
 
-Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums and playlists (favorites + recommendations), and pick what to play from **crates** (user-defined sets: library filters plus records added or left out by hand), **search**, or **Discover** (recommendations, least-heard first). Crate and Discover pages list everything, ordered by a weighted-random algorithm that favors what hasn't been played lately. The redesign plan and its remaining steps are in `docs/superpowers/specs/2026-10-08-redesign-design.md`.
+Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums and playlists (favorites + recommendations), and pick what to play from **crates** (user-defined sets: library filters plus records added or left out by hand), **search**, or **Discover** (recommendations, least-heard first). Crate and Discover pages list everything, ordered by a weighted-random algorithm that favors what hasn't been played lately, and can show Claude's suggestions for new albums (a per-crate toggle, and one on Discover). The redesign plan and its remaining steps are in `docs/superpowers/specs/2026-10-08-redesign-design.md`.
 
 ## Development Commands
 
@@ -46,7 +46,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
     - `GET /api/spotify/state` — current playback state (track + device)
     - `PUT /api/spotify/play` — start an album or playlist on a device, and record the pick (see below)
     - `PUT /api/spotify/control` — transport commands (resume/pause/next/previous/seek/volume)
-  - `api/picks/dashboard.ts` — GET crate definitions + per-item play stats (what the client ranks from). Seeds crates on first load and converts older crate shapes (`normalizeCrates`), saving the result.
+  - `api/picks/dashboard.ts` — GET crate definitions + per-item play stats (what the client ranks from). Seeds crates on first load and converts older crate shapes (`normalizeCrates`), saving the result. `?suggest=<crateId>|discover` returns Claude's new-album suggestions instead (`lib/suggestions.ts`).
   - `api/picks/index.ts` — GET pick history
   - `api/config/index.ts` — GET/PATCH user config
 
@@ -55,6 +55,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - `auth.ts` — JWT verification helper used by all API routes
 - `queries.ts` — All async Supabase DB queries
 - `spotify.ts` — Spotify API wrapper with automatic token refresh
+- `claude.ts` — Claude (Haiku 5.5, structured output) suggesting new albums for a taste + theme; `suggestions.ts` matches them to Spotify albums and drops ones already owned (`albumKey.ts`)
 - `crates.ts` — The crate model, shared with the client: `CrateDefinition`, `cratePool` (what's in a crate), membership toggling, seeding, and `normalizeCrates` for older shapes. Every crate ranks with `DEFAULT_WEIGHTING`.
 - `selection.ts` — Weighted random album selection; receives config as a parameter
 - `ranking.ts` — Orders a whole pool for browsing (playable, then resting); `DISCOVER_WEIGHTING`
@@ -76,7 +77,7 @@ Row Level Security is enabled on all tables. API routes use the service role key
 - **Spotify tokens** are stored in `public.users` and refreshed server-side by `lib/spotify.ts`. Supabase only provides the provider token at initial sign-in; after that, the server manages refresh independently.
 - **No in-memory caches** — serverless functions are stateless; config and Claude suggestion caches from the old Express server were removed.
 - **`selectAlbums`** in `lib/selection.ts` takes a `SelectionConfig` parameter instead of fetching config internally.
-- **Crates live in `user_config` under the `crates` key** as a JSON array. A crate is `(filter matches, favorites only unless include_recommendations) + include_ids − exclude_ids`; with `use_filters` off it's purely hand-picked. "Add to crate" in the details pane toggles an item via `toggleMembership`.
+- **Crates live in `user_config` under the `crates` key** as a JSON array. A crate is `(filter matches, favorites only unless include_recommendations) + include_ids − exclude_ids`. Filters let nothing in until they have a rule, so a crate with no rules is hand-picked only; the "Everything" rule (`field: "all"`) takes the whole library. "Add to crate" in the details pane toggles an item via `toggleMembership`. `ai_suggestions` shows Claude's picks on the crate page; Discover's switch is the `discover_ai_suggestions` config key. Suggestions are cached client-side for the session (each fetch is a paid Claude call).
 
 ## Environment
 
@@ -84,6 +85,7 @@ Copy `.env.example` to `.env.local`. Required variables:
 - `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` — public, exposed to client build
 - `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — server-only
 - `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` — for server-side token refresh
+- `ANTHROPIC_API_KEY` — Claude album suggestions
 
 ## Supabase setup
 

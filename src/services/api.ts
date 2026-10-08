@@ -187,6 +187,14 @@ export async function getCrateMeta(): Promise<DashboardData> {
 }
 
 /**
+ * Claude's suggestions for new albums: for a crate (by id) or for Discover.
+ * Slow (a Claude call plus Spotify searches), so callers cache the result.
+ */
+export async function getSuggestions(target: string): Promise<{ suggestions: Item[] }> {
+  return request<{ suggestions: Item[] }>(`/picks/dashboard?suggest=${encodeURIComponent(target)}`);
+}
+
+/**
  * `source` says where the play started (a crate id, "search", "library", ...).
  * The server records the pick when the URI belongs to a library item.
  */

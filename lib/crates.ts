@@ -1,4 +1,4 @@
-import { applyFilters, MULTI_SEP, type FilterRule, type PickStat } from "./filters";
+import { applyFilters, ruleIsComplete, MULTI_SEP, type FilterRule, type PickStat } from "./filters";
 import type { SelectionConfig } from "./selection";
 import type { Item } from "./types";
 
@@ -11,21 +11,23 @@ export interface CrateFilters {
 
 /**
  * A crate's contents are
- *   (library items matching its filters, if use_filters)
- *   + (items added by hand) − (items left out by hand).
- * Added-by-hand items always appear, recommendations included. With
- * use_filters off, a crate is a hand-picked list.
+ *   (library items matching its filters) + (items added by hand)
+ *   − (items left out by hand).
+ * Filters let nothing in until they have a rule, so a crate with no rules is a
+ * hand-picked list, and the "Everything" rule takes the whole library.
+ * Added-by-hand items always appear, recommendations included.
  */
 export interface CrateDefinition {
   id: string;
   name: string;
   position: number;
-  use_filters: boolean;
   filters: CrateFilters;
   /** Whether filter matches may include recommendations, not only favorites. */
   include_recommendations: boolean;
   include_ids: number[];
   exclude_ids: number[];
+  /** Show Claude's suggestions for new albums that fit the crate. */
+  ai_suggestions: boolean;
 }
 
 /** The one weighting every crate is ranked with. */
@@ -45,7 +47,7 @@ export const DEFAULT_WEIGHTING: Weighting = {
 // ── Contents ──────────────────────────────────────────────────────────────────
 
 function matchesFilters(crate: CrateDefinition, items: Item[], pickStats: Map<number, PickStat>): Item[] {
-  if (!crate.use_filters) return [];
+  if (!crate.filters.rules.some(ruleIsComplete)) return [];
   const base = crate.include_recommendations ? items : items.filter((i) => i.list_type === "favorite");
   return applyFilters(base, crate.filters.rules, crate.filters.matchMode, pickStats);
 }
@@ -102,12 +104,17 @@ export function makeEmptyCrate(position: number): CrateDefinition {
     id: makeCrateId(),
     name: "",
     position,
-    use_filters: true,
     filters: { rules: [], matchMode: "AND" },
     include_recommendations: false,
     include_ids: [],
     exclude_ids: [],
+    ai_suggestions: false,
   };
+}
+
+/** The rule that matches every record. */
+export function everythingRule(id = "r-all"): FilterRule {
+  return { id, field: "all", operator: "is", value: "" };
 }
 
 const SEED_GENRE_CRATES: { name: string; genres: string[] }[] = [
@@ -118,9 +125,11 @@ const SEED_GENRE_CRATES: { name: string; genres: string[] }[] = [
   { name: "Winding Down", genres: ["ambient", "folk", "acoustic", "indie folk", "classical", "lo-fi", "neo-soul"] },
 ];
 
-/** First-run crates: all favorites, plus a few genre-based moods. */
+/** First-run crates: all favorites, a few genre-based moods, and Claude's picks. */
 export function seedCrates(): CrateDefinition[] {
-  const crates: CrateDefinition[] = [{ ...makeEmptyCrate(0), name: "Favorites" }];
+  const crates: CrateDefinition[] = [
+    { ...makeEmptyCrate(0), name: "Favorites", filters: { rules: [everythingRule()], matchMode: "AND" } },
+  ];
   for (const seed of SEED_GENRE_CRATES) {
     crates.push({
       ...makeEmptyCrate(crates.length),
@@ -132,6 +141,7 @@ export function seedCrates(): CrateDefinition[] {
       include_recommendations: true,
     });
   }
+  crates.push({ ...makeEmptyCrate(crates.length), name: "Surprise Me", ai_suggestions: true });
   return crates;
 }
 
@@ -142,12 +152,15 @@ function numberArray(v: unknown): number[] {
 /**
  * Brings stored crates to the current shape. Older crates carried a source,
  * a count and a pick strategy (weighted, random or AI); those go away:
- * - the friends crate and AI "new music" crates are dropped (friend recs live
- *   on Discover now);
+ * - the friends crate is dropped (friend recs live on Discover now);
  * - a "List is favorite" rule becomes include_recommendations: false;
  * - a crate whose only rule was "List is recommendation" is dropped, since
  *   Discover is that list; alongside other rules it just becomes
- *   include_recommendations: true.
+ *   include_recommendations: true;
+ * - old crates with no rules took the whole library, so they get the
+ *   "Everything" rule (no rules now means hand-picked only);
+ * - AI "new music" and hybrid crates keep Claude's suggestions turned on;
+ *   an AI new-music crate never drew from the library, so it gets no rule.
  * Idempotent: current-shape crates come back unchanged, and `changed` says
  * whether anything needs saving.
  */
@@ -161,27 +174,30 @@ export function normalizeCrates(raw: unknown): { crates: CrateDefinition[]; chan
 
   for (const c of sorted) {
     if (c.source === "friends") continue;
-    const strategy = c.strategy as { type?: string } | undefined;
-    if (strategy?.type === "ai_new") continue;
+    const isOld = "strategy" in c;
+    const strategy = (c.strategy as { type?: string } | undefined)?.type;
 
     const filters = (c.filters ?? {}) as Partial<CrateFilters>;
     const allRules = Array.isArray(filters.rules) ? filters.rules : [];
     const isList = (r: FilterRule, v: string) => r.field === "list" && r.value === v;
     const hasFavRule = allRules.some((r) => isList(r, "favorite"));
     const hasRecRule = allRules.some((r) => isList(r, "recommendation"));
-    const rules = allRules.filter((r) => r.field !== "list");
-    if (hasRecRule && rules.length === 0 && !("include_ids" in c)) continue;
+    let rules = allRules.filter((r) => r.field !== "list");
+    const hasActiveRule = rules.some(ruleIsComplete);
+    if (isOld && hasRecRule && !hasActiveRule) continue;
+    if (isOld && !hasActiveRule && strategy !== "ai_new") rules = [everythingRule()];
 
     out.push({
       id: typeof c.id === "string" ? c.id : makeCrateId(),
       name: typeof c.name === "string" ? c.name : "",
       position: out.length,
-      use_filters: typeof c.use_filters === "boolean" ? c.use_filters : true,
       filters: { rules, matchMode: filters.matchMode === "OR" ? "OR" : "AND" },
       include_recommendations:
         typeof c.include_recommendations === "boolean" ? c.include_recommendations : !hasFavRule,
       include_ids: numberArray(c.include_ids),
       exclude_ids: numberArray(c.exclude_ids),
+      ai_suggestions:
+        typeof c.ai_suggestions === "boolean" ? c.ai_suggestions : strategy === "ai_new" || strategy === "hybrid",
     });
   }
 

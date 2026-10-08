@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  cratePool, crateMembership, toggleMembership, normalizeCrates, seedCrates, makeEmptyCrate,
+  cratePool, crateMembership, toggleMembership, normalizeCrates, seedCrates, makeEmptyCrate, everythingRule,
   type CrateDefinition,
 } from "./crates";
 import type { Item } from "./types";
@@ -28,11 +28,23 @@ function crate(over: Partial<CrateDefinition>): CrateDefinition {
 }
 
 const jazzRule = { rules: [{ id: "r", field: "genre" as const, operator: "is", value: "jazz" }], matchMode: "AND" as const };
+const everything = { rules: [everythingRule()], matchMode: "AND" as const };
 const ids = (xs: Item[]) => xs.map((i) => i.id);
 
 describe("cratePool", () => {
-  it("with no rules, holds every favorite", () => {
-    expect(ids(cratePool(crate({}), items, stats))).toEqual([1, 2, 4]);
+  it("with the Everything rule, holds every favorite (and recommendations when on)", () => {
+    expect(ids(cratePool(crate({ filters: everything }), items, stats))).toEqual([1, 2, 4]);
+    expect(ids(cratePool(crate({ filters: everything, include_recommendations: true }), items, stats))).toEqual([1, 2, 3, 4]);
+  });
+
+  it("with no rules, holds only hand-picked records", () => {
+    expect(ids(cratePool(crate({}), items, stats))).toEqual([]);
+    expect(ids(cratePool(crate({ include_ids: [3] }), items, stats))).toEqual([3]);
+  });
+
+  it("treats a crate whose only rule is blank as having no rules", () => {
+    const blank = { rules: [{ id: "r", field: "genre" as const, operator: "is", value: "" }], matchMode: "AND" as const };
+    expect(ids(cratePool(crate({ filters: blank }), items, stats))).toEqual([]);
   });
 
   it("includes recommendations only when toggled on", () => {
@@ -45,12 +57,8 @@ describe("cratePool", () => {
     expect(ids(cratePool(c, items, stats))).toEqual([4, 3]);
   });
 
-  it("is only the hand-picked items when filters are off", () => {
-    expect(ids(cratePool(crate({ use_filters: false, include_ids: [2] }), items, stats))).toEqual([2]);
-  });
-
   it("skips hand-picked ids that are no longer in the library", () => {
-    expect(ids(cratePool(crate({ use_filters: false, include_ids: [99, 2] }), items, stats))).toEqual([2]);
+    expect(ids(cratePool(crate({ include_ids: [99, 2] }), items, stats))).toEqual([2]);
   });
 });
 
@@ -90,17 +98,29 @@ describe("normalizeCrates", () => {
       filters: { rules: [], matchMode: "AND" }, strategy: { type: "random" } },
   ];
 
-  it("converts old crates and drops Discover, AI new-music and friends crates", () => {
+  it("converts old crates, dropping the Discover and friends crates", () => {
     const { crates, changed } = normalizeCrates(old);
     expect(changed).toBe(true);
-    expect(crates.map((c) => c.name)).toEqual(["Favorites", "Jazz"]);
+    expect(crates.map((c) => c.name)).toEqual(["Favorites", "Surprise Me", "Jazz"]);
     expect(crates[0]).toEqual({
-      id: "fav", name: "Favorites", position: 0, use_filters: true,
-      filters: { rules: [], matchMode: "AND" },
-      include_recommendations: false, include_ids: [], exclude_ids: [],
+      id: "fav", name: "Favorites", position: 0,
+      filters: { rules: [everythingRule()], matchMode: "AND" },
+      include_recommendations: false, include_ids: [], exclude_ids: [], ai_suggestions: false,
     });
-    expect(crates[1].include_recommendations).toBe(true);
-    expect(crates[1].position).toBe(1);
+    expect(crates[2].include_recommendations).toBe(true);
+    expect(crates[2].position).toBe(2);
+  });
+
+  it("keeps Claude suggestions on for AI new-music crates, without library rules", () => {
+    const surprise = normalizeCrates(old).crates[1];
+    expect(surprise.ai_suggestions).toBe(true);
+    expect(surprise.filters.rules).toEqual([]);
+  });
+
+  it("turns a pool-picking AI crate into a plain filtered crate", () => {
+    const jazz = normalizeCrates(old).crates[2];
+    expect(jazz.ai_suggestions).toBe(false);
+    expect(jazz.filters).toEqual(jazzRule);
   });
 
   it("leaves current crates alone, whatever their key order", () => {
@@ -123,6 +143,8 @@ describe("seedCrates", () => {
     const seeds = seedCrates();
     expect(seeds[0].name).toBe("Favorites");
     expect(seeds[0].include_recommendations).toBe(false);
+    expect(seeds[0].filters.rules).toEqual([everythingRule()]);
+    expect(seeds.some((c) => c.ai_suggestions)).toBe(true);
     expect(seeds.length).toBeGreaterThan(1);
     expect(normalizeCrates(seeds).changed).toBe(false);
   });
