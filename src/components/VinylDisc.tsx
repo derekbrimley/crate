@@ -9,7 +9,7 @@ interface VinylDiscProps {
 
 export function VinylDisc({
   size = 80,
-  labelColor = "#c4892a",
+  labelColor = "rgb(var(--c-label))",
   isSpinning = false,
   className = "",
 }: VinylDiscProps) {
@@ -22,7 +22,7 @@ export function VinylDisc({
       style={{ display: "block" }}
     >
       {/* Main disc */}
-      <circle cx="50" cy="50" r="49" fill="#0f0f0f" />
+      <circle cx="50" cy="50" r="49" style={{ fill: "rgb(var(--c-vinyl))" }} />
       {/* Outer rim highlight */}
       <circle cx="50" cy="50" r="49" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
       {/* Grooves — concentric circles at decreasing radii */}
@@ -38,7 +38,7 @@ export function VinylDisc({
         />
       ))}
       {/* Record label */}
-      <circle cx="50" cy="50" r="14" fill={labelColor} />
+      <circle cx="50" cy="50" r="14" style={{ fill: labelColor }} />
       {/* Label shine ring */}
       <circle cx="50" cy="50" r="13.5" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.5" />
       {/* Label text lines (decorative) */}

@@ -108,9 +108,9 @@ export function AlbumCard({
                 fontSize: 7,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#ff5e00",
-                textShadow: "0 0 6px rgba(255,94,0,0.5)",
-                border: "1px solid rgba(255,94,0,0.3)",
+                color: "rgb(var(--c-accent))",
+                textShadow: "0 0 6px rgb(var(--c-accent) / calc(0.5 * var(--tint)))",
+                border: "1px solid rgb(var(--c-accent) / calc(0.3 * var(--tint)))",
               }}
             >
               AI Suggested

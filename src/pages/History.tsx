@@ -82,10 +82,10 @@ export function History({ onLogout }: HistoryProps) {
           width: 28,
           height: 28,
           borderRadius: "50%",
-          background: "linear-gradient(135deg, #3a2010, #261406)",
-          border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
-          color: showProfile ? "#ff5e00" : "#907558",
-          boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+          background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
+          border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+          color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+          boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
         }}
         title="Profile"
       >
@@ -103,10 +103,10 @@ export function History({ onLogout }: HistoryProps) {
         <div className="px-5 pt-4 space-y-3">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex gap-3 py-2">
-              <div className="w-12 h-12 shrink-0 animate-pulse" style={{ background: "#1a1218" }} />
+              <div className="w-12 h-12 shrink-0 animate-pulse" style={{ background: "rgb(var(--c-elevated))" }} />
               <div className="flex-1 space-y-2 pt-1">
-                <div className="h-2.5 w-36 animate-pulse" style={{ background: "#1a1218" }} />
-                <div className="h-2 w-24 animate-pulse" style={{ background: "#1a1218" }} />
+                <div className="h-2.5 w-36 animate-pulse" style={{ background: "rgb(var(--c-elevated))" }} />
+                <div className="h-2 w-24 animate-pulse" style={{ background: "rgb(var(--c-elevated))" }} />
               </div>
             </div>
           ))}
@@ -127,21 +127,21 @@ export function History({ onLogout }: HistoryProps) {
               {/* Date divider tab */}
               <div
                 className="sticky z-10 flex items-center gap-3 px-5 py-2"
-                style={{ top: 56, background: "rgba(9,7,10,0.97)", backdropFilter: "blur(12px)" }}
+                style={{ top: 56, background: "rgb(var(--c-bg) / calc(0.97 * var(--tint)))", backdropFilter: "blur(12px)" }}
               >
                 <div
                   className="font-display text-sm px-3 py-0.5"
                   style={{
-                    color: "#907558",
-                    border: "1px solid rgba(61,40,21,0.8)",
+                    color: "rgb(var(--c-muted))",
+                    border: "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
                     letterSpacing: "0.18em",
-                    background: "rgba(9,7,10,0.9)",
+                    background: "rgb(var(--c-bg) / calc(0.9 * var(--tint)))",
                   }}
                 >
                   {label.toUpperCase()}
                 </div>
-                <div className="flex-1 h-px" style={{ background: "rgba(61,40,21,0.4)" }} />
-                <span className="font-mono text-[9px]" style={{ color: "rgba(144,117,88,0.4)", letterSpacing: "0.1em" }}>
+                <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border) / calc(0.4 * var(--tint)))" }} />
+                <span className="font-mono text-[9px]" style={{ color: "rgb(var(--c-muted) / calc(0.4 * var(--tint)))", letterSpacing: "0.1em" }}>
                   {entries.length} {entries.length === 1 ? "RECORD" : "RECORDS"}
                 </span>
               </div>
@@ -158,7 +158,7 @@ export function History({ onLogout }: HistoryProps) {
                       onClick={() => setSelectedItem(entryToItem(entry))}
                       className="flex items-center gap-3 py-3 cursor-pointer"
                       style={{
-                        borderBottom: i < entries.length - 1 ? "1px solid rgba(61,40,21,0.3)" : "none",
+                        borderBottom: i < entries.length - 1 ? "1px solid rgb(var(--c-border) / calc(0.3 * var(--tint)))" : "none",
                       }}
                     >
                       {/* Sleeve art */}
@@ -167,7 +167,7 @@ export function History({ onLogout }: HistoryProps) {
                         style={{
                           width: 48,
                           height: 48,
-                          boxShadow: "2px 2px 8px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.06)",
+                          boxShadow: "2px 2px 8px rgba(0,0,0,0.7), inset 0 0 0 1px rgb(var(--c-hi) / calc(0.06 * var(--tint-hi)))",
                         }}
                       >
                         {entry.image_url ? (
@@ -180,7 +180,7 @@ export function History({ onLogout }: HistoryProps) {
                         ) : (
                           <div
                             className="w-full h-full flex items-center justify-center"
-                            style={{ background: "#1a1218" }}
+                            style={{ background: "rgb(var(--c-elevated))" }}
                           >
                             <VinylDisc size={32} />
                           </div>
@@ -191,20 +191,20 @@ export function History({ onLogout }: HistoryProps) {
                       <div className="flex-1 min-w-0">
                         <p
                           className="font-type truncate leading-tight"
-                          style={{ fontSize: 13, color: "#f2e8d2", letterSpacing: "0.01em" }}
+                          style={{ fontSize: 13, color: "rgb(var(--c-text))", letterSpacing: "0.01em" }}
                         >
                           {entry.title}
                         </p>
                         <p
                           className="font-mono truncate mt-0.5"
-                          style={{ fontSize: 10, color: "#907558", letterSpacing: "0.06em" }}
+                          style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.06em" }}
                         >
                           {entry.creator}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <span
                             className="font-mono"
-                            style={{ fontSize: 9, color: "rgba(144,117,88,0.5)", letterSpacing: "0.08em" }}
+                            style={{ fontSize: 9, color: "rgb(var(--c-muted) / calc(0.5 * var(--tint)))", letterSpacing: "0.08em" }}
                           >
                             {entry.context && contextInfo
                               ? `${modeInfo.label} · ${contextInfo.label.toUpperCase()}`
@@ -216,7 +216,7 @@ export function History({ onLogout }: HistoryProps) {
                       {/* Time */}
                       <span
                         className="font-mono shrink-0 tabular-nums"
-                        style={{ fontSize: 10, color: "rgba(144,117,88,0.45)", letterSpacing: "0.05em" }}
+                        style={{ fontSize: 10, color: "rgb(var(--c-muted) / calc(0.45 * var(--tint)))", letterSpacing: "0.05em" }}
                       >
                         {formatTime(entry.picked_at_ts)}
                       </span>

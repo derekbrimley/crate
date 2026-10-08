@@ -119,11 +119,11 @@ export function NowPlayingSheet({ album, onClose }: NowPlayingSheetProps) {
         ) : (
           <div
             className="flex items-center justify-center"
-            style={{ background: "#1a1210", borderTop: "2px solid #ff5e00", height: 120 }}
+            style={{ background: "rgb(var(--c-elevated))", borderTop: "2px solid rgb(var(--c-accent))", height: 120 }}
           >
             <div
               className="animate-spin"
-              style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid #ff5e00", borderTopColor: "transparent" }}
+              style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgb(var(--c-accent))", borderTopColor: "transparent" }}
             />
           </div>
         )}

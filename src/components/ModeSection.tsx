@@ -106,8 +106,8 @@ export function ModeSection({
       <div
         className="mx-5 wood-grain overflow-hidden"
         style={{
-          background: "linear-gradient(180deg, #2e1c0a 0%, #1e1008 40%, #1e1008 60%, #2e1c0a 100%)",
-          border: "2px solid #4a2e10",
+          background: "linear-gradient(180deg, rgb(var(--c-wood)) 0%, rgb(var(--c-wood-darker)) 40%, rgb(var(--c-wood-darker)) 60%, rgb(var(--c-wood)) 100%)",
+          border: "2px solid rgb(var(--c-wood-edge))",
           borderRadius: "2px",
           boxShadow:
             "inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.5)",
@@ -161,8 +161,8 @@ export function ModeSection({
         className="mx-5 wood-grain"
         style={{
           height: 6,
-          background: "#3d2210",
-          border: "1px solid #4a2e10",
+          background: "rgb(var(--c-wood-mid))",
+          border: "1px solid rgb(var(--c-wood-edge))",
           borderTop: "none",
           boxShadow: "0 3px 8px rgba(0,0,0,0.5)",
         }}

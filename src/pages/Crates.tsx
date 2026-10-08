@@ -178,9 +178,9 @@ export function Crates({ onLogout }: CratesProps) {
       <div
         className="sticky top-0 z-40 relative"
         style={{
-          background: "rgba(15,10,12,0.97)",
+          background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid #3d2815",
+          borderBottom: "1px solid rgb(var(--c-border))",
         }}
       >
         <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center" style={{ padding: "10px 12px 9px" }}>
@@ -188,9 +188,9 @@ export function Crates({ onLogout }: CratesProps) {
             className="font-display flex-1 leading-none"
             style={{
               fontSize: 22,
-              color: "#39ff14",
+              color: "rgb(var(--c-neon))",
               letterSpacing: "0.4em",
-              textShadow: "0 0 6px #39ff14, 0 0 18px #0fa",
+              textShadow: "0 0 6px rgb(var(--c-neon)), 0 0 18px #0fa",
             }}
           >
             CRATES
@@ -203,10 +203,10 @@ export function Crates({ onLogout }: CratesProps) {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "#ff5e00",
+                background: "rgb(var(--c-accent))",
                 border: "none",
                 color: "#fff",
-                boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
+                boxShadow: "0 2px 10px rgb(var(--c-accent) / calc(0.4 * var(--tint)))",
               }}
               title="New crate"
             >
@@ -222,10 +222,10 @@ export function Crates({ onLogout }: CratesProps) {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #3a2010, #261406)",
-                border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
-                color: showProfile ? "#ff5e00" : "#907558",
-                boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+                background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
+                border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
               }}
               title="Profile"
             >
@@ -357,22 +357,22 @@ function CrateSection({
       <div className="flex items-baseline gap-2" style={{ padding: "0 12px", marginBottom: 8 }}>
         <span
           className="font-display"
-          style={{ fontSize: 15, color: "#f2e8d2", letterSpacing: "0.15em" }}
+          style={{ fontSize: 15, color: "rgb(var(--c-text))", letterSpacing: "0.15em" }}
         >
           {name.toUpperCase()}
         </span>
-        <span className="font-mono" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+        <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
           {desc}
         </span>
-        <div className="flex-1 h-px" style={{ background: "#3d2815" }} />
-        <span className="font-mono" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em" }}>
+        <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
+        <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
           {items.length}
         </span>
         <button
           onClick={onMoveUp}
           disabled={!onMoveUp}
           className="flex items-center justify-center cursor-pointer disabled:opacity-25"
-          style={{ width: 20, height: 20, background: "transparent", border: "1px solid #3d2815", color: "#907558", fontSize: 10 }}
+          style={{ width: 20, height: 20, background: "transparent", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", fontSize: 10 }}
           title="Move crate up"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -383,7 +383,7 @@ function CrateSection({
           onClick={onMoveDown}
           disabled={!onMoveDown}
           className="flex items-center justify-center cursor-pointer disabled:opacity-25"
-          style={{ width: 20, height: 20, background: "transparent", border: "1px solid #3d2815", color: "#907558", fontSize: 10 }}
+          style={{ width: 20, height: 20, background: "transparent", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", fontSize: 10 }}
           title="Move crate down"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -397,8 +397,8 @@ function CrateSection({
             width: 20,
             height: 20,
             background: "transparent",
-            border: "1px solid #3d2815",
-            color: "#907558",
+            border: "1px solid rgb(var(--c-border))",
+            color: "rgb(var(--c-muted))",
             fontSize: 10,
           }}
           title="Edit crate"
@@ -416,8 +416,8 @@ function CrateSection({
             width: 20,
             height: 20,
             background: "transparent",
-            border: "1px solid #3d2815",
-            color: "#907558",
+            border: "1px solid rgb(var(--c-border))",
+            color: "rgb(var(--c-muted))",
             fontSize: 10,
           }}
           title="Refresh crate"
@@ -439,14 +439,14 @@ function CrateSection({
       {/* Shelf */}
       {loading ? (
         <div style={{ padding: "0 12px" }}>
-          <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "#2e1c0a" }} />
-          <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "#0e0609" }} />
-          <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "#221008" }} />
+          <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "rgb(var(--c-wood))" }} />
+          <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "rgb(var(--c-shelf))" }} />
+          <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "rgb(var(--c-wood-dark))" }} />
         </div>
       ) : items.length === 0 ? (
         <div className="flex items-center justify-center gap-3 py-6" style={{ padding: "0 12px" }}>
           <VinylDisc size={32} />
-          <p className="font-mono italic" style={{ fontSize: 11, color: "#907558", opacity: 0.7 }}>
+          <p className="font-mono italic" style={{ fontSize: 11, color: "rgb(var(--c-muted))", opacity: 0.7 }}>
             crate empty — add some records
           </p>
         </div>

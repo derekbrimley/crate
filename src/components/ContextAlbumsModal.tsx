@@ -69,18 +69,18 @@ export function ContextAlbumsModal({ context, items, onClose }: Props) {
         className="relative w-full max-w-md max-h-full sm:max-h-[90vh] overflow-y-auto scrollbar-hide
                    translate-y-8 opacity-0 transition-all duration-300 ease-out"
         style={{
-          background: "linear-gradient(180deg, #1a1210 0%, #0f0a0c 100%)",
-          border: "1px solid #3d2815",
-          boxShadow: "0 0 60px rgba(0,0,0,0.8), 0 0 20px rgba(255,94,0,0.08)",
+          background: "linear-gradient(180deg, rgb(var(--c-elevated)) 0%, rgb(var(--c-surface)) 100%)",
+          border: "1px solid rgb(var(--c-border))",
+          boxShadow: "0 0 60px rgba(0,0,0,0.8), 0 0 20px rgb(var(--c-accent) / calc(0.08 * var(--tint)))",
         }}
       >
         {/* Header */}
         <div
           className="sticky top-0 z-10 flex items-center justify-between px-4"
           style={{
-            background: "rgba(26,18,16,0.95)",
+            background: "rgb(var(--c-elevated) / calc(0.95 * var(--tint)))",
             backdropFilter: "blur(12px)",
-            borderBottom: "1px solid #3d2815",
+            borderBottom: "1px solid rgb(var(--c-border))",
             height: 44,
           }}
         >
@@ -107,7 +107,7 @@ export function ContextAlbumsModal({ context, items, onClose }: Props) {
               {matching.length > 0 && (
                 <Section
                   label={`Matching — ${matching.length} album${matching.length !== 1 ? "s" : ""}`}
-                  color="#ff5e00"
+                  color="rgb(var(--c-accent))"
                   items={matching.map((s) => s.item)}
                   preferGenres={context.prefer_genres}
                 />
@@ -116,7 +116,7 @@ export function ContextAlbumsModal({ context, items, onClose }: Props) {
               {neutral.length > 0 && (
                 <Section
                   label={`Neutral — ${neutral.length} album${neutral.length !== 1 ? "s" : ""}`}
-                  color="#907558"
+                  color="rgb(var(--c-muted))"
                   items={neutral.map((s) => s.item)}
                   preferGenres={context.prefer_genres}
                   defaultCollapsed={matching.length > 0}
@@ -192,7 +192,7 @@ function AlbumRow({ item, preferGenres }: AlbumRowProps) {
       {/* Thumbnail */}
       <div
         className="shrink-0 overflow-hidden"
-        style={{ width: 36, height: 36, background: "#1a1210", border: "1px solid #3d2815" }}
+        style={{ width: 36, height: 36, background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))" }}
       >
         {item.image_url ? (
           <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
@@ -208,7 +208,7 @@ function AlbumRow({ item, preferGenres }: AlbumRowProps) {
         {matchingGenres.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-0.5">
             {matchingGenres.map((g) => (
-              <span key={g} className="text-[8px] font-mono tracking-wider px-1 py-px" style={{ color: "#ff5e00", background: "rgba(255,94,0,0.1)", border: "1px solid rgba(255,94,0,0.25)" }}>
+              <span key={g} className="text-[8px] font-mono tracking-wider px-1 py-px" style={{ color: "rgb(var(--c-accent))", background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.25 * var(--tint)))" }}>
                 {g}
               </span>
             ))}

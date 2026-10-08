@@ -74,8 +74,8 @@ function SearchTab() {
           type="search" value={query} onChange={(e) => handleQuery(e.target.value)}
           placeholder="Search for an album..."
           className="w-full font-mono text-sm text-crate-text placeholder-crate-muted/50 outline-none transition-all"
-          style={{ background: "#1a1210", border: "1px solid #3d2815", borderBottom: "2px solid #ff5e00", padding: "10px 40px 10px 14px", letterSpacing: "0.04em" }}
-          onFocus={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(255,94,0,0.15)"; }}
+          style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", borderBottom: "2px solid rgb(var(--c-accent))", padding: "10px 40px 10px 14px", letterSpacing: "0.04em" }}
+          onFocus={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgb(var(--c-accent) / calc(0.15 * var(--tint)))"; }}
           onBlur={(e)  => { e.currentTarget.style.boxShadow = "none"; }}
         />
         {searching ? (
@@ -85,7 +85,7 @@ function SearchTab() {
         )}
       </div>
 
-      {error && <p className="mb-3 font-mono text-xs text-red-400" style={{ letterSpacing: "0.05em" }}>{error}</p>}
+      {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
 
       {results.length > 0 && (
         <ul>
@@ -110,25 +110,25 @@ function SearchTab() {
                     onClick={() => handlePlay(album)}
                     title="Play on Spotify"
                     className="flex items-center justify-center cursor-pointer"
-                    style={{ width: 28, height: 28, border: "1px solid rgba(29,185,84,0.4)", color: "#1DB954", background: "rgba(29,185,84,0.08)" }}
+                    style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                   </button>
                   {addedAs ? (
                     <span className="font-mono text-[9px] px-2 py-1"
-                      style={{ color: addedAs === "favorite" ? "#ff5e00" : "#00b4c8", letterSpacing: "0.12em" }}>
+                      style={{ color: addedAs === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
                       {addedAs === "favorite" ? "★ IN FAVS" : "◈ IN RECS"}
                     </span>
                   ) : (
                     <>
                       <button onClick={() => handleAdd(album, "favorite")} disabled={!!(addingFav || addingRec)}
                         className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                        style={{ background: "rgba(255,94,0,0.1)", border: "1px solid rgba(255,94,0,0.4)", color: "#ff5e00", letterSpacing: "0.12em" }}>
+                        style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
                         {addingFav ? "…" : "★ FAV"}
                       </button>
                       <button onClick={() => handleAdd(album, "recommendation")} disabled={!!(addingFav || addingRec)}
                         className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                        style={{ background: "rgba(0,180,200,0.1)", border: "1px solid rgba(0,180,200,0.4)", color: "#00b4c8", letterSpacing: "0.12em" }}>
+                        style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
                         {addingRec ? "…" : "◈ REC"}
                       </button>
                     </>
@@ -157,7 +157,7 @@ function SelectableRow({ album, selected, onToggle }: { album: LibraryAlbum; sel
   const disabled = album.already_added !== null;
   return (
     <li className={`flex items-center gap-3 py-2.5 border-b border-crate-border/50 last:border-0 transition-colors ${selected ? "bg-crate-accent/5" : ""} ${disabled ? "opacity-45" : ""}`}>
-      <input type="checkbox" checked={selected} disabled={disabled} onChange={() => onToggle(album.spotify_id)} className="w-4 h-4 shrink-0 accent-[#ff5e00]" />
+      <input type="checkbox" checked={selected} disabled={disabled} onChange={() => onToggle(album.spotify_id)} className="w-4 h-4 shrink-0 accent-crate-accent" />
       <SleeveArt url={album.image_url} title={album.title} size={40} />
       <div className="flex-1 min-w-0">
         <p className="font-mono text-xs font-medium text-crate-text truncate">{album.title}</p>
@@ -180,17 +180,17 @@ function BulkBar({ count, adding, onAdd }: { count: number; adding: boolean; onA
   return (
     <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
       <div className="max-w-xl mx-auto flex items-center justify-between gap-3 p-3"
-        style={{ background: "rgba(26,18,16,0.97)", border: "1px solid #3d2815", backdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.7)" }}>
+        style={{ background: "rgb(var(--c-elevated) / calc(0.97 * var(--tint)))", border: "1px solid rgb(var(--c-border))", backdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.7)" }}>
         <span className="font-mono text-xs text-crate-text" style={{ letterSpacing: "0.08em" }}>{count} SELECTED</span>
         <div className="flex gap-2">
           <button onClick={() => onAdd("favorite")} disabled={adding}
             className="font-mono text-[9px] px-3 py-2 transition-all disabled:opacity-40"
-            style={{ background: "rgba(255,94,0,0.15)", border: "1px solid rgba(255,94,0,0.5)", color: "#ff5e00", letterSpacing: "0.12em" }}>
+            style={{ background: "rgb(var(--c-accent) / calc(0.15 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
             {adding ? "ADDING…" : "★ FAVORITES"}
           </button>
           <button onClick={() => onAdd("recommendation")} disabled={adding}
             className="font-mono text-[9px] px-3 py-2 transition-all disabled:opacity-40"
-            style={{ background: "transparent", border: "1px solid #3d2815", color: "#907558", letterSpacing: "0.12em" }}>
+            style={{ background: "transparent", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
             {adding ? "ADDING…" : "◈ RECS"}
           </button>
         </div>
@@ -212,10 +212,10 @@ function SpotifyConnectPrompt({ onConnect }: { onConnect: () => void }) {
         className="flex items-center gap-2.5 px-5 py-3 font-display text-xs transition-all duration-150 active:scale-[0.97]"
         style={{
           background: "transparent",
-          border: "1px solid #39ff14",
-          color: "#39ff14",
-          textShadow: "0 0 8px #39ff14",
-          boxShadow: "0 0 6px rgba(57,255,20,0.2),inset 0 0 8px rgba(57,255,20,0.04)",
+          border: "1px solid rgb(var(--c-neon))",
+          color: "rgb(var(--c-neon))",
+          textShadow: "0 0 8px rgb(var(--c-neon))",
+          boxShadow: "0 0 6px rgb(var(--c-neon) / calc(0.2 * var(--tint))),inset 0 0 8px rgb(var(--c-neon) / calc(0.04 * var(--tint)))",
           letterSpacing: "0.2em",
         }}
       >
@@ -273,13 +273,13 @@ function LibraryTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: 
   };
 
   if (loading) return <div className="mt-16 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>;
-  if (error && !albums.length) return <p className="mt-10 text-center font-mono text-xs text-red-400">{error}</p>;
+  if (error && !albums.length) return <p className="mt-10 text-center font-mono text-xs text-crate-danger">{error}</p>;
   if (!albums.length) return <div className="mt-16 flex flex-col items-center gap-4"><VinylDisc size={60} /><p className="font-display text-3xl text-crate-muted/20 tracking-widest">EMPTY</p></div>;
 
   return (
     <>
-      {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgba(57,255,20,0.06)", border: "1px solid rgba(57,255,20,0.2)", color: "#39ff14", letterSpacing: "0.12em" }}>{successMsg}</div>}
-      {error && <p className="mb-2 font-mono text-xs text-red-400">{error}</p>}
+      {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
+      {error && <p className="mb-2 font-mono text-xs text-crate-danger">{error}</p>}
       <div className="flex items-center justify-between mb-3">
         <p className="font-mono text-[9px] text-crate-muted/60" style={{ letterSpacing: "0.12em" }}>{albums.length}/{total} RECORDS</p>
         {selectableAlbums.length > 0 && (
@@ -292,7 +292,7 @@ function LibraryTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: 
       {albums.length < total && (
         <button onClick={async () => { setLoadingMore(true); await loadPage(albums.length); setLoadingMore(false); }} disabled={loadingMore}
           className="mt-4 w-full py-3 font-mono text-[10px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
-          style={{ border: "1px solid #3d2815", letterSpacing: "0.15em" }}>
+          style={{ border: "1px solid rgb(var(--c-border))", letterSpacing: "0.15em" }}>
           {loadingMore ? "LOADING…" : `LOAD MORE (${total - albums.length} REMAINING)`}
         </button>
       )}
@@ -369,8 +369,8 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
             <p className="font-mono text-[10px] text-crate-muted">{active.track_count} TRACKS</p>
           </div>
         </div>
-        {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgba(57,255,20,0.06)", border: "1px solid rgba(57,255,20,0.2)", color: "#39ff14", letterSpacing: "0.12em" }}>{successMsg}</div>}
-        {error && <p className="mb-2 font-mono text-xs text-red-400">{error}</p>}
+        {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
+        {error && <p className="mb-2 font-mono text-xs text-crate-danger">{error}</p>}
         {loadingAlbums ? (
           <div className="mt-10 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
         ) : plAlbums.length === 0 ? (
@@ -394,7 +394,7 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
   }
 
   if (loadingPl) return <div className="mt-16 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>;
-  if (error && !playlists.length) return <p className="mt-10 text-center font-mono text-xs text-red-400">{error}</p>;
+  if (error && !playlists.length) return <p className="mt-10 text-center font-mono text-xs text-crate-danger">{error}</p>;
   if (!playlists.length) return <div className="mt-16 flex flex-col items-center gap-4"><VinylDisc size={60} /><p className="font-display text-3xl text-crate-muted/20 tracking-widest">EMPTY</p></div>;
 
   return (
@@ -417,7 +417,7 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
       {playlists.length < totalPl && (
         <button onClick={async () => { setLoadingMorePl(true); await loadPlaylists(playlists.length); setLoadingMorePl(false); }} disabled={loadingMorePl}
           className="mt-4 w-full py-3 font-mono text-[10px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
-          style={{ border: "1px solid #3d2815", letterSpacing: "0.15em" }}>
+          style={{ border: "1px solid rgb(var(--c-border))", letterSpacing: "0.15em" }}>
           {loadingMorePl ? "LOADING…" : `LOAD MORE (${totalPl - playlists.length} LEFT)`}
         </button>
       )}
@@ -448,10 +448,10 @@ export function AddAlbums() {
                 onClick={() => setActiveTab(tab.key)}
                 className="mr-5 pb-2.5 font-display text-sm transition-all duration-150"
                 style={{
-                  borderBottom: isActive ? "2px solid #ff5e00" : "2px solid transparent",
-                  color: isActive ? "#ff5e00" : "#907558",
+                  borderBottom: isActive ? "2px solid rgb(var(--c-accent))" : "2px solid transparent",
+                  color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                   letterSpacing: "0.18em",
-                  textShadow: isActive ? "0 0 8px rgba(255,94,0,0.4)" : "none",
+                  textShadow: isActive ? "0 0 8px rgb(var(--c-accent) / calc(0.4 * var(--tint)))" : "none",
                   marginBottom: -1,
                 }}
               >

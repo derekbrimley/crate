@@ -31,7 +31,7 @@ export function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-crate-border"
       style={{
-        background: "rgba(15,10,12,0.97)",
+        background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
         backdropFilter: "blur(16px)",
         boxShadow: "0 -4px 24px rgba(0,0,0,0.6)",
       }}
@@ -44,31 +44,31 @@ export function BottomNav() {
                 <span
                   className="transition-all duration-200"
                   style={{
-                    color: isActive ? "#ff5e00" : "#907558",
+                    color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                     filter: isActive
-                      ? "drop-shadow(0 0 6px rgba(255,94,0,0.7)) drop-shadow(0 0 12px rgba(255,94,0,0.4))"
+                      ? "drop-shadow(0 0 6px rgb(var(--c-accent) / calc(0.7 * var(--tint)))) drop-shadow(0 0 12px rgb(var(--c-accent) / calc(0.4 * var(--tint))))"
                       : "none",
                   }}
                 >
                   {icon}
                 </span>
                 <span
-                  className="font-display text-[11px] transition-all duration-200"
+                  className={`font-display text-[11px] transition-all duration-200 ${isActive ? "nav-active-label" : ""}`}
                   style={{
-                    color: isActive ? "#ff5e00" : "#907558",
+                    color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                     letterSpacing: "0.18em",
-                    textShadow: isActive ? "0 0 8px rgba(255,94,0,0.6)" : "none",
+                    textShadow: isActive ? "0 0 8px rgb(var(--c-accent) / calc(0.6 * var(--tint)))" : "none",
                   }}
                 >
                   {label}
                 </span>
                 <span
-                  className="rounded-full transition-all duration-300"
+                  className={`rounded-full transition-all duration-300 ${isActive ? "nav-indicator" : ""}`}
                   style={{
                     width: 3,
                     height: 3,
-                    background: isActive ? "#ff5e00" : "transparent",
-                    boxShadow: isActive ? "0 0 6px #ff5e00, 0 0 12px #ff5e00" : "none",
+                    background: isActive ? "rgb(var(--c-accent))" : "transparent",
+                    boxShadow: isActive ? "0 0 6px rgb(var(--c-accent)), 0 0 12px rgb(var(--c-accent))" : "none",
                   }}
                 />
               </span>

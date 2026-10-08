@@ -207,9 +207,9 @@ export function Lists({ onLogout }: ListsProps) {
       <div
         className="sticky top-0 z-40 relative"
         style={{
-          background: "rgba(15,10,12,0.97)",
+          background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid #3d2815",
+          borderBottom: "1px solid rgb(var(--c-border))",
         }}
       >
         <div className="max-w-xl lg:max-w-4xl mx-auto" style={{ padding: "10px 12px 9px" }}>
@@ -217,7 +217,7 @@ export function Lists({ onLogout }: ListsProps) {
           <div className="flex items-center mb-2">
             <h1
               className="font-display flex-1 leading-none"
-              style={{ fontSize: 22, color: "#f2e8d2", letterSpacing: "0.4em" }}
+              style={{ fontSize: 22, color: "rgb(var(--c-text))", letterSpacing: "0.4em" }}
             >
               LIBRARY
             </h1>
@@ -229,10 +229,10 @@ export function Lists({ onLogout }: ListsProps) {
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  background: "#ff5e00",
+                  background: "rgb(var(--c-accent))",
                   border: "none",
                   color: "#fff",
-                  boxShadow: "0 2px 10px rgba(255,94,0,0.4)",
+                  boxShadow: "0 2px 10px rgb(var(--c-accent) / calc(0.4 * var(--tint)))",
                 }}
                 title="Search for new albums"
               >
@@ -247,10 +247,10 @@ export function Lists({ onLogout }: ListsProps) {
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #3a2010, #261406)",
-                  border: showProfile ? "1.5px solid #ff5e00" : "1px solid #3d2815",
-                  color: showProfile ? "#ff5e00" : "#907558",
-                  boxShadow: showProfile ? "0 0 10px rgba(255,94,0,0.35)" : "none",
+                  background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
+                  border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                  color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                  boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
                 }}
                 title="Profile"
               >
@@ -265,12 +265,12 @@ export function Lists({ onLogout }: ListsProps) {
           <div
             className="flex items-center gap-1.5 mb-2"
             style={{
-              border: "1px solid #3d2815",
+              border: "1px solid rgb(var(--c-border))",
               padding: "4px 8px",
-              background: "#1a1210",
+              background: "rgb(var(--c-elevated))",
             }}
           >
-            <span style={{ color: "#907558", fontSize: 11 }}>⌕</span>
+            <span style={{ color: "rgb(var(--c-muted))", fontSize: 11 }}>⌕</span>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -282,7 +282,7 @@ export function Lists({ onLogout }: ListsProps) {
               <button
                 onClick={() => setSearch("")}
                 className="bg-transparent border-none cursor-pointer"
-                style={{ color: "#907558", fontSize: 10 }}
+                style={{ color: "rgb(var(--c-muted))", fontSize: 10 }}
               >
                 ✕
               </button>
@@ -291,7 +291,7 @@ export function Lists({ onLogout }: ListsProps) {
 
           {/* Sort + Group controls */}
           <div className="flex gap-1 items-center flex-wrap">
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               SORT
             </span>
             {SORT_OPTIONS.map(({ key, label }) => (
@@ -303,18 +303,18 @@ export function Lists({ onLogout }: ListsProps) {
                   fontSize: 10,
                   padding: "2px 6px",
                   letterSpacing: "0.08em",
-                  border: sort === key ? "1px solid #ff5e00" : "1px solid #3d2815",
-                  background: sort === key ? "rgba(255,94,0,0.1)" : "transparent",
-                  color: sort === key ? "#ff5e00" : "#907558",
+                  border: sort === key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                  background: sort === key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                  color: sort === key ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                 }}
               >
                 {label}{sort === key ? (sortDir === 1 ? " ↑" : " ↓") : ""}
               </button>
             ))}
 
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               LIST
             </span>
             {([["all", "ALL"], ["favorite", "★ FAV"], ["recommendation", "◈ REC"]] as [ListFilter, string][]).map(([key, label]) => (
@@ -326,18 +326,18 @@ export function Lists({ onLogout }: ListsProps) {
                   fontSize: 10,
                   padding: "2px 6px",
                   letterSpacing: "0.08em",
-                  border: listFilter === key ? "1px solid #ff5e00" : "1px solid #3d2815",
-                  background: listFilter === key ? "rgba(255,94,0,0.1)" : "transparent",
-                  color: listFilter === key ? "#ff5e00" : "#907558",
+                  border: listFilter === key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                  background: listFilter === key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                  color: listFilter === key ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                 }}
               >
                 {label}
               </button>
             ))}
 
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               GROUP
             </span>
             <select
@@ -347,20 +347,20 @@ export function Lists({ onLogout }: ListsProps) {
               style={{
                 fontSize: 10,
                 padding: "2px 4px",
-                border: group !== "none" ? "1px solid #ff5e00" : "1px solid #3d2815",
-                background: "#1a1210",
-                color: group !== "none" ? "#ff5e00" : "#907558",
+                border: group !== "none" ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                background: "rgb(var(--c-elevated))",
+                color: group !== "none" ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
               }}
             >
               {GROUP_OPTIONS.map((o) => (
                 <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </select>
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.08em" }}>
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
+            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
               {ruleFiltered.length} {ruleFiltered.length === 1 ? "ALBUM" : "ALBUMS"}
             </span>
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "#3d2815", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
             <button
               onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); setShowCoverage(false); return !v; })}
               className="font-mono shrink-0 cursor-pointer"
@@ -368,9 +368,9 @@ export function Lists({ onLogout }: ListsProps) {
                 fontSize: 10,
                 padding: "2px 6px",
                 letterSpacing: "0.08em",
-                border: showDuplicates ? "1px solid #ff5e00" : "1px solid #3d2815",
-                background: showDuplicates ? "rgba(255,94,0,0.1)" : "transparent",
-                color: showDuplicates ? "#ff5e00" : "#907558",
+                border: showDuplicates ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                background: showDuplicates ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                color: showDuplicates ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
               }}
             >
               DUPLICATES
@@ -382,9 +382,9 @@ export function Lists({ onLogout }: ListsProps) {
                 fontSize: 10,
                 padding: "2px 6px",
                 letterSpacing: "0.08em",
-                border: showCoverage ? "1px solid #ff5e00" : "1px solid #3d2815",
-                background: showCoverage ? "rgba(255,94,0,0.1)" : "transparent",
-                color: showCoverage ? "#ff5e00" : "#907558",
+                border: showCoverage ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                background: showCoverage ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                color: showCoverage ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
               }}
             >
               GAPS
@@ -396,9 +396,9 @@ export function Lists({ onLogout }: ListsProps) {
                 fontSize: 10,
                 padding: "2px 6px",
                 letterSpacing: "0.08em",
-                border: "1px solid #3d2815",
+                border: "1px solid rgb(var(--c-border))",
                 background: "transparent",
-                color: "#907558",
+                color: "rgb(var(--c-muted))",
               }}
             >
               SAVE AS CRATE
@@ -430,16 +430,16 @@ export function Lists({ onLogout }: ListsProps) {
           <div style={{ padding: "0 12px" }}>
             {[...Array(3)].map((_, i) => (
               <div key={i} style={{ marginBottom: 16 }}>
-                <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "#2e1c0a" }} />
-                <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "#0e0609" }} />
-                <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "#221008" }} />
+                <div className="animate-pulse" style={{ height: 7, margin: "0 12px", background: "rgb(var(--c-wood))" }} />
+                <div className="animate-pulse" style={{ height: 138, margin: "0 12px", background: "rgb(var(--c-shelf))" }} />
+                <div className="animate-pulse" style={{ height: 8, margin: "0 12px", background: "rgb(var(--c-wood-dark))" }} />
               </div>
             ))}
           </div>
         ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <VinylDisc size={56} />
-            <p className="font-mono text-center" style={{ fontSize: 11, color: "#907558", opacity: 0.5 }}>
+            <p className="font-mono text-center" style={{ fontSize: 11, color: "rgb(var(--c-muted))", opacity: 0.5 }}>
               {search ? "no albums match" : listFilter === "recommendation" ? "no recommendations yet" : listFilter === "favorite" ? "no favorites yet — add some records" : "no albums yet — add some records"}
             </p>
           </div>
