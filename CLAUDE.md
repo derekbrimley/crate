@@ -25,7 +25,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - Supabase client in `src/lib/supabase.ts` (uses `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`)
 - `useAuth` hook manages Supabase session state, calls `POST /api/auth/sync` after Spotify OAuth
 - `services/api.ts` attaches `Authorization: Bearer <token>` to every request (token from Supabase session)
-- Pages: Home (`/`: Crates / Search / Discover tiles), CratesIndex (`/crates`), CratePage (`/crates/:id`), Discover (`/discover`), AddAlbums (`/add`), Lists (`/library`), History, Login
+- Pages: Home (`/`: Crates / Search / Discover tiles), CratesIndex (`/crates`), CratePage (`/crates/:id`), Discover (`/discover`), Search (`/search?q=`: library matches, then Spotify albums / artists / your playlists; a 🔍 button in every page header opens it), AddAlbums (`/import`: bulk import from your Spotify library and playlists; `/add` redirects to `/search`), Lists (`/library`), History, Login
 - Crate and Discover pages show the **whole** pool, ranked on the client (`lib/ranking.ts` → `useRankedPool`): playable items in weighted-random order, then items still in cooldown ("Recently played"). The order is frozen per page in `DataCache` for the session, until reshuffled.
 
 ### API (`api/`)
@@ -35,7 +35,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - Routes:
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
   - `api/albums/index.ts` — GET/POST library items (albums, or playlists with `media_type: "playlist"`)
-  - `api/albums/search.ts` — GET Spotify album search. Playlist search covers only the user's own playlists, filtered client-side (`src/lib/playlistSearch.ts`) from `GET /api/spotify/playlists`.
+  - `api/albums/search.ts` — GET Spotify search: `?q=` albums, `?q=&type=artist` artists, `?artist=<id>` one artist's albums. Playlist search covers only the user's own playlists, filtered client-side (`src/lib/playlistSearch.ts`) from `GET /api/spotify/playlists`; library matches are client-side too (`src/lib/librarySearch.ts`).
   - `api/albums/bulk.ts` — POST bulk-add albums
   - `api/albums/[id].ts` — DELETE item, POST promote to favorite, GET details (album: tracks + artist albums; `?type=playlist`: tracks + owner/description)
   - `api/spotify/[[...path]].ts` — Catch-all for Spotify routes:

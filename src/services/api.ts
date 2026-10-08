@@ -107,6 +107,21 @@ export async function searchSpotify(
   );
 }
 
+export interface ArtistResult {
+  id: string;
+  name: string;
+  image_url: string | null;
+  genres: string[];
+}
+
+export async function searchArtists(query: string): Promise<{ artists: ArtistResult[] }> {
+  return request<{ artists: ArtistResult[] }>(`/albums/search?type=artist&q=${encodeURIComponent(query)}`);
+}
+
+export async function getArtistAlbums(artistId: string): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(`/albums/search?artist=${encodeURIComponent(artistId)}`);
+}
+
 export async function backfillReleaseDates(): Promise<{ updated: number }> {
   return request<{ updated: number }>("/albums/backfill", { method: "POST" });
 }

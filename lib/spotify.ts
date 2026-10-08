@@ -154,6 +154,21 @@ export async function searchAlbums(
   return data.albums.items.filter((a) => a.album_type !== "single");
 }
 
+export interface SpotifyArtist {
+  id: string;
+  name: string;
+  genres?: string[];
+  images: { url: string; width: number; height: number }[] | null;
+}
+
+export async function searchArtists(query: string, limit = 12): Promise<SpotifyArtist[]> {
+  const params = new URLSearchParams({ q: query, type: "artist", limit: String(limit) });
+  const res = await spotifyPublicFetch(`/search?${params}`);
+  if (!res.ok) throw new Error(`Spotify artist search failed: ${res.status}`);
+  const data = (await res.json()) as { artists?: { items: (SpotifyArtist | null)[] } };
+  return (data.artists?.items ?? []).filter((a): a is SpotifyArtist => Boolean(a?.id));
+}
+
 export interface SpotifySavedAlbum {
   added_at: string;
   album: SpotifyAlbum;

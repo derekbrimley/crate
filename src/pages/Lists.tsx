@@ -249,7 +249,7 @@ export function Lists({ onLogout }: ListsProps) {
             </h1>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate("/add")}
+                onClick={() => navigate("/search")}
                 className="flex items-center justify-center cursor-pointer"
                 style={{
                   width: 28,

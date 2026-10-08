@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import { DataCacheProvider } from "./contexts/DataCache";
 import { PlayerProvider } from "./hooks/usePlayer";
@@ -12,6 +12,7 @@ import { CratePage } from "./pages/CratePage";
 import { Discover } from "./pages/Discover";
 import { Lists } from "./pages/Lists";
 import { AddAlbums } from "./pages/AddAlbums";
+import { Search } from "./pages/Search";
 import { History } from "./pages/History";
 
 function AppInner() {
@@ -42,7 +43,10 @@ function AppInner() {
           <Route path="/crates/:id" element={<CratePage onLogout={logout} />} />
           <Route path="/discover" element={<Discover onLogout={logout} />} />
           <Route path="/library" element={<Lists onLogout={logout} />} />
-          <Route path="/add" element={<AddAlbums onLogout={logout} />} />
+          <Route path="/search" element={<Search onLogout={logout} />} />
+          <Route path="/import" element={<AddAlbums onLogout={logout} />} />
+          {/* The old Add page: its search moved to /search, its imports to /import. */}
+          <Route path="/add" element={<Navigate to="/search" replace />} />
           <Route path="/history" element={<History onLogout={logout} />} />
           <Route path="/callback" element={<Home onLogout={logout} />} />
         </Routes>

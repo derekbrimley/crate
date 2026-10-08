@@ -33,7 +33,7 @@ The library also holds Spotify **playlists**, not only albums.
 
 ### Navigation
 - Bottom nav: **Home · Library**. History lives in the profile menu.
-- Home offers the three options. Search replaces the Add page once it exists (step 4); until then the Search tile opens the Add page.
+- Home offers the three options. Search (`/search`) is one tap away from every page header and replaces the Add page; the Add page's bulk Spotify imports live on at `/import` (profile menu → Import from Spotify).
 
 ## Steps
 
@@ -43,7 +43,7 @@ The library also holds Spotify **playlists**, not only albums.
 | 1b | Search only your own playlists, Albums / My Playlists toggle | Done (#16) |
 | 2 | Home page with three tiles, crates index, crate page (full ranked list), Discover page with friends row; retire the shelf dashboard | Done (#17, #18) |
 | 3 | Crate editor: drop the weighting and AI options, add `include_recommendations`, items added or excluded by hand ("Add to crate…" sheet), convert existing crates, delete the AI code | Done |
-| 4 | Universal search page (`/search?q=`): library and Spotify results, albums / artists / playlists; replaces the Add page | |
+| 4 | Universal search page (`/search?q=`): library and Spotify results, albums / artists / playlists; replaces the Add page | Done |
 | 5 | Cleanup: remove the dead dashboard endpoint paths, `NowPlayingModal`, stale config keys | |
 
 ## Implementation notes

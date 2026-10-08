@@ -1,18 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
 import { PageHeader } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { useAuth } from "../hooks/useAuth";
 import { usePlayer } from "../hooks/usePlayer";
 import {
-  searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
-  getAllSpotifyPlaylists, getPlaylistAlbums, bulkAddAlbums,
+  addAlbum, getSpotifyLibrary, getSpotifyPlaylists, getPlaylistAlbums, bulkAddAlbums,
 } from "../services/api";
-import { matchPlaylists } from "../lib/playlistSearch";
 import type { LibraryAlbum, SpotifyPlaylistInfo } from "../types";
 
 type ListType = "favorite" | "recommendation";
-type Tab = "search" | "library" | "playlists";
+type Tab = "library" | "playlists";
 
 function SleeveArt({ url, title, size = 48 }: { url: string | null; title: string; size?: number }) {
   return url ? (
@@ -24,222 +22,6 @@ function SleeveArt({ url, title, size = 48 }: { url: string | null; title: strin
     <div className="shrink-0 flex items-center justify-center bg-crate-elevated" style={{ width: size, height: size }}>
       <VinylDisc size={Math.round(size * 0.7)} />
     </div>
-  );
-}
-
-type SearchMode = "albums" | "playlists";
-
-// Search results share the album row, so a playlist is shaped like one, with
-// its owner standing in for the artist.
-function playlistAsRow(pl: SpotifyPlaylistInfo): LibraryAlbum {
-  return {
-    media_type: "playlist",
-    spotify_id: pl.id,
-    title: pl.name,
-    artist: pl.owner ?? "",
-    image_url: pl.image_url,
-    spotify_uri: pl.uri,
-    spotify_url: pl.url,
-    total_tracks: pl.track_count,
-    already_added: pl.already_added,
-  };
-}
-
-function ModeToggle({ mode, onChange, albumCount, playlistCount }: {
-  mode: SearchMode;
-  onChange: (m: SearchMode) => void;
-  albumCount: number | null;
-  playlistCount: number | null;
-}) {
-  const options: { key: SearchMode; label: string; count: number | null }[] = [
-    { key: "albums", label: "ALBUMS", count: albumCount },
-    { key: "playlists", label: "MY PLAYLISTS", count: playlistCount },
-  ];
-  return (
-    <div className="flex mb-4" style={{ border: "1px solid rgb(var(--c-border))" }}>
-      {options.map(({ key, label, count }) => {
-        const active = mode === key;
-        return (
-          <button
-            key={key}
-            onClick={() => onChange(key)}
-            className="flex-1 font-mono text-[10px] py-2 transition-all duration-150"
-            style={{
-              background: active ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",
-              color: active ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-              letterSpacing: "0.15em",
-            }}
-          >
-            {label}{count !== null && <span className="opacity-60"> · {count}</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function SearchTab() {
-  const [query, setQuery]       = useState("");
-  const [mode, setMode]         = useState<SearchMode>("albums");
-  const [results, setResults]   = useState<LibraryAlbum[]>([]);
-  // The user's own Spotify playlists, loaded once and filtered locally.
-  const [myPlaylists, setMyPlaylists] = useState<SpotifyPlaylistInfo[] | null>(null);
-  const [playlistError, setPlaylistError] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [adding, setAdding]     = useState<string | null>(null);
-  const [addedIds, setAddedIds] = useState<Map<string, ListType>>(new Map());
-  const [error, setError]       = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
-  const player = usePlayer();
-
-  const handlePlay = async (album: LibraryAlbum) => {
-    const uri = album.spotify_uri || (album.spotify_id ? `spotify:${album.media_type ?? "album"}:${album.spotify_id}` : null);
-    if (!uri) return;
-    try {
-      await player.playAlbum(uri, undefined, "search");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Playback failed");
-    }
-  };
-
-  useEffect(() => {
-    getAllSpotifyPlaylists()
-      .then(setMyPlaylists)
-      .catch(() => { setPlaylistError("Couldn't load your Spotify playlists."); setMyPlaylists([]); });
-  }, []);
-
-  const handleQuery = (q: string) => {
-    setQuery(q);
-    clearTimeout(timer.current);
-    if (!q.trim()) { setResults([]); return; }
-    timer.current = setTimeout(async () => {
-      setSearching(true); setError(null);
-      try { const { albums } = await searchSpotify(q); setResults(albums); }
-      catch { setError("Search failed. Try again."); setResults([]); }
-      finally { setSearching(false); }
-    }, 400);
-  };
-
-  const playlistRows = myPlaylists ? matchPlaylists(myPlaylists, query).map(playlistAsRow) : [];
-
-  const handleAdd = async (album: LibraryAlbum, listType: ListType) => {
-    const key = `${album.spotify_id}:${listType}`;
-    setAdding(key);
-    try {
-      await addAlbum({
-        spotify_id: album.spotify_id, title: album.title, artist: album.artist,
-        image_url: album.image_url || undefined, spotify_uri: album.spotify_uri, spotify_url: album.spotify_url,
-        list_type: listType, media_type: album.media_type, total_tracks: album.total_tracks,
-      });
-      setAddedIds((prev) => new Map(prev).set(album.spotify_id, listType));
-    } catch { setError("Failed to add."); }
-    finally { setAdding(null); }
-  };
-
-  const renderRow = (album: LibraryAlbum) => {
-    // Albums already filed show only their label; the server marks them
-    // via already_added, and addedIds covers ones filed in this session.
-    const addedAs = addedIds.get(album.spotify_id) ?? album.already_added;
-    const addingFav = adding === `${album.spotify_id}:favorite`;
-    const addingRec = adding === `${album.spotify_id}:recommendation`;
-    return (
-      <li key={album.spotify_id} className="flex items-center gap-3 py-3 border-b border-crate-border/50 last:border-0">
-        <SleeveArt url={album.image_url} title={album.title} size={44} />
-        <div className="flex-1 min-w-0">
-          <p className="font-mono text-xs font-medium text-crate-text truncate">{album.title}</p>
-          <p className="font-mono text-[10px] text-crate-muted truncate mt-0.5">
-            {album.artist}
-            {album.total_tracks != null && <span className="opacity-50"> · {album.total_tracks} tracks</span>}
-          </p>
-        </div>
-        <div className="flex gap-1.5 shrink-0 items-center">
-          <button
-            onClick={() => handlePlay(album)}
-            title="Play on Spotify"
-            className="flex items-center justify-center cursor-pointer"
-            style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-          </button>
-          {addedAs ? (
-            <span className="font-mono text-[9px] px-2 py-1"
-              style={{ color: addedAs === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-              {addedAs === "favorite" ? "★ IN FAVS" : "◈ IN RECS"}
-            </span>
-          ) : (
-            <>
-              <button onClick={() => handleAdd(album, "favorite")} disabled={!!(addingFav || addingRec)}
-                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
-                {addingFav ? "…" : "★ FAV"}
-              </button>
-              <button onClick={() => handleAdd(album, "recommendation")} disabled={!!(addingFav || addingRec)}
-                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-                {addingRec ? "…" : "◈ REC"}
-              </button>
-            </>
-          )}
-        </div>
-      </li>
-    );
-  };
-
-  return (
-    <>
-      <div className="relative mb-5">
-        <input
-          type="search" value={query} onChange={(e) => handleQuery(e.target.value)}
-          placeholder={mode === "albums" ? "Search for an album..." : "Filter your playlists..."}
-          className="w-full font-mono text-sm text-crate-text placeholder-crate-muted/50 outline-none transition-all"
-          style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", borderBottom: "2px solid rgb(var(--c-accent))", padding: "10px 40px 10px 14px", letterSpacing: "0.04em" }}
-          onFocus={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgb(var(--c-accent) / calc(0.15 * var(--tint)))"; }}
-          onBlur={(e)  => { e.currentTarget.style.boxShadow = "none"; }}
-        />
-        {searching && mode === "albums" ? (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="w-3.5 h-3.5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
-        ) : (
-          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crate-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-        )}
-      </div>
-
-      <ModeToggle
-        mode={mode}
-        onChange={setMode}
-        albumCount={query.trim() && !searching ? results.length : null}
-        playlistCount={myPlaylists ? playlistRows.length : null}
-      />
-
-      {mode === "albums" ? (
-        <>
-          {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
-          {results.length > 0 && <ul>{results.map(renderRow)}</ul>}
-          {!searching && query && results.length === 0 && (
-            <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO RECORDS FOUND</p>
-          )}
-          {!query && (
-            <div className="mt-16 flex flex-col items-center gap-4">
-              <VinylDisc size={72} />
-              <p className="font-display text-3xl text-crate-muted/20 tracking-widest">Feel free to look around.</p>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
-          {playlistError && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{playlistError}</p>}
-          {myPlaylists === null ? (
-            <div className="mt-10 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
-          ) : playlistRows.length > 0 ? (
-            <ul>{playlistRows.map(renderRow)}</ul>
-          ) : !playlistError ? (
-            <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>
-              {query ? "NO MATCHING PLAYLISTS" : "NO PLAYLISTS"}
-            </p>
-          ) : null}
-        </>
-      )}
-    </>
   );
 }
 
@@ -570,7 +352,6 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
 }
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "search",    label: "SEARCH"    },
   { key: "library",   label: "LIBRARY"   },
   { key: "playlists", label: "PLAYLISTS" },
 ];
@@ -580,13 +361,13 @@ interface AddAlbumsProps {
 }
 
 export function AddAlbums({ onLogout }: AddAlbumsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("search");
+  const [activeTab, setActiveTab] = useState<Tab>("library");
   const { user, login } = useAuth();
   const spotifyConnected = !!user?.spotifyId;
 
   return (
     <Layout>
-      <PageHeader title="Dig for Records" backTo="back" onLogout={onLogout} />
+      <PageHeader title="Import from Spotify" backTo="back" onLogout={onLogout} />
       <div className="px-5 pt-5">
         <div className="flex mb-5 border-b border-crate-border">
           {TABS.map((tab) => {
@@ -609,7 +390,6 @@ export function AddAlbums({ onLogout }: AddAlbumsProps) {
             );
           })}
         </div>
-        {activeTab === "search"    && <SearchTab />}
         {activeTab === "library"   && <LibraryTab spotifyConnected={spotifyConnected} onConnectSpotify={login} />}
         {activeTab === "playlists" && <PlaylistsTab spotifyConnected={spotifyConnected} onConnectSpotify={login} />}
       </div>

@@ -53,6 +53,7 @@ export interface LibraryAlbum extends SpotifySearchResult {
   /** Absent on endpoints that only ever return albums. */
   media_type?: MediaType;
   total_tracks?: number;
+  release_date?: string;
   already_added: "favorite" | "recommendation" | null;
 }
 
