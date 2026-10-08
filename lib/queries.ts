@@ -25,6 +25,11 @@ export async function setConfig(userId: number, key: string, value: unknown): Pr
   );
 }
 
+export async function deleteConfigKeys(userId: number, keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await supabaseAdmin.from("user_config").delete().eq("user_id", userId).in("key", keys);
+}
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 
 export async function upsertUser(

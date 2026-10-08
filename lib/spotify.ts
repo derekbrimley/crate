@@ -380,10 +380,6 @@ export async function fetchAlbumMeta(
   return { genres: Array.from(genres), release_date, total_tracks };
 }
 
-export async function fetchAlbumGenres(albumId: string): Promise<string[]> {
-  return (await fetchAlbumMeta(albumId)).genres;
-}
-
 export interface SpotifyDevice {
   id: string | null;
   is_active: boolean;

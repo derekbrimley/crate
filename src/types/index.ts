@@ -122,8 +122,8 @@ export interface PickStat {
   pick_count: number;
 }
 
-export interface DashboardData {
-  crates?: { id: string; items: Item[]; deferred?: boolean }[];
+/** GET /api/crates: crate definitions (inside the user's config) and play stats. */
+export interface CrateMeta {
   _config?: AppConfig;
   _picks?: PickStat[];
 }

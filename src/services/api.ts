@@ -4,7 +4,7 @@ import type {
   LibraryAlbum,
   SpotifyPlaylistInfo,
   PickHistoryEntry,
-  DashboardData,
+  CrateMeta,
   AppConfig,
   AlbumDetails,
   CrateDefinition,
@@ -87,16 +87,6 @@ export async function deleteAlbum(id: number): Promise<void> {
 
 export async function promoteAlbum(id: number): Promise<void> {
   await request(`/albums/${id}`, { method: "POST" });
-}
-
-export async function moveAlbum(
-  id: number,
-  listType: "favorite" | "recommendation"
-): Promise<void> {
-  await request(`/albums/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ list_type: listType }),
-  });
 }
 
 export async function searchSpotify(
@@ -194,11 +184,11 @@ export async function getAlbumDetails(
   return request<AlbumDetails>(`/albums/${spotifyId}${query}`);
 }
 
-// ── Picks / Dashboard ─────────────────────────────────────────────────────────
+// ── Crates / Picks ─────────────────────────────────────────────────────────
 
 /** Crate definitions and play stats, without running any crates. */
-export async function getCrateMeta(): Promise<DashboardData> {
-  return request<DashboardData>("/picks/dashboard");
+export async function getCrateMeta(): Promise<CrateMeta> {
+  return request<CrateMeta>("/crates");
 }
 
 /**
@@ -206,7 +196,7 @@ export async function getCrateMeta(): Promise<DashboardData> {
  * Slow (a Claude call plus Spotify searches), so callers cache the result.
  */
 export async function getSuggestions(target: string): Promise<{ suggestions: Item[] }> {
-  return request<{ suggestions: Item[] }>(`/picks/dashboard?suggest=${encodeURIComponent(target)}`);
+  return request<{ suggestions: Item[] }>(`/crates?suggest=${encodeURIComponent(target)}`);
 }
 
 /**
@@ -304,10 +294,6 @@ export async function actOnRecommendation(
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-
-export async function getConfig(): Promise<{ config: AppConfig }> {
-  return request<{ config: AppConfig }>("/config");
-}
 
 export async function updateConfig(
   updates: Partial<AppConfig>
