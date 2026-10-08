@@ -47,7 +47,11 @@ export interface PickHistoryEntry {
   list_type: string;
 }
 
+export type MediaType = "album" | "playlist";
+
 export interface LibraryAlbum extends SpotifySearchResult {
+  /** Absent on endpoints that only ever return albums. */
+  media_type?: MediaType;
   total_tracks?: number;
   already_added: "favorite" | "recommendation" | null;
 }
@@ -58,6 +62,10 @@ export interface SpotifyPlaylistInfo {
   image_url: string | null;
   track_count: number;
   owner: string;
+  uri: string;
+  url: string;
+  /** Whether the playlist itself is saved to the library, and on which list. */
+  already_added: "favorite" | "recommendation" | null;
 }
 
 export interface AlbumTrack {
@@ -89,11 +97,19 @@ export interface SentRecommendation {
   status: string;
 }
 
+export interface PlaylistInfo {
+  owner: string | null;
+  description: string | null;
+  total_tracks: number;
+}
+
 export interface AlbumDetails {
   tracks: AlbumTrack[];
   artist_albums: ArtistAlbum[];
   genres: string[];
   sent_to: SentRecommendation[];
+  /** Present only for playlists. Their track `number` is the playlist position. */
+  playlist?: PlaylistInfo;
 }
 
 export interface Weighting {

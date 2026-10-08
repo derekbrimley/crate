@@ -25,9 +25,16 @@ function SleeveArt({ url, title, size = 48 }: { url: string | null; title: strin
   );
 }
 
+function ResultHeading({ label }: { label: string }) {
+  return (
+    <p className="font-mono text-[9px] text-crate-muted/60 mt-4 mb-1" style={{ letterSpacing: "0.15em" }}>{label}</p>
+  );
+}
+
 function SearchTab() {
   const [query, setQuery]       = useState("");
   const [results, setResults]   = useState<LibraryAlbum[]>([]);
+  const [playlists, setPlaylists] = useState<LibraryAlbum[]>([]);
   const [searching, setSearching] = useState(false);
   const [adding, setAdding]     = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Map<string, ListType>>(new Map());
@@ -36,10 +43,10 @@ function SearchTab() {
   const player = usePlayer();
 
   const handlePlay = async (album: LibraryAlbum) => {
-    const uri = album.spotify_uri || (album.spotify_id ? `spotify:album:${album.spotify_id}` : null);
+    const uri = album.spotify_uri || (album.spotify_id ? `spotify:${album.media_type ?? "album"}:${album.spotify_id}` : null);
     if (!uri) return;
     try {
-      await player.playAlbum(uri);
+      await player.playAlbum(uri, undefined, "search");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Playback failed");
     }
@@ -48,11 +55,15 @@ function SearchTab() {
   const handleQuery = (q: string) => {
     setQuery(q);
     clearTimeout(timer.current);
-    if (!q.trim()) { setResults([]); return; }
+    if (!q.trim()) { setResults([]); setPlaylists([]); return; }
     timer.current = setTimeout(async () => {
       setSearching(true); setError(null);
-      try { const { albums } = await searchSpotify(q); setResults(albums); }
-      catch { setError("Search failed. Try again."); setResults([]); }
+      try {
+        const data = await searchSpotify(q);
+        setResults(data.albums);
+        setPlaylists(data.playlists ?? []);
+      }
+      catch { setError("Search failed. Try again."); setResults([]); setPlaylists([]); }
       finally { setSearching(false); }
     }, 400);
   };
@@ -61,10 +72,63 @@ function SearchTab() {
     const key = `${album.spotify_id}:${listType}`;
     setAdding(key);
     try {
-      await addAlbum({ spotify_id: album.spotify_id, title: album.title, artist: album.artist, image_url: album.image_url || undefined, spotify_uri: album.spotify_uri, spotify_url: album.spotify_url, list_type: listType });
+      await addAlbum({
+        spotify_id: album.spotify_id, title: album.title, artist: album.artist,
+        image_url: album.image_url || undefined, spotify_uri: album.spotify_uri, spotify_url: album.spotify_url,
+        list_type: listType, media_type: album.media_type, total_tracks: album.total_tracks,
+      });
       setAddedIds((prev) => new Map(prev).set(album.spotify_id, listType));
     } catch { setError("Failed to add."); }
     finally { setAdding(null); }
+  };
+
+  const renderRow = (album: LibraryAlbum) => {
+    // Albums already filed show only their label; the server marks them
+    // via already_added, and addedIds covers ones filed in this session.
+    const addedAs = addedIds.get(album.spotify_id) ?? album.already_added;
+    const addingFav = adding === `${album.spotify_id}:favorite`;
+    const addingRec = adding === `${album.spotify_id}:recommendation`;
+    return (
+      <li key={album.spotify_id} className="flex items-center gap-3 py-3 border-b border-crate-border/50 last:border-0">
+        <SleeveArt url={album.image_url} title={album.title} size={44} />
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-xs font-medium text-crate-text truncate">{album.title}</p>
+          <p className="font-mono text-[10px] text-crate-muted truncate mt-0.5">
+            {album.artist}
+            {album.total_tracks != null && <span className="opacity-50"> · {album.total_tracks} tracks</span>}
+          </p>
+        </div>
+        <div className="flex gap-1.5 shrink-0 items-center">
+          <button
+            onClick={() => handlePlay(album)}
+            title="Play on Spotify"
+            className="flex items-center justify-center cursor-pointer"
+            style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </button>
+          {addedAs ? (
+            <span className="font-mono text-[9px] px-2 py-1"
+              style={{ color: addedAs === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
+              {addedAs === "favorite" ? "★ IN FAVS" : "◈ IN RECS"}
+            </span>
+          ) : (
+            <>
+              <button onClick={() => handleAdd(album, "favorite")} disabled={!!(addingFav || addingRec)}
+                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
+                {addingFav ? "…" : "★ FAV"}
+              </button>
+              <button onClick={() => handleAdd(album, "recommendation")} disabled={!!(addingFav || addingRec)}
+                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
+                {addingRec ? "…" : "◈ REC"}
+              </button>
+            </>
+          )}
+        </div>
+      </li>
+    );
   };
 
   return (
@@ -72,7 +136,7 @@ function SearchTab() {
       <div className="relative mb-5">
         <input
           type="search" value={query} onChange={(e) => handleQuery(e.target.value)}
-          placeholder="Search for an album..."
+          placeholder="Search for an album or playlist..."
           className="w-full font-mono text-sm text-crate-text placeholder-crate-muted/50 outline-none transition-all"
           style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", borderBottom: "2px solid rgb(var(--c-accent))", padding: "10px 40px 10px 14px", letterSpacing: "0.04em" }}
           onFocus={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgb(var(--c-accent) / calc(0.15 * var(--tint)))"; }}
@@ -88,59 +152,19 @@ function SearchTab() {
       {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
 
       {results.length > 0 && (
-        <ul>
-          {results.map((album) => {
-            // Albums already filed show only their label; the server marks them
-            // via already_added, and addedIds covers ones filed in this session.
-            const addedAs = addedIds.get(album.spotify_id) ?? album.already_added;
-            const addingFav = adding === `${album.spotify_id}:favorite`;
-            const addingRec = adding === `${album.spotify_id}:recommendation`;
-            return (
-              <li key={album.spotify_id} className="flex items-center gap-3 py-3 border-b border-crate-border/50 last:border-0">
-                <SleeveArt url={album.image_url} title={album.title} size={44} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-mono text-xs font-medium text-crate-text truncate">{album.title}</p>
-                  <p className="font-mono text-[10px] text-crate-muted truncate mt-0.5">
-                    {album.artist}
-                    {album.total_tracks != null && <span className="opacity-50"> · {album.total_tracks} tracks</span>}
-                  </p>
-                </div>
-                <div className="flex gap-1.5 shrink-0 items-center">
-                  <button
-                    onClick={() => handlePlay(album)}
-                    title="Play on Spotify"
-                    className="flex items-center justify-center cursor-pointer"
-                    style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  </button>
-                  {addedAs ? (
-                    <span className="font-mono text-[9px] px-2 py-1"
-                      style={{ color: addedAs === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-                      {addedAs === "favorite" ? "★ IN FAVS" : "◈ IN RECS"}
-                    </span>
-                  ) : (
-                    <>
-                      <button onClick={() => handleAdd(album, "favorite")} disabled={!!(addingFav || addingRec)}
-                        className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                        style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
-                        {addingFav ? "…" : "★ FAV"}
-                      </button>
-                      <button onClick={() => handleAdd(album, "recommendation")} disabled={!!(addingFav || addingRec)}
-                        className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
-                        style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-                        {addingRec ? "…" : "◈ REC"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          {playlists.length > 0 && <ResultHeading label="ALBUMS" />}
+          <ul>{results.map(renderRow)}</ul>
+        </>
+      )}
+      {playlists.length > 0 && (
+        <>
+          <ResultHeading label="PLAYLISTS" />
+          <ul>{playlists.map(renderRow)}</ul>
+        </>
       )}
 
-      {!searching && query && results.length === 0 && (
+      {!searching && query && results.length === 0 && playlists.length === 0 && (
         <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO RECORDS FOUND</p>
       )}
       {!query && (
@@ -313,6 +337,8 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
   const [selected, setSelected]           = useState<Set<string>>(new Set());
   const [bulkAdding, setBulkAdding]       = useState(false);
   const [successMsg, setSuccessMsg]       = useState<string | null>(null);
+  const [savingAs, setSavingAs]           = useState<ListType | null>(null);
+  const player = usePlayer();
 
   const loadPlaylists = useCallback(async (offset: number) => {
     try {
@@ -335,6 +361,22 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
     catch (err) { setError(err instanceof Error ? err.message : "Failed"); setPlAlbums([]); }
     finally { setLoadingAlbums(false); }
   };
+  // Saves the playlist itself (as opposed to the albums on it) to the library.
+  const savePlaylist = async (pl: SpotifyPlaylistInfo, listType: ListType) => {
+    setSavingAs(listType); setError(null);
+    try {
+      await addAlbum({
+        spotify_id: pl.id, title: pl.name, artist: pl.owner, image_url: pl.image_url || undefined,
+        spotify_uri: pl.uri, spotify_url: pl.url, list_type: listType,
+        media_type: "playlist", total_tracks: pl.track_count,
+      });
+      const saved = { ...pl, already_added: listType };
+      setActive(saved);
+      setPlaylists((p) => p.map((x) => (x.id === pl.id ? saved : x)));
+    } catch { setError("Failed to save playlist."); }
+    finally { setSavingAs(null); }
+  };
+
   const goBack = () => { setActive(null); setPlAlbums([]); setSelected(new Set()); setError(null); setSuccessMsg(null); };
 
   const toggleSelect = (id: string) => { setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
@@ -362,13 +404,44 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           BACK
         </button>
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-3">
           <SleeveArt url={active.image_url} title={active.name} size={48} />
           <div className="min-w-0">
             <p className="font-display text-lg text-crate-text truncate" style={{ letterSpacing: "0.1em" }}>{active.name.toUpperCase()}</p>
             <p className="font-mono text-[10px] text-crate-muted">{active.track_count} TRACKS</p>
           </div>
         </div>
+        <div className="flex gap-1.5 items-center mb-5">
+          <button
+            onClick={() => { player.playAlbum(active.uri, undefined, "search").catch(() => setError("Playback failed")); }}
+            title="Play on Spotify"
+            className="flex items-center justify-center cursor-pointer"
+            style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </button>
+          {active.already_added ? (
+            <span className="font-mono text-[9px] px-2 py-1"
+              style={{ color: active.already_added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
+              {active.already_added === "favorite" ? "★ PLAYLIST IN FAVS" : "◈ PLAYLIST IN RECS"}
+            </span>
+          ) : (
+            <>
+              <span className="font-mono text-[9px] text-crate-muted/60 mr-1" style={{ letterSpacing: "0.12em" }}>SAVE PLAYLIST</span>
+              <button onClick={() => savePlaylist(active, "favorite")} disabled={savingAs !== null}
+                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
+                {savingAs === "favorite" ? "…" : "★ FAV"}
+              </button>
+              <button onClick={() => savePlaylist(active, "recommendation")} disabled={savingAs !== null}
+                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
+                {savingAs === "recommendation" ? "…" : "◈ REC"}
+              </button>
+            </>
+          )}
+        </div>
+        <p className="font-mono text-[9px] text-crate-muted/60 mb-2" style={{ letterSpacing: "0.12em" }}>OR ADD ITS ALBUMS</p>
         {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
         {error && <p className="mb-2 font-mono text-xs text-crate-danger">{error}</p>}
         {loadingAlbums ? (
@@ -409,6 +482,11 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
                 <p className="font-mono text-xs font-medium text-crate-text truncate">{pl.name}</p>
                 <p className="font-mono text-[10px] text-crate-muted mt-0.5">{pl.track_count} TRACKS · {pl.owner}</p>
               </div>
+              {pl.already_added && (
+                <span className="font-mono text-[9px] shrink-0 px-1" style={{ color: pl.already_added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.1em" }}>
+                  {pl.already_added === "favorite" ? "★" : "◈"}
+                </span>
+              )}
               <svg className="w-3 h-3 text-crate-muted/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
           </li>

@@ -12,7 +12,8 @@ import {
   controlPlayback,
   type PlayerAction,
 } from "../../lib/spotify";
-import { getItems } from "../../lib/queries";
+import { getItems, recordPlay } from "../../lib/queries";
+import { parsePlayTarget } from "../../lib/plays";
 
 // wait_for_device holds the request open while a woken Spotify app registers,
 // so this needs more than the default 10s ceiling.
@@ -38,8 +39,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // With wait_for_device the request holds open for a few seconds while the
   // Spotify app the client just deep-linked into comes online, then plays there.
   if (route === "play" && req.method === "PUT") {
-    const { spotify_uri, device_id, offset, wait_for_device } = req.body as {
+    const { spotify_uri, device_id, offset, wait_for_device, source } = req.body as {
       spotify_uri?: string; device_id?: string; offset?: number; wait_for_device?: boolean;
+      // Where the play started (a crate id, "search", "library", ...), kept as the pick's mode.
+      source?: string;
     };
     if (!spotify_uri) return res.status(400).json({ error: "spotify_uri is required" });
     const position = typeof offset === "number" ? offset : undefined;
@@ -49,10 +52,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else {
         await startPlayback(user.id, spotify_uri, device_id, position);
       }
-      return res.status(204).end();
     } catch (err: unknown) {
       return sendPlayerError(res, err);
     }
+    // Playback started, so count it. A failure here must not turn a successful
+    // play into an error for the client.
+    const target = parsePlayTarget(spotify_uri);
+    if (target) {
+      const mode = typeof source === "string" && source.trim() ? source.trim().slice(0, 100) : "play";
+      try {
+        await recordPlay(user.id, target, mode);
+      } catch (err) {
+        console.warn("Failed to record play", err);
+      }
+    }
+    return res.status(204).end();
   }
 
   // GET /api/spotify/devices — Spotify Connect targets for playback
@@ -165,12 +179,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (retryAfter) return res.status(429).json({ error: message, retryAfter });
       return res.status(502).json({ error: "Failed to fetch playlists", detail: message });
     }
+    // already_added is whether the playlist itself is saved to the library.
+    const existingItems = await getItems(user.id);
+    const existingMap = new Map(existingItems.map((item) => [item.external_id, item.list_type]));
     const playlists = data.items.map((pl) => ({
       id: pl.id,
       name: pl.name,
       image_url: getBestImageUrl(pl.images),
       track_count: pl.tracks.total,
       owner: pl.owner.display_name,
+      uri: pl.uri,
+      url: pl.external_urls?.spotify ?? `https://open.spotify.com/playlist/${pl.id}`,
+      already_added: existingMap.get(pl.id) ?? null,
     }));
     return res.json({ playlists, total: data.total, limit, offset });
   }

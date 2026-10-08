@@ -52,8 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     aiPoolPick: (prompt, pool, count) =>
       getPoolSuggestions(prompt, pool, count, recentPicks, /* weighting */ poolSelectionConfig(crates!, pool)),
     aiNewPick: async (prompt, library, count) => {
-      const favorites = library.filter((i) => i.list_type === "favorite");
-      const seed = favorites.length > 0 ? favorites : library;
+      // Playlists say nothing useful about taste as "title by owner", so the
+      // seed is albums only.
+      const albums = library.filter((i) => i.media_type !== "playlist");
+      const favorites = albums.filter((i) => i.list_type === "favorite");
+      const seed = favorites.length > 0 ? favorites : albums;
       const suggestions = await getSurpriseSuggestion(seed, library, prompt);
       const shuffled = [...suggestions].sort(() => Math.random() - 0.5);
       const searchResults = await Promise.all(

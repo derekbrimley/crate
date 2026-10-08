@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { Item } from "../../types";
+import { isPlaylist } from "../../lib/media";
 
 export const SPINE_WIDTH = 46;
 export const SPINE_HEIGHT = 170;
@@ -102,6 +103,16 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
           className="spine-ai absolute bottom-0 left-0 right-0 pointer-events-none"
           style={{ height: 2, background: "rgb(var(--c-rec))", boxShadow: "0 0 8px rgb(var(--c-rec))", zIndex: 2 }}
         />
+      )}
+
+      {isPlaylist(item) && (
+        <div
+          className="spine-badge absolute bottom-1 left-1 pointer-events-none font-mono"
+          style={{ fontSize: 9, color: "rgb(var(--c-text))", zIndex: 3, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}
+          title="Playlist"
+        >
+          ≡
+        </div>
       )}
 
       {item.list_type === "recommendation" && (

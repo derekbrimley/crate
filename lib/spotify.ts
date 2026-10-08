@@ -154,6 +154,25 @@ export async function searchAlbums(
   return data.albums.items.filter((a) => a.album_type !== "single");
 }
 
+/** Albums and playlists in one request, for the add-to-library search. */
+export async function searchCatalog(
+  query: string,
+  limit = 20
+): Promise<{ albums: SpotifyAlbum[]; playlists: SpotifyPlaylist[] }> {
+  const params = new URLSearchParams({ q: query, type: "album,playlist", limit: String(limit) });
+  const res = await spotifyPublicFetch(`/search?${params}`);
+  if (!res.ok) throw new Error(`Spotify search failed: ${res.status}`);
+  const data = (await res.json()) as {
+    albums?: { items: SpotifyAlbum[] };
+    // Playlist results can contain null entries for playlists Spotify won't serve.
+    playlists?: { items: (SpotifyPlaylist | null)[] };
+  };
+  return {
+    albums: (data.albums?.items ?? []).filter((a) => a.album_type !== "single"),
+    playlists: (data.playlists?.items ?? []).filter((p): p is SpotifyPlaylist => Boolean(p?.id)),
+  };
+}
+
 export interface SpotifySavedAlbum {
   added_at: string;
   album: SpotifyAlbum;
@@ -162,9 +181,41 @@ export interface SpotifySavedAlbum {
 export interface SpotifyPlaylist {
   id: string;
   name: string;
-  images: { url: string; width: number; height: number }[];
+  description?: string | null;
+  uri: string;
+  external_urls: { spotify: string };
+  // Null for playlists that have no cover yet.
+  images: { url: string; width: number; height: number }[] | null;
   tracks: { total: number };
-  owner: { display_name: string };
+  owner: { display_name: string | null };
+}
+
+export interface SpotifyPlaylistTrack {
+  type: string;
+  name: string;
+  uri: string;
+  duration_ms: number;
+  artists: { name: string }[];
+}
+
+/**
+ * A playlist's header plus its first 100 entries, read with the user's token so
+ * their private playlists work too. Spotify-owned editorial and algorithmic
+ * playlists 404 for apps in development mode.
+ */
+export async function getPlaylistDetails(
+  userId: number,
+  playlistId: string
+): Promise<SpotifyPlaylist & { tracks: { total: number; items: { track: SpotifyPlaylistTrack | null }[] } }> {
+  const fields =
+    "id,name,description,uri,external_urls,images,owner(display_name)," +
+    "tracks(total,items(track(type,name,uri,duration_ms,artists(name))))";
+  const params = new URLSearchParams({ fields });
+  const res = await spotifyFetch(userId, `/playlists/${encodeURIComponent(playlistId)}?${params}`);
+  if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`);
+  return (await res.json()) as SpotifyPlaylist & {
+    tracks: { total: number; items: { track: SpotifyPlaylistTrack | null }[] };
+  };
 }
 
 export async function getSavedAlbums(
@@ -237,7 +288,7 @@ export async function getPlaylistAlbums(
   return albums;
 }
 
-export function getBestImageUrl(images: SpotifyAlbum["images"]): string | null {
+export function getBestImageUrl(images: SpotifyAlbum["images"] | null | undefined): string | null {
   if (!images || images.length === 0) return null;
   const sorted = [...images].sort((a, b) => (b.width || 0) - (a.width || 0));
   return sorted[0].url;

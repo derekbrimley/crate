@@ -5,7 +5,7 @@ import { DetailPanel } from "../components/library/DetailPanel";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
 import { VinylDisc } from "../components/VinylDisc";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
-import { recordPick, promoteAlbum, actOnRecommendation } from "../services/api";
+import { promoteAlbum, actOnRecommendation } from "../services/api";
 import { useDataCache } from "../contexts/DataCache";
 import { getItemGenres } from "../lib/filters";
 import type { Item, CrateDefinition } from "../types";
@@ -130,19 +130,6 @@ export function Crates({ onLogout }: CratesProps) {
     }
   };
 
-  const handlePick = async (item: Item, crateId: string) => {
-    // Skip recording picks for AI-suggested items (id <= 0)
-    if (item.id <= 0) return;
-    try {
-      await recordPick({
-        item_id: item.id,
-        mode: crateId,
-      });
-    } catch (err) {
-      console.error("Failed to record pick:", err);
-    }
-  };
-
   const handleSaveCrate = async (crate: CrateDefinition) => {
     const next = upsertCrate(crateDefs, crate);
     await saveCrateDefs(next);
@@ -263,7 +250,6 @@ export function Crates({ onLogout }: CratesProps) {
               onEdit={() => setEditingCrate(crate)}
               onMoveUp={crateIdx > 0 ? () => handleMoveCrate(crate.id, -1) : undefined}
               onMoveDown={crateIdx < crateDefs.length - 1 ? () => handleMoveCrate(crate.id, 1) : undefined}
-              onPick={handlePick}
               pickStats={pickStats}
               onFavorite={
                 isFriendCrate
@@ -309,7 +295,6 @@ interface CrateSectionProps {
   onEdit: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
-  onPick: (item: Item, crateId: string) => void;
   pickStats: Map<number, { pickCount: number; lastPickedTs: number | null }>;
   onFavorite?: (item: Item) => void;
   onRemoveAlbum?: (item: Item) => void;
@@ -327,7 +312,6 @@ function CrateSection({
   onEdit,
   onMoveUp,
   onMoveDown,
-  onPick,
   pickStats,
   onFavorite,
   onRemoveAlbum,
@@ -470,7 +454,7 @@ function CrateSection({
                 lastPickedTs={stats?.lastPickedTs ?? null}
                 onClose={() => onSelectAlbum(null)}
                 onRemove={handleRemove}
-                onPlay={() => onPick(selectedItem, crateId)}
+                playSource={crateId}
                 onPromote={onFavorite ? () => onFavorite(selectedItem) : undefined}
               />
             ) : undefined
