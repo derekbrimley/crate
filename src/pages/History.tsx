@@ -28,11 +28,11 @@ function entryToItem(entry: PickHistoryEntry): Item {
 // Picks record where the play started: a crate id, or one of these pages.
 const MODE_SYMBOLS: Record<string, { label: string }> = {
   favorites:    { label: "Favorites" },
-  discover:     { label: "Recommendations" },
   for_right_now:{ label: "Right Now" },
   surprise:     { label: "Surprise Me" },
   search:       { label: "Search" },
   library:      { label: "Library" },
+  discover:     { label: "Discover" },
   history:      { label: "History" },
   now_playing:  { label: "Now Playing" },
   play:         { label: "Played" },

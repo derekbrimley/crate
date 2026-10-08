@@ -16,9 +16,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const requestedCrateId = (req.query.crateId as string) || null;
 
+  const metaOnly = req.query.meta === "1";
   const [config, allItems, recentPicks] = await Promise.all([
     getAllConfig(user.id),
-    getItems(user.id),
+    metaOnly ? Promise.resolve([] as Item[]) : getItems(user.id),
     getLastPicksForUser(user.id),
   ]);
 
@@ -30,6 +31,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   crates = [...crates].sort((a, b) => a.position - b.position);
+
+  // ?meta=1: just the crate definitions and play stats. The crate and Discover
+  // pages rank the whole pool on the client from these plus the library.
+  if (metaOnly) {
+    return res.json({ _config: { ...config, crates }, _picks: recentPicks });
+  }
 
   const existingIds = new Set(allItems.map((i) => i.external_id));
 
