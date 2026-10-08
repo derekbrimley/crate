@@ -4,7 +4,8 @@ import { getItems, addItem, getItemByExternalId, type MediaType } from "../../li
 import { fetchAlbumMeta } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  // Household tokens (the kitchen dashboard) may list the library, never add to it.
+  const user = await getAuthenticatedUser(req.headers.authorization, req.method === "GET" ? "read" : "edit");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {

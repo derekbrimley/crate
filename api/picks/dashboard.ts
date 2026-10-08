@@ -11,7 +11,7 @@ import type { Item } from "../../lib/types";
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
 
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  const user = await getAuthenticatedUser(req.headers.authorization, "read");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   const requestedCrateId = (req.query.crateId as string) || null;

@@ -20,7 +20,9 @@ import { parsePlayTarget } from "../../lib/plays";
 export const config = { maxDuration: 15 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  // Every GET here is a read; play and control are "play". Household tokens get
+  // both, so the kitchen dashboard can see devices and state and start an album.
+  const user = await getAuthenticatedUser(req.headers.authorization, req.method === "GET" ? "read" : "play");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   const rawPath = req.query.path;
