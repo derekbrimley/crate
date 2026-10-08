@@ -10,6 +10,7 @@ import type {
   CrateDefinition,
   SpotifyDevice,
   PlaybackState,
+  MediaType,
 } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -57,7 +58,7 @@ export async function getAlbums(listType?: "favorite" | "recommendation"): Promi
   return request<{ items: Item[] }>(`/albums${query}`);
 }
 
-/** Returns the user's library row for a Spotify album id, or null if they don't have it. */
+/** Returns the user's library row for a Spotify album or playlist id, or null if they don't have it. */
 export async function lookupAlbum(externalId: string): Promise<{ item: Item | null }> {
   return request<{ item: Item | null }>(`/albums?external_id=${encodeURIComponent(externalId)}`);
 }
@@ -70,6 +71,8 @@ export async function addAlbum(data: {
   spotify_uri?: string;
   spotify_url?: string;
   list_type: "favorite" | "recommendation";
+  media_type?: MediaType;
+  total_tracks?: number;
 }): Promise<{ item: Item }> {
   return request<{ item: Item }>("/albums", {
     method: "POST",
@@ -97,8 +100,8 @@ export async function moveAlbum(
 
 export async function searchSpotify(
   query: string
-): Promise<{ albums: LibraryAlbum[] }> {
-  return request<{ albums: LibraryAlbum[] }>(
+): Promise<{ albums: LibraryAlbum[]; playlists: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[]; playlists: LibraryAlbum[] }>(
     `/albums/search?q=${encodeURIComponent(query)}`
   );
 }
@@ -157,8 +160,12 @@ export async function bulkAddAlbums(
 
 // ── Album Details ────────────────────────────────────────────────────────────
 
-export async function getAlbumDetails(spotifyId: string): Promise<AlbumDetails> {
-  return request<AlbumDetails>(`/albums/${spotifyId}`);
+export async function getAlbumDetails(
+  spotifyId: string,
+  mediaType: MediaType = "album"
+): Promise<AlbumDetails> {
+  const query = mediaType === "playlist" ? "?type=playlist" : "";
+  return request<AlbumDetails>(`/albums/${spotifyId}${query}`);
 }
 
 // ── Picks / Dashboard ─────────────────────────────────────────────────────────
@@ -172,11 +179,15 @@ export async function getDashboardCrate(crateId: string): Promise<DashboardData>
   return request<DashboardData>(`/picks/dashboard?${params}`);
 }
 
+/**
+ * `source` says where the play started (a crate id, "search", "library", ...).
+ * The server records the pick when the URI belongs to a library item.
+ */
 export async function playOnSpotify(
   spotifyUri: string,
   deviceId?: string,
   positionOffset?: number,
-  opts: { waitForDevice?: boolean } = {}
+  opts: { waitForDevice?: boolean; source?: string } = {}
 ): Promise<void> {
   await request("/spotify/play", {
     method: "PUT",
@@ -188,6 +199,7 @@ export async function playOnSpotify(
       ...(deviceId ? { device_id: deviceId } : {}),
       ...(typeof positionOffset === "number" ? { offset: positionOffset } : {}),
       ...(opts.waitForDevice ? { wait_for_device: true } : {}),
+      ...(opts.source ? { source: opts.source } : {}),
     }),
   });
 }
@@ -213,14 +225,6 @@ export async function controlPlayback(
       ...(typeof value === "number" ? { value } : {}),
     }),
   });
-}
-
-export async function recordPick(data: {
-  item_id: number;
-  mode: string;
-  context?: string;
-}): Promise<void> {
-  await request("/picks", { method: "POST", body: JSON.stringify(data) });
 }
 
 export async function getHistory(

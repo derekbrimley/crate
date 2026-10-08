@@ -112,6 +112,7 @@ export function LibraryShelf({
                     lastPickedTs={stats?.lastPickedTs ?? null}
                     onClose={() => onSelectAlbum(null)}
                     onRemove={onRemoveAlbum}
+                    playSource="library"
                     onPromote={selectedItem.list_type === "recommendation" ? onPromoteAlbum : undefined}
                   />
                 ) : undefined

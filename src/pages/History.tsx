@@ -7,11 +7,12 @@ import { useDataCache } from "../contexts/DataCache";
 import { CONTEXT_LABELS, PickHistoryEntry, Item } from "../types";
 
 // History entries carry enough album fields to build the Item the DetailPanel needs.
+// They don't carry media_type, so it comes from the stored Spotify URI.
 function entryToItem(entry: PickHistoryEntry): Item {
   return {
     id: entry.item_id,
     user_id: 0,
-    media_type: "album",
+    media_type: entry.external_uri?.startsWith("spotify:playlist:") ? "playlist" : "album",
     list_type: (entry.list_type === "favorite" ? "favorite" : "recommendation"),
     title: entry.title,
     creator: entry.creator,
@@ -24,11 +25,17 @@ function entryToItem(entry: PickHistoryEntry): Item {
   };
 }
 
+// Picks record where the play started: a crate id, or one of these pages.
 const MODE_SYMBOLS: Record<string, { label: string }> = {
   favorites:    { label: "Favorites" },
   discover:     { label: "Recommendations" },
   for_right_now:{ label: "Right Now" },
   surprise:     { label: "Surprise Me" },
+  search:       { label: "Search" },
+  library:      { label: "Library" },
+  history:      { label: "History" },
+  now_playing:  { label: "Now Playing" },
+  play:         { label: "Played" },
 };
 
 function formatDate(timestamp: number): string {
@@ -53,7 +60,8 @@ interface HistoryProps {
 }
 
 export function History({ onLogout }: HistoryProps) {
-  const { history, historyLoaded, loadHistory, pickStats } = useDataCache();
+  const { history, historyLoaded, loadHistory, pickStats, crateDefs } = useDataCache();
+  const crateNames = new Map(crateDefs.map((c) => [c.id, c.name]));
   const [loading, setLoading] = useState(!historyLoaded);
   const [showProfile, setShowProfile] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -149,7 +157,10 @@ export function History({ onLogout }: HistoryProps) {
               {/* Entries */}
               <ul className="px-5">
                 {entries.map((entry, i) => {
-                  const modeInfo = MODE_SYMBOLS[entry.mode] || { label: entry.mode.toUpperCase() };
+                  const crateName = crateNames.get(entry.mode);
+                  const modeInfo = crateName
+                    ? { label: crateName.toUpperCase() }
+                    : MODE_SYMBOLS[entry.mode] || { label: entry.mode.toUpperCase() };
                   const contextInfo = entry.context ? CONTEXT_LABELS[entry.context] : null;
 
                   return (
@@ -246,6 +257,7 @@ export function History({ onLogout }: HistoryProps) {
               lastPickedTs={pickStats.get(selectedItem.id)?.lastPickedTs ?? null}
               onClose={() => setSelectedItem(null)}
               onRemove={() => setSelectedItem(null)}
+              playSource="history"
               readOnly
             />
           </div>

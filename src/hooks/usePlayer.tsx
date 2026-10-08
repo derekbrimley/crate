@@ -32,7 +32,8 @@ interface PlayerContextValue {
   position: number;
   duration: number;
   volume: number;
-  playAlbum(uri: string, offset?: number): Promise<void>;
+  /** `source` is where the play started; the server records it as the pick's mode. */
+  playAlbum(uri: string, offset?: number, source?: string): Promise<void>;
   togglePlay(): Promise<void>;
   next(): Promise<void>;
   previous(): Promise<void>;
@@ -160,12 +161,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [paused, duration, currentTrack]);
 
   /**
-   * Play an album. If a Spotify app is already active, hand it straight over —
+   * Play an album or playlist. If a Spotify app is already active, hand it straight over —
    * no app switch. Otherwise open the Spotify app on this device (the album URI
    * is itself the deep link) and have the server start the album as soon as that
    * app registers as a device.
    */
-  const playAlbum = useCallback(async (uri: string, offset?: number) => {
+  const playAlbum = useCallback(async (uri: string, offset?: number, source?: string) => {
     let active: string | undefined;
     try {
       const { devices } = await getSpotifyDevices();
@@ -175,14 +176,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (active) {
-      await playOnSpotify(uri, active, offset);
+      await playOnSpotify(uri, active, offset, { source });
       setTimeout(() => { void pollState(); }, 700);
       return;
     }
 
     // Fire the play request before navigating: it is marked keepalive so it
     // survives this page being backgrounded when Spotify takes the foreground.
-    const started = playOnSpotify(uri, undefined, offset, { waitForDevice: true })
+    const started = playOnSpotify(uri, undefined, offset, { waitForDevice: true, source })
       .catch((err) => { console.warn("Spotify play failed", err); });
     window.location.href = uri;
     await started;

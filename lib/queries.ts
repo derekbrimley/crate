@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { DEFAULT_CONFIG } from "./defaults";
+import { isRepeatPlay, type PlayTarget } from "./plays";
 import type { User, Item, Pick, LastPickInfo, FriendRecommendation } from "./types";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -92,6 +93,8 @@ export async function updateTokens(
 
 // ── Items ─────────────────────────────────────────────────────────────────────
 
+export type MediaType = "album" | "playlist";
+
 export async function addItem(
   userId: number,
   listType: "favorite" | "recommendation",
@@ -101,7 +104,8 @@ export async function addItem(
   externalId: string,
   externalUri: string | null,
   externalUrl: string | null,
-  metadata: Record<string, unknown> | null = null
+  metadata: Record<string, unknown> | null = null,
+  mediaType: MediaType = "album"
 ): Promise<Item> {
   const now = Math.floor(Date.now() / 1000);
   const { data, error } = await supabaseAdmin
@@ -109,7 +113,7 @@ export async function addItem(
     .upsert(
       {
         user_id: userId,
-        media_type: "album",
+        media_type: mediaType,
         list_type: listType,
         title,
         creator,
@@ -186,7 +190,7 @@ export async function getItems(
   return (data ?? []) as Item[];
 }
 
-/** Looks up a single library row by its Spotify album id, if the user has it. */
+/** Looks up a single library row by its Spotify album or playlist id, if the user has it. */
 export async function getItemByExternalId(
   userId: number,
   externalId: string
@@ -247,6 +251,42 @@ export async function recordPick(
 
   if (error) throw error;
   return data as Pick;
+}
+
+/**
+ * Records a pick for the library item behind a Spotify album or playlist id,
+ * if the user has one. Returns false when there's no such item, or when the
+ * item was already picked within the replay window.
+ */
+export async function recordPlay(
+  userId: number,
+  target: PlayTarget,
+  mode: string
+): Promise<boolean> {
+  const { data: item } = await supabaseAdmin
+    .from("items")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("external_id", target.externalId)
+    .eq("media_type", target.mediaType)
+    .limit(1)
+    .maybeSingle();
+  if (!item) return false;
+
+  const { data: last } = await supabaseAdmin
+    .from("picks")
+    .select("picked_at")
+    .eq("user_id", userId)
+    .eq("item_id", item.id)
+    .order("picked_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const now = Math.floor(Date.now() / 1000);
+  if (isRepeatPlay(last?.picked_at ?? null, now)) return false;
+
+  await recordPick(userId, item.id, mode);
+  return true;
 }
 
 export async function getPickHistory(

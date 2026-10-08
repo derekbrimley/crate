@@ -113,6 +113,7 @@ export function NowPlayingSheet({ album, onClose }: NowPlayingSheetProps) {
             lastPickedTs={stats?.lastPickedTs ?? null}
             onClose={onClose}
             onRemove={handleRemove}
+            playSource="now_playing"
             onPromote={handlePromote}
             onAdd={handleAdd}
           />

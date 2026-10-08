@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getItems, addItem, getItemByExternalId } from "../../lib/queries";
+import { getItems, addItem, getItemByExternalId, type MediaType } from "../../lib/queries";
 import { fetchAlbumMeta } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -8,7 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {
-    // ?external_id= looks up a single album by its Spotify id — used to tell
+    // ?external_id= looks up a single album or playlist by its Spotify id — used to tell
     // whether something (e.g. whatever is currently playing) is in the library.
     const externalId = req.query.external_id as string | undefined;
     if (externalId) {
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    const { spotify_id, title, artist, image_url, spotify_uri, spotify_url, list_type, genres } =
+    const { spotify_id, title, artist, image_url, spotify_uri, spotify_url, list_type, genres, media_type, total_tracks } =
       req.body as {
         spotify_id: string;
         title: string;
@@ -32,6 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         spotify_url?: string;
         list_type: "favorite" | "recommendation";
         genres?: string[];
+        media_type?: MediaType;
+        total_tracks?: number;
       };
 
     if (!spotify_id || !title || !artist || !list_type) {
@@ -40,6 +42,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (list_type !== "favorite" && list_type !== "recommendation") {
       return res.status(400).json({ error: "Invalid list_type" });
+    }
+
+    const mediaType: MediaType = media_type ?? "album";
+    if (mediaType !== "album" && mediaType !== "playlist") {
+      return res.status(400).json({ error: "Invalid media_type" });
+    }
+
+    // Playlists have no genres or release date, so there's nothing to look up.
+    if (mediaType === "playlist") {
+      const item = await addItem(
+        user.id,
+        list_type,
+        title,
+        artist,
+        image_url ?? null,
+        spotify_id,
+        spotify_uri ?? `spotify:playlist:${spotify_id}`,
+        spotify_url ?? `https://open.spotify.com/playlist/${spotify_id}`,
+        typeof total_tracks === "number" ? { total_tracks } : null,
+        "playlist"
+      );
+      return res.json({ item });
     }
 
     // Fetch artist genres + release date from Spotify (best-effort — don't block the add if it fails)

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { deleteItem, promoteItem, updateItemListType, getItems, getSentRecommendationsForAlbum } from "../../lib/queries";
-import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres } from "../../lib/spotify";
+import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres, getPlaylistDetails } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await getAuthenticatedUser(req.headers.authorization);
@@ -38,6 +38,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case "GET": {
       const spotifyId = rawId;
       if (!spotifyId) return res.status(400).json({ error: "Missing album id" });
+
+      // ?type=playlist — a playlist has a track list but no genres or "more by".
+      if (req.query.type === "playlist") {
+        try {
+          const playlist = await getPlaylistDetails(user.id, spotifyId);
+          const tracks: {
+            number: number; disc: number; name: string; duration_ms: number; artists: string; uri: string;
+          }[] = [];
+          playlist.tracks.items.forEach((entry, position) => {
+            const t = entry.track;
+            if (!t || t.type !== "track") return;
+            // number is the playlist position (1-based) so playback offsets stay
+            // right even when unavailable entries are skipped.
+            tracks.push({
+              number: position + 1,
+              disc: 1,
+              name: t.name,
+              duration_ms: t.duration_ms,
+              artists: t.artists.map((a) => a.name).join(", "),
+              uri: t.uri,
+            });
+          });
+          return res.json({
+            tracks,
+            artist_albums: [],
+            genres: [],
+            sent_to: [],
+            playlist: {
+              owner: playlist.owner?.display_name ?? null,
+              description: playlist.description || null,
+              total_tracks: playlist.tracks.total,
+            },
+          });
+        } catch (err) {
+          console.error("Playlist details error:", err);
+          return res.status(502).json({ error: "Failed to fetch playlist details" });
+        }
+      }
 
       try {
         const [album, tracks] = await Promise.all([
