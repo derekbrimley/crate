@@ -4,7 +4,7 @@ import { Layout } from "../components/Layout";
 import { PageHeader, HeaderAction } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { CoverGrid, GridHeading } from "../components/CoverGrid";
-import { SuggestionsSection } from "../components/SuggestionsSection";
+import { SuggestionsSection, SuggestionsRail } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { CrateEditorModal } from "../components/CrateEditorModal";
 import { useLibraryData } from "../hooks/useLibraryData";
@@ -87,22 +87,27 @@ export function CratePage({ onLogout }: CratePageProps) {
             <VinylDisc size={56} />
             <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE YET — EDIT IT, OR ADD RECORDS WITH "ADD TO CRATE"</p>
           </div>
+        ) : ranked.length + resting.length === 0 ? (
+          // Nothing of its own (e.g. Surprise Me): Claude's picks get the whole page.
+          <SuggestionsSection target={crate.id} onSelect={setSelected} />
         ) : (
-          <>
-            {ranked.length > 0 && (
-              <>
-                <GridHeading label="UP NEXT" count={ranked.length} />
-                <CoverGrid items={ranked} onSelect={setSelected} />
-              </>
-            )}
-            {crate.ai_suggestions && <SuggestionsSection target={crate.id} onSelect={setSelected} />}
-            {resting.length > 0 && (
-              <>
-                <GridHeading label="RECENTLY PLAYED" count={resting.length} />
-                <CoverGrid items={resting} onSelect={setSelected} dimmed />
-              </>
-            )}
-          </>
+          <div className="flex items-start">
+            <div className="flex-1 min-w-0">
+              {ranked.length > 0 && (
+                <>
+                  <GridHeading label="UP NEXT" count={ranked.length} />
+                  <CoverGrid items={ranked} onSelect={setSelected} />
+                </>
+              )}
+              {resting.length > 0 && (
+                <>
+                  <GridHeading label="RECENTLY PLAYED" count={resting.length} />
+                  <CoverGrid items={resting} onSelect={setSelected} dimmed />
+                </>
+              )}
+            </div>
+            {crate.ai_suggestions && <SuggestionsRail target={crate.id} onSelect={setSelected} />}
+          </div>
         )}
       </div>
 

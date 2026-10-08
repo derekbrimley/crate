@@ -6,6 +6,7 @@ import { VinylDisc } from "../components/VinylDisc";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
+import { useDataCache } from "../contexts/DataCache";
 import { cratePool, DEFAULT_WEIGHTING } from "../../lib/crates";
 import type { CrateDefinition, Item } from "../types";
 
@@ -84,7 +85,11 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
   const pool = useMemo(() => cratePool(crate, items, pickStats), [crate, items, pickStats]);
   // Shares the crate page's order, so the covers here are the ones it opens with.
   const { ranked, resting } = useRankedPool(`crate:${crate.id}`, pool, DEFAULT_WEIGHTING);
-  const covers = [...ranked, ...resting].slice(0, 4);
+  // A crate with nothing of its own (e.g. Surprise Me) borrows Claude's latest
+  // picks for its cover, when this session has fetched them.
+  const { getCachedSuggestions } = useDataCache();
+  const own = [...ranked, ...resting];
+  const covers = (own.length > 0 ? own : getCachedSuggestions(crate.id) ?? []).slice(0, 4);
 
   return (
     <button
@@ -92,20 +97,29 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
       className="w-full text-left cursor-pointer transition-transform duration-150 active:scale-[0.98]"
       style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", padding: 8 }}
     >
-      <div className="grid grid-cols-2 gap-0.5 aspect-square overflow-hidden" style={{ background: "rgb(var(--c-surface))" }}>
-        {Array.from({ length: 4 }).map((_, i) => {
-          const item = covers[i];
-          return (
-            <div key={i} className="relative aspect-square flex items-center justify-center" style={{ background: "rgb(var(--c-surface))" }}>
-              {item?.image_url ? (
-                <img src={item.image_url} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-              ) : i === 0 && covers.length === 0 ? (
-                <VinylDisc size={28} />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+      {covers.length === 0 ? (
+        // Nothing to show yet: one centered mark for the whole cover area.
+        <div className="aspect-square flex items-center justify-center" style={{ background: "rgb(var(--c-surface))" }}>
+          {crate.ai_suggestions ? (
+            <span style={{ fontSize: 64, color: "rgb(var(--c-rec))", textShadow: "0 0 18px rgb(var(--c-rec) / calc(0.6 * var(--tint)))" }}>✦</span>
+          ) : (
+            <VinylDisc size={72} />
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-0.5 aspect-square overflow-hidden" style={{ background: "rgb(var(--c-surface))" }}>
+          {Array.from({ length: 4 }).map((_, i) => {
+            const item = covers[i];
+            return (
+              <div key={i} className="relative aspect-square" style={{ background: "rgb(var(--c-surface))" }}>
+                {item?.image_url && (
+                  <img src={item.image_url} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="flex items-baseline gap-2 mt-2">
         <span className="font-display flex-1 truncate" style={{ fontSize: 18, color: "rgb(var(--c-text))", letterSpacing: "0.14em" }}>
           {crate.name.toUpperCase() || "UNTITLED"}
