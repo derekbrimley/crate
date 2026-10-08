@@ -33,10 +33,10 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
         onChange={(e) => setFilter(e.target.value)}
         placeholder="filter genres..."
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(61,40,21,0.8)",
+          background: "rgb(var(--c-hi) / calc(0.03 * var(--tint-hi)))",
+          border: "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
           borderRadius: 4,
-          color: "#f2e8d2",
+          color: "rgb(var(--c-text))",
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: 11,
           padding: "5px 9px",
@@ -51,7 +51,7 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
           style={{
             fontFamily: '"IBM Plex Mono", monospace',
             fontSize: 10,
-            color: "#907558",
+            color: "rgb(var(--c-muted))",
             letterSpacing: "0.12em",
             padding: "6px 0",
           }}
@@ -75,11 +75,11 @@ export function GenrePicker({ selected, onChange, available }: GenrePickerProps)
                   fontFamily: '"IBM Plex Mono", monospace',
                   fontSize: 10,
                   letterSpacing: "0.1em",
-                  border: isActive ? "1px solid #ff5e00" : "1px solid rgba(61,40,21,0.8)",
-                  background: isActive ? "rgba(255,94,0,0.12)" : "transparent",
-                  color: isActive ? "#ff5e00" : "#907558",
-                  textShadow: isActive ? "0 0 8px rgba(255,94,0,0.5)" : "none",
-                  boxShadow: isActive ? "0 0 6px rgba(255,94,0,0.15)" : "none",
+                  border: isActive ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
+                  background: isActive ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",
+                  color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                  textShadow: isActive ? "0 0 8px rgb(var(--c-accent) / calc(0.5 * var(--tint)))" : "none",
+                  boxShadow: isActive ? "0 0 6px rgb(var(--c-accent) / calc(0.15 * var(--tint)))" : "none",
                   borderRadius: 3,
                   cursor: "pointer",
                   transition: "all 0.12s",

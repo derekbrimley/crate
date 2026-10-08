@@ -40,7 +40,8 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       title={`${item.title} — ${item.creator}`}
-      className="shrink-0 cursor-pointer relative overflow-hidden"
+      data-selected={isSelected}
+      className="spine shrink-0 cursor-pointer relative overflow-hidden"
       style={{
         width: currentWidth,
         height: spineHeight,
@@ -52,7 +53,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             ? "translateY(-7px)"
             : "translateY(0)",
         boxShadow: isSelected
-          ? "0 0 0 1.5px #ff5e00, 4px 0 16px rgba(0,0,0,0.9), 0 0 12px rgba(255,94,0,0.25)"
+          ? "0 0 0 1.5px rgb(var(--c-accent)), 4px 0 16px rgba(0,0,0,0.9), 0 0 12px rgb(var(--c-accent) / calc(0.25 * var(--tint)))"
           : hovered
             ? "3px 0 12px rgba(0,0,0,0.7), -2px 0 8px rgba(0,0,0,0.5)"
             : "-4px 0 4px rgba(0,0,0,0.5)",
@@ -92,21 +93,21 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
       {isSelected && (
         <div
           className="absolute top-0 left-0 right-0"
-          style={{ height: 2, background: "#ff5e00", boxShadow: "0 0 8px #ff5e00", zIndex: 2 }}
+          style={{ height: 2, background: "rgb(var(--c-accent))", boxShadow: "0 0 8px rgb(var(--c-accent))", zIndex: 2 }}
         />
       )}
 
       {(item.metadata as Record<string, unknown> | null)?._ai_suggested === true && (
         <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
-          style={{ height: 2, background: "#00d4ff", boxShadow: "0 0 8px #00d4ff", zIndex: 2 }}
+          className="spine-ai absolute bottom-0 left-0 right-0 pointer-events-none"
+          style={{ height: 2, background: "rgb(var(--c-rec))", boxShadow: "0 0 8px rgb(var(--c-rec))", zIndex: 2 }}
         />
       )}
 
       {item.list_type === "recommendation" && (
         <div
-          className="absolute top-1 left-1 pointer-events-none font-mono"
-          style={{ fontSize: 9, color: "#00b4c8", zIndex: 3, textShadow: "0 0 4px rgba(0,180,200,0.8), 0 1px 2px rgba(0,0,0,0.9)" }}
+          className="spine-badge absolute top-1 left-1 pointer-events-none font-mono"
+          style={{ fontSize: 9, color: "rgb(var(--c-rec))", zIndex: 3, textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
         >
           ◈
         </div>
@@ -121,15 +122,15 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             onFavorite(item);
             setFavorited(true);
           }}
-          className="absolute flex items-center justify-center cursor-pointer"
+          className="spine-badge absolute flex items-center justify-center cursor-pointer"
           style={{
             top: 4,
             right: 4,
             width: 20,
             height: 20,
             background: "rgba(0,0,0,0.7)",
-            border: "1px solid rgba(255,94,0,0.6)",
-            color: "#ff5e00",
+            border: "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))",
+            color: "rgb(var(--c-accent))",
             fontSize: 11,
             zIndex: 30,
             lineHeight: 1,
@@ -142,15 +143,15 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
 
       {onFavorite && favorited && (
         <div
-          className="absolute flex items-center justify-center pointer-events-none"
+          className="spine-badge absolute flex items-center justify-center pointer-events-none"
           style={{
             top: 4,
             right: 4,
             width: 20,
             height: 20,
             background: "rgba(0,0,0,0.7)",
-            border: "1px solid rgba(255,94,0,0.6)",
-            color: "#ff5e00",
+            border: "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))",
+            color: "rgb(var(--c-accent))",
             fontSize: 11,
             zIndex: 30,
           }}
@@ -161,7 +162,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
 
       {isWide ? (
         <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          className="spine-caption absolute bottom-0 left-0 right-0 pointer-events-none"
           style={{
             padding: "24px 6px 5px",
             background: "linear-gradient(transparent, rgba(0,0,0,0.88))",
@@ -172,16 +173,16 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             className="truncate font-mono"
             style={{
               fontSize: 12,
-              color: isSelected ? "#ff5e00" : "rgb(68, 253, 33)",
+              color: isSelected ? "rgb(var(--c-accent))" : "rgb(var(--c-neon))",
               letterSpacing: "0.04em",
-              textShadow: isSelected ? "0 0 8px rgba(255,94,0,0.9)" : "0 0 8px rgba(68,253,33,0.6), 0 1px 2px rgba(0,0,0,0.9)",
+              textShadow: isSelected ? "0 0 8px rgb(var(--c-accent) / calc(0.9 * var(--tint)))" : "0 0 8px rgb(var(--c-neon) / calc(0.6 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)",
               fontWeight: 700,
             }}
           >
             {item.title}
           </div>
           <div
-            className="truncate font-mono"
+            className="spine-sub truncate font-mono"
             style={{
               fontSize: 11,
               color: "rgba(255,255,255,0.5)",
@@ -193,7 +194,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
           {statLabel && (
             <div
               className="font-mono"
-              style={{ fontSize: 11, color: "#ff5e00", letterSpacing: "0.04em", marginTop: 1 }}
+              style={{ fontSize: 11, color: "rgb(var(--c-accent))", letterSpacing: "0.04em", marginTop: 1 }}
             >
               {statLabel}
             </div>
@@ -217,20 +218,20 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
               paddingRight: 6,
               fontSize: 11,
               fontFamily: '"IBM Plex Mono", monospace',
-              color: isSelected ? "#ff5e00" : "rgb(68, 253, 33)",
+              color: isSelected ? "rgb(var(--c-accent))" : "rgb(var(--c-neon))",
               letterSpacing: "0.05em",
               textShadow: isSelected
-                ? "0 0 8px rgba(255,94,0,0.9)"
-                : "0 0 8px rgba(68,253,33,0.7), 0 0 16px rgba(68,253,33,0.3), 0 1px 3px rgba(0,0,0,1)",
+                ? "0 0 8px rgb(var(--c-accent) / calc(0.9 * var(--tint)))"
+                : "0 0 8px rgb(var(--c-neon) / calc(0.7 * var(--tint))), 0 0 16px rgb(var(--c-neon) / calc(0.3 * var(--tint))), 0 1px 3px rgba(0,0,0,1)",
               fontWeight: 700,
               WebkitTextStroke: "0.3px rgba(0,0,0,0.4)",
             }}
           >
-            {item.title}
+            <span className="spine-label">{item.title}</span>
           </div>
           {statLabel && (
             <div
-              className="absolute bottom-0 left-0 right-0 pointer-events-none text-center"
+              className="spine-caption absolute bottom-0 left-0 right-0 pointer-events-none text-center"
               style={{
                 padding: "10px 2px 4px",
                 background: "linear-gradient(transparent, rgba(0,0,0,0.8))",
@@ -239,7 +240,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             >
               <div
                 className="font-mono truncate"
-                style={{ fontSize: 11, color: "#ff5e00", letterSpacing: "0.02em" }}
+                style={{ fontSize: 11, color: "rgb(var(--c-accent))", letterSpacing: "0.02em" }}
               >
                 {statLabel}
               </div>
@@ -248,7 +249,7 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
         </>
       ) : (
         <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          className="spine-caption absolute bottom-0 left-0 right-0 pointer-events-none"
           style={{
             padding: "20px 5px 5px",
             background: "linear-gradient(transparent, rgba(0,0,0,0.88))",
@@ -260,16 +261,16 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
             style={{
               fontSize: 12,
               fontFamily: '"IBM Plex Mono", monospace',
-              color: "rgb(68, 253, 33)",
+              color: "rgb(var(--c-neon))",
               letterSpacing: "0.04em",
-              textShadow: "0 0 8px rgba(68,253,33,0.6), 0 1px 2px rgba(0,0,0,0.9)",
+              textShadow: "0 0 8px rgb(var(--c-neon) / calc(0.6 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)",
               fontWeight: 700,
             }}
           >
             {item.title}
           </div>
           <div
-            className="truncate"
+            className="spine-sub truncate"
             style={{
               fontSize: 11,
               fontFamily: '"IBM Plex Mono", monospace',

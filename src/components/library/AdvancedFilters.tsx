@@ -15,9 +15,9 @@ interface AdvancedFiltersProps {
 const selectStyle: React.CSSProperties = {
   fontSize: 10,
   padding: "2px 4px",
-  border: "1px solid #3d2815",
-  background: "#1a1210",
-  color: "#f2e8d2",
+  border: "1px solid rgb(var(--c-border))",
+  background: "rgb(var(--c-elevated))",
+  color: "rgb(var(--c-text))",
   outline: "none",
 };
 
@@ -25,9 +25,9 @@ const inputStyle: React.CSSProperties = {
   fontSize: 10,
   padding: "2px 6px",
   width: 64,
-  border: "1px solid #3d2815",
-  background: "#1a1210",
-  color: "#f2e8d2",
+  border: "1px solid rgb(var(--c-border))",
+  background: "rgb(var(--c-elevated))",
+  color: "rgb(var(--c-text))",
   outline: "none",
 };
 
@@ -88,7 +88,7 @@ export default function AdvancedFilters({
           letterSpacing: "0.12em",
           background: "transparent",
           border: "none",
-          color: rules.length > 0 ? "#ff5e00" : "#907558",
+          color: rules.length > 0 ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
           padding: 0,
         }}
       >
@@ -107,7 +107,7 @@ export default function AdvancedFilters({
               ? rule.value.split(MULTI_SEP).map((g) => g.trim()).filter(Boolean)
               : [];
             return (
-              <div key={rule.id} className="flex flex-col gap-1" style={{ borderLeft: "1px solid #3d2815", paddingLeft: 8 }}>
+              <div key={rule.id} className="flex flex-col gap-1" style={{ borderLeft: "1px solid rgb(var(--c-border))", paddingLeft: 8 }}>
                 <div className="flex items-center gap-1 flex-wrap">
                   <select
                     value={rule.field}
@@ -132,7 +132,7 @@ export default function AdvancedFilters({
                   </select>
 
                   {!showValue ? null : isMultiGenre ? (
-                    <span className="font-mono" style={{ fontSize: 10, color: "#907558" }}>
+                    <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
                       {multiSelected.length > 0 ? `${multiSelected.length} selected` : "choose below"}
                     </span>
                   ) : def.valueType === "list" ? (
@@ -168,7 +168,7 @@ export default function AdvancedFilters({
 
                   {needsV2 && (
                     <>
-                      <span className="font-mono" style={{ fontSize: 10, color: "#907558" }}>–</span>
+                      <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>–</span>
                       <input
                         type="number"
                         value={rule.value2 ?? ""}
@@ -183,7 +183,7 @@ export default function AdvancedFilters({
                   <button
                     onClick={() => removeRule(rule.id)}
                     className="cursor-pointer"
-                    style={{ background: "transparent", border: "none", color: "#907558", fontSize: 12 }}
+                    style={{ background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: 12 }}
                     title="Remove rule"
                   >
                     ×
@@ -215,9 +215,9 @@ export default function AdvancedFilters({
                 fontSize: 10,
                 padding: "2px 6px",
                 letterSpacing: "0.08em",
-                border: "1px solid #3d2815",
+                border: "1px solid rgb(var(--c-border))",
                 background: "transparent",
-                color: "#907558",
+                color: "rgb(var(--c-muted))",
               }}
             >
               + ADD RULE
@@ -225,7 +225,7 @@ export default function AdvancedFilters({
 
             {rules.length > 1 && (
               <div className="flex items-center gap-1">
-                <span className="font-mono" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em" }}>
+                <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
                   MATCH
                 </span>
                 {(["AND", "OR"] as const).map((m) => (
@@ -236,9 +236,9 @@ export default function AdvancedFilters({
                     style={{
                       fontSize: 10,
                       padding: "2px 6px",
-                      border: matchMode === m ? "1px solid #ff5e00" : "1px solid #3d2815",
-                      background: matchMode === m ? "rgba(255,94,0,0.1)" : "transparent",
-                      color: matchMode === m ? "#ff5e00" : "#907558",
+                      border: matchMode === m ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                      background: matchMode === m ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                      color: matchMode === m ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                     }}
                   >
                     {m}

@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../lib/theme";
 
 interface ProfileDropdownProps {
   onClose: () => void;
@@ -8,10 +9,12 @@ interface ProfileDropdownProps {
 
 export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const items = [
     { label: "View History", action: () => { onClose(); navigate("/history"); } },
-    { label: "Sign Out", action: onLogout, color: "#ff5555" },
+    { label: theme === "paper" ? "Display: Paper (high contrast)" : "Display: Neon", action: toggleTheme },
+    { label: "Sign Out", action: onLogout, color: "rgb(var(--c-danger))" },
   ];
 
   return (
@@ -21,8 +24,8 @@ export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
         className="absolute top-[52px] right-3 z-30 animate-panel-open"
         style={{
           width: 210,
-          background: "#1a1210",
-          border: "1px solid #3d2815",
+          background: "rgb(var(--c-elevated))",
+          border: "1px solid rgb(var(--c-border))",
           boxShadow: "0 8px 32px rgba(0,0,0,0.85)",
         }}
       >
@@ -33,12 +36,12 @@ export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
             className="block w-full text-left font-mono cursor-pointer"
             style={{
               padding: "9px 14px",
-              fontSize: 8,
+              fontSize: 10,
               letterSpacing: "0.1em",
-              color: color || "#907558",
+              color: color || "rgb(var(--c-muted))",
               background: "transparent",
               border: "none",
-              borderBottom: i < items.length - 1 ? "1px solid #3d2815" : "none",
+              borderBottom: i < items.length - 1 ? "1px solid rgb(var(--c-border))" : "none",
             }}
           >
             {label}

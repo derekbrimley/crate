@@ -34,7 +34,7 @@ export function PlayerBar() {
 
       <div
         className="relative z-50 flex flex-col gap-1 px-4 py-2 border-t"
-        style={{ background: "#1a120b", borderColor: "#3d2815" }}
+        style={{ background: "rgb(var(--c-elevated))", borderColor: "rgb(var(--c-border))" }}
       >
         <div className="flex items-center gap-3">
           {/* Art + title open the album's details pane, where it can be added
@@ -52,7 +52,7 @@ export function PlayerBar() {
                 src={currentTrack.image_url}
                 alt=""
                 className="w-11 h-11 object-cover shrink-0"
-                style={{ boxShadow: detailsOpen ? "0 0 0 1px #ff5e00" : undefined }}
+                style={{ outline: detailsOpen ? "1px solid rgb(var(--c-accent))" : undefined }}
               />
             )}
 
@@ -66,7 +66,7 @@ export function PlayerBar() {
           {deviceName && (
             <div
               className="hidden sm:flex items-center gap-1.5 max-w-[140px] shrink-0"
-              style={{ color: "#907558" }}
+              style={{ color: "rgb(var(--c-muted))" }}
             >
               <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 6h16v10H4zm0 12h16v2H4zM6 8v6h12V8z" opacity="0.9" />

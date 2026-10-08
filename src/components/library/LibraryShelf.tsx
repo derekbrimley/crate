@@ -71,12 +71,12 @@ export function LibraryShelf({
         <div className="flex items-center gap-2 mb-2" style={{ padding: "0 12px" }}>
           <span
             className="font-display shrink-0"
-            style={{ fontSize: 13, color: "#ff5e00", letterSpacing: "0.15em" }}
+            style={{ fontSize: 13, color: "rgb(var(--c-accent))", letterSpacing: "0.15em" }}
           >
             {groupLabel.toUpperCase()}
           </span>
-          <div className="flex-1 h-px" style={{ background: "#3d2815" }} />
-          <span className="font-mono" style={{ fontSize: 10, color: "#907558", letterSpacing: "0.1em" }}>
+          <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
+          <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
             {albums.length}
           </span>
         </div>

@@ -73,7 +73,7 @@ const sliderStyle = `
     width: 100%;
     height: 4px;
     border-radius: 2px;
-    background: rgba(61,40,21,0.8);
+    background: rgb(var(--c-border) / calc(0.8 * var(--tint)));
     outline: none;
     cursor: pointer;
   }
@@ -83,18 +83,18 @@ const sliderStyle = `
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #ff5e00;
+    background: rgb(var(--c-accent));
     cursor: pointer;
-    box-shadow: 0 0 6px rgba(255,94,0,0.5);
+    box-shadow: 0 0 6px rgb(var(--c-accent) / calc(0.5 * var(--tint)));
   }
   .algo-slider::-moz-range-thumb {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #ff5e00;
+    background: rgb(var(--c-accent));
     cursor: pointer;
     border: none;
-    box-shadow: 0 0 6px rgba(255,94,0,0.5);
+    box-shadow: 0 0 6px rgb(var(--c-accent) / calc(0.5 * var(--tint)));
   }
   .algo-slider:disabled {
     opacity: 0.5;
@@ -166,11 +166,11 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
 
   const label: React.CSSProperties = {
     fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: "0.2em",
-    textTransform: "uppercase", color: "#907558", display: "block", marginBottom: 6,
+    textTransform: "uppercase", color: "rgb(var(--c-muted))", display: "block", marginBottom: 6,
   };
   const input: React.CSSProperties = {
-    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(61,40,21,0.8)", borderRadius: 4,
-    color: "#f2e8d2", fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, padding: "6px 10px",
+    background: "rgb(var(--c-hi) / calc(0.03 * var(--tint-hi)))", border: "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))", borderRadius: 4,
+    color: "rgb(var(--c-text))", fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, padding: "6px 10px",
     width: "100%", outline: "none",
   };
 
@@ -183,18 +183,18 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
       <style>{sliderStyle}</style>
       <div
         className="w-full max-w-lg flex flex-col"
-        style={{ background: "#140d0a", border: "1px solid #3d2815", borderRadius: 10, maxHeight: "90vh" }}
+        style={{ background: "rgb(var(--c-modal))", border: "1px solid rgb(var(--c-border))", borderRadius: 10, maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header (fixed) */}
         <div
           className="flex items-center justify-between shrink-0"
-          style={{ padding: "20px 20px 12px", borderBottom: "1px solid #3d2815" }}
+          style={{ padding: "20px 20px 12px", borderBottom: "1px solid rgb(var(--c-border))" }}
         >
-          <span className="font-display" style={{ fontSize: 16, color: "#f2e8d2", letterSpacing: "0.15em" }}>
+          <span className="font-display" style={{ fontSize: 16, color: "rgb(var(--c-text))", letterSpacing: "0.15em" }}>
             {initial.name ? "EDIT CRATE" : "NEW CRATE"}
           </span>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#907558", fontSize: 18, cursor: "pointer" }}>✕</button>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: 18, cursor: "pointer" }}>✕</button>
         </div>
 
         {/* Scrollable body */}
@@ -216,9 +216,9 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
                 onClick={() => setCount(n)}
                 style={{
                   width: 36, height: 36, borderRadius: 4, cursor: "pointer",
-                  border: count === n ? "1px solid #ff5e00" : "1px solid rgba(61,40,21,0.8)",
-                  background: count === n ? "rgba(255,94,0,0.12)" : "transparent",
-                  color: count === n ? "#ff5e00" : "#907558",
+                  border: count === n ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
+                  background: count === n ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",
+                  color: count === n ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                   fontFamily: '"IBM Plex Mono", monospace', fontSize: 13,
                 }}
               >
@@ -252,9 +252,9 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
                 className="font-mono cursor-pointer"
                 style={{
                   fontSize: 10, padding: "4px 8px", letterSpacing: "0.08em",
-                  border: strategyType === o.key ? "1px solid #ff5e00" : "1px solid #3d2815",
-                  background: strategyType === o.key ? "rgba(255,94,0,0.1)" : "transparent",
-                  color: strategyType === o.key ? "#ff5e00" : "#907558",
+                  border: strategyType === o.key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+                  background: strategyType === o.key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
+                  color: strategyType === o.key ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                 }}
               >
                 {o.label}
@@ -264,7 +264,7 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
         </div>
 
         {/* Strategy detail */}
-        <p className="font-mono mb-3" style={{ fontSize: 10, color: "#907558", lineHeight: 1.5 }}>
+        <p className="font-mono mb-3" style={{ fontSize: 10, color: "rgb(var(--c-muted))", lineHeight: 1.5 }}>
           {STRATEGY_HELP[strategyType]}
         </p>
 
@@ -296,23 +296,23 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
         {/* Actions (sticky footer) */}
         <div
           className="flex items-center justify-between shrink-0"
-          style={{ padding: "12px 20px", borderTop: "1px solid #3d2815", background: "#140d0a" }}
+          style={{ padding: "12px 20px", borderTop: "1px solid rgb(var(--c-border))", background: "rgb(var(--c-modal))" }}
         >
           {onDelete ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">
                 <button onClick={() => onDelete(initial.id)} className="font-mono cursor-pointer"
-                  style={{ fontSize: 10, padding: "4px 8px", color: "#ff4444", border: "1px solid rgba(255,68,68,0.4)", background: "transparent", borderRadius: 3 }}>
+                  style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-danger))", border: "1px solid rgb(var(--c-danger) / calc(0.4 * var(--tint)))", background: "transparent", borderRadius: 3 }}>
                   DELETE
                 </button>
                 <button onClick={() => setConfirmDelete(false)} className="font-mono cursor-pointer"
-                  style={{ fontSize: 10, padding: "4px 8px", color: "#907558", border: "1px solid #3d2815", background: "transparent", borderRadius: 3 }}>
+                  style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 3 }}>
                   CANCEL
                 </button>
               </div>
             ) : (
               <button onClick={() => setConfirmDelete(true)} className="font-mono cursor-pointer"
-                style={{ fontSize: 10, padding: "4px 8px", color: "#907558", border: "1px solid #3d2815", background: "transparent", borderRadius: 3 }}>
+                style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 3 }}>
                 DELETE CRATE
               </button>
             )
@@ -320,11 +320,11 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
 
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="font-mono cursor-pointer"
-              style={{ fontSize: 10, padding: "6px 12px", color: "#907558", border: "1px solid #3d2815", background: "transparent", borderRadius: 4 }}>
+              style={{ fontSize: 10, padding: "6px 12px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 4 }}>
               CANCEL
             </button>
             <button onClick={handleSave} disabled={saving} className="font-mono cursor-pointer disabled:opacity-60"
-              style={{ fontSize: 10, padding: "6px 12px", color: "#ff5e00", border: "1px solid rgba(255,94,0,0.6)", background: "rgba(255,94,0,0.12)", borderRadius: 4, letterSpacing: "0.1em" }}>
+              style={{ fontSize: 10, padding: "6px 12px", color: "rgb(var(--c-accent))", border: "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))", background: "rgb(var(--c-accent) / calc(0.12 * var(--tint)))", borderRadius: 4, letterSpacing: "0.1em" }}>
               {saving ? "SAVING…" : "SAVE"}
             </button>
           </div>
@@ -338,11 +338,11 @@ function Slider({ label, valueLabel, help, idx, onChange }: { label: string; val
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: help ? 2 : 6 }}>
-        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "#f2e8d2" }}>{label}</span>
-        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "#ff5e00" }}>{valueLabel}</span>
+        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgb(var(--c-text))" }}>{label}</span>
+        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "rgb(var(--c-accent))" }}>{valueLabel}</span>
       </div>
       {help && (
-        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: "#907558", lineHeight: 1.4, marginBottom: 6 }}>
+        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: "rgb(var(--c-muted))", lineHeight: 1.4, marginBottom: 6 }}>
           {help}
         </p>
       )}

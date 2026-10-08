@@ -18,7 +18,7 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
         <header
           className="sticky top-0 z-40 border-b border-crate-border"
           style={{
-            background: "rgba(9,7,10,0.97)",
+            background: "rgb(var(--c-bg) / calc(0.97 * var(--tint)))",
             backdropFilter: "blur(12px)",
           }}
         >

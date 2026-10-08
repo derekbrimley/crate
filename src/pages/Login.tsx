@@ -37,9 +37,9 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center overflow-hidden relative" style={{ background: "#09070a" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center overflow-hidden relative" style={{ background: "rgb(var(--c-bg))" }}>
       {/* Ambient glow */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,94,0,0.06) 0%, transparent 70%)" }} />
+      <div className="ambient-glow absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 50%, rgb(var(--c-accent) / calc(0.06 * var(--tint))) 0%, transparent 70%)" }} />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center text-center px-10 max-w-[320px]">
@@ -47,18 +47,18 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
         {/* Giant wordmark */}
         <h1
           className="font-display leading-none"
-          style={{ fontSize: 112, letterSpacing: "0.04em", color: "#f2e8d2", textShadow: "0 0 60px rgba(255,94,0,0.15),0 4px 32px rgba(0,0,0,0.8)", lineHeight: 0.9 }}
+          style={{ fontSize: 112, letterSpacing: "0.04em", color: "rgb(var(--c-text))", textShadow: "0 0 60px rgb(var(--c-accent) / calc(0.15 * var(--tint))),0 4px 32px rgba(0,0,0,0.8)", lineHeight: 0.9 }}
         >
           CRATES
         </h1>
 
         {/* Divider */}
         <div className="flex items-center gap-3 w-full mb-8 mt-5">
-          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
-          <span className="font-mono text-[9px]" style={{ color: "#907558", letterSpacing: "0.2em" }}>
+          <div className="flex-1 h-px" style={{ background: "rgb(var(--c-hi) / calc(0.07 * var(--tint-hi)))" }} />
+          <span className="font-mono text-[9px]" style={{ color: "rgb(var(--c-muted))", letterSpacing: "0.2em" }}>
             INTENTIONAL ALBUM PICKING
           </span>
-          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+          <div className="flex-1 h-px" style={{ background: "rgb(var(--c-hi) / calc(0.07 * var(--tint-hi)))" }} />
         </div>
 
         {/* Features */}
@@ -69,8 +69,8 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
             { icon: "◉", label: "FIND THE RIGHT VIBE"   },
           ].map(({ icon, label }) => (
             <div key={label} className="flex items-center gap-3">
-              <span className="font-mono text-xs" style={{ color: "#ff5e00", textShadow: "0 0 8px rgba(255,94,0,0.5)" }}>{icon}</span>
-              <span className="font-display text-sm" style={{ color: "#907558", letterSpacing: "0.2em" }}>{label}</span>
+              <span className="font-mono text-xs" style={{ color: "rgb(var(--c-accent))", textShadow: "0 0 8px rgb(var(--c-accent) / calc(0.5 * var(--tint)))" }}>{icon}</span>
+              <span className="font-display text-sm" style={{ color: "rgb(var(--c-muted))", letterSpacing: "0.2em" }}>{label}</span>
             </div>
           ))}
         </div>
@@ -84,9 +84,9 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               onClick={() => { setEmailMode(mode); setEmailError(null); setForgotMode(false); setForgotSent(false); }}
               className="flex-1 py-2 font-display text-xs transition-all duration-150"
               style={{
-                borderBottom: emailMode === mode ? "1px solid #ff5e00" : "1px solid rgba(255,255,255,0.08)",
-                color: emailMode === mode ? "#ff5e00" : "#907558",
-                textShadow: emailMode === mode ? "0 0 8px rgba(255,94,0,0.4)" : "none",
+                borderBottom: emailMode === mode ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-hi) / calc(0.08 * var(--tint-hi)))",
+                color: emailMode === mode ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+                textShadow: emailMode === mode ? "0 0 8px rgb(var(--c-accent) / calc(0.4 * var(--tint)))" : "none",
                 letterSpacing: "0.2em",
                 background: "none",
               }}
@@ -99,7 +99,7 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
         {forgotMode ? (
           <div className="w-full space-y-2">
             {forgotSent ? (
-              <div className="px-3 py-3 font-mono text-[10px] text-center" style={{ background: "rgba(57,255,20,0.06)", border: "1px solid rgba(57,255,20,0.2)", color: "#39ff14", letterSpacing: "0.08em" }}>
+              <div className="px-3 py-3 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.08em" }}>
                 CHECK YOUR EMAIL FOR A RESET LINK
               </div>
             ) : (
@@ -111,7 +111,7 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full font-mono text-xs px-3 py-2.5 outline-none"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#f2e8d2", letterSpacing: "0.05em" }}
+                  style={{ background: "rgb(var(--c-hi) / calc(0.04 * var(--tint-hi)))", border: "1px solid rgb(var(--c-hi) / calc(0.1 * var(--tint-hi)))", color: "rgb(var(--c-text))", letterSpacing: "0.05em" }}
                 />
                 <button
                   type="submit"
@@ -119,10 +119,10 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
                   className="w-full py-3.5 font-display text-sm transition-all duration-150 active:scale-[0.97]"
                   style={{
                     background: "transparent",
-                    border: "1px solid #ff5e00",
-                    color: "#ff5e00",
-                    textShadow: "0 0 8px rgba(255,94,0,0.5)",
-                    boxShadow: "0 0 6px rgba(255,94,0,0.2),inset 0 0 8px rgba(255,94,0,0.04)",
+                    border: "1px solid rgb(var(--c-accent))",
+                    color: "rgb(var(--c-accent))",
+                    textShadow: "0 0 8px rgb(var(--c-accent) / calc(0.5 * var(--tint)))",
+                    boxShadow: "0 0 6px rgb(var(--c-accent) / calc(0.2 * var(--tint))),inset 0 0 8px rgb(var(--c-accent) / calc(0.04 * var(--tint)))",
                     letterSpacing: "0.25em",
                     opacity: submitting ? 0.5 : 1,
                   }}
@@ -135,7 +135,7 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               type="button"
               onClick={() => { setForgotMode(false); setForgotSent(false); }}
               className="w-full py-2 font-mono text-[9px] transition-opacity duration-150"
-              style={{ color: "#907558", letterSpacing: "0.18em", background: "none" }}
+              style={{ color: "rgb(var(--c-muted))", letterSpacing: "0.18em", background: "none" }}
             >
               BACK TO SIGN IN
             </button>
@@ -149,7 +149,7 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full font-mono text-xs px-3 py-2.5 outline-none"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#f2e8d2", letterSpacing: "0.05em" }}
+              style={{ background: "rgb(var(--c-hi) / calc(0.04 * var(--tint-hi)))", border: "1px solid rgb(var(--c-hi) / calc(0.1 * var(--tint-hi)))", color: "rgb(var(--c-text))", letterSpacing: "0.05em" }}
             />
             <input
               type="password"
@@ -158,10 +158,10 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full font-mono text-xs px-3 py-2.5 outline-none"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#f2e8d2", letterSpacing: "0.05em" }}
+              style={{ background: "rgb(var(--c-hi) / calc(0.04 * var(--tint-hi)))", border: "1px solid rgb(var(--c-hi) / calc(0.1 * var(--tint-hi)))", color: "rgb(var(--c-text))", letterSpacing: "0.05em" }}
             />
             {emailError && (
-              <div className="px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgba(180,0,0,0.12)", border: "1px solid rgba(180,0,0,0.3)", color: "#ff6b6b" }}>
+              <div className="px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-danger-deep) / calc(0.12 * var(--tint)))", border: "1px solid rgb(var(--c-danger-deep) / calc(0.3 * var(--tint)))", color: "rgb(var(--c-danger))" }}>
                 {emailError}
               </div>
             )}
@@ -171,10 +171,10 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               className="w-full py-3.5 font-display text-sm transition-all duration-150 active:scale-[0.97]"
               style={{
                 background: "transparent",
-                border: "1px solid #ff5e00",
-                color: "#ff5e00",
-                textShadow: "0 0 8px rgba(255,94,0,0.5)",
-                boxShadow: "0 0 6px rgba(255,94,0,0.2),inset 0 0 8px rgba(255,94,0,0.04)",
+                border: "1px solid rgb(var(--c-accent))",
+                color: "rgb(var(--c-accent))",
+                textShadow: "0 0 8px rgb(var(--c-accent) / calc(0.5 * var(--tint)))",
+                boxShadow: "0 0 6px rgb(var(--c-accent) / calc(0.2 * var(--tint))),inset 0 0 8px rgb(var(--c-accent) / calc(0.04 * var(--tint)))",
                 letterSpacing: "0.25em",
                 opacity: submitting ? 0.5 : 1,
               }}
@@ -186,7 +186,7 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
                 type="button"
                 onClick={() => { setForgotMode(true); setEmailError(null); }}
                 className="w-full py-1 font-mono text-[9px] transition-opacity duration-150"
-                style={{ color: "#907558", letterSpacing: "0.18em", background: "none" }}
+                style={{ color: "rgb(var(--c-muted))", letterSpacing: "0.18em", background: "none" }}
               >
                 FORGOT PASSWORD?
               </button>
@@ -198,9 +198,9 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
         {onSpotifyLogin && (
           <>
             <div className="flex items-center gap-3 w-full my-5">
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
-              <span className="font-mono text-[9px]" style={{ color: "#907558", letterSpacing: "0.15em" }}>OR</span>
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+              <div className="flex-1 h-px" style={{ background: "rgb(var(--c-hi) / calc(0.07 * var(--tint-hi)))" }} />
+              <span className="font-mono text-[9px]" style={{ color: "rgb(var(--c-muted))", letterSpacing: "0.15em" }}>OR</span>
+              <div className="flex-1 h-px" style={{ background: "rgb(var(--c-hi) / calc(0.07 * var(--tint-hi)))" }} />
             </div>
             <button
               type="button"
@@ -208,10 +208,10 @@ export function Login({ onEmailLogin, onSignUp, onForgotPassword, onSpotifyLogin
               className="w-full py-3.5 font-display text-sm flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97]"
               style={{
                 background: "transparent",
-                border: "1px solid #1DB954",
-                color: "#1DB954",
-                textShadow: "0 0 8px rgba(29,185,84,0.5)",
-                boxShadow: "0 0 6px rgba(29,185,84,0.2),inset 0 0 8px rgba(29,185,84,0.04)",
+                border: "1px solid rgb(var(--c-spotify))",
+                color: "rgb(var(--c-spotify))",
+                textShadow: "0 0 8px rgb(var(--c-spotify) / calc(0.5 * var(--tint)))",
+                boxShadow: "0 0 6px rgb(var(--c-spotify) / calc(0.2 * var(--tint))),inset 0 0 8px rgb(var(--c-spotify) / calc(0.04 * var(--tint)))",
                 letterSpacing: "0.25em",
               }}
             >

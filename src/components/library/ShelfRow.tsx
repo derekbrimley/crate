@@ -60,9 +60,9 @@ export function ShelfRow({
         style={{
           height: 7,
           margin: "0 12px",
-          background: "linear-gradient(180deg, #5a3818 0%, #3a2008 100%)",
-          border: "1px solid #4a2e10",
-          boxShadow: "0 -2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
+          background: "linear-gradient(180deg, rgb(var(--c-wood-hi)) 0%, rgb(var(--c-wood-lo)) 100%)",
+          border: "1px solid rgb(var(--c-wood-edge))",
+          boxShadow: "0 -2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgb(var(--c-hi) / calc(0.04 * var(--tint-hi)))",
         }}
       />
 
@@ -70,9 +70,9 @@ export function ShelfRow({
         ref={containerRef}
         style={{
           margin: "0 12px",
-          background: "linear-gradient(180deg, #0e0609 0%, #090408 100%)",
-          borderLeft: "3px solid #261408",
-          borderRight: "3px solid #261408",
+          background: "linear-gradient(180deg, rgb(var(--c-shelf)) 0%, rgb(var(--c-shelf-lo)) 100%)",
+          borderLeft: "3px solid rgb(var(--c-wood-side))",
+          borderRight: "3px solid rgb(var(--c-wood-side))",
           paddingTop: 14,
           overflowX: "hidden",
           overflowY: "visible",
@@ -104,8 +104,8 @@ export function ShelfRow({
                 height: effectiveHeight,
                 marginLeft: (i === 0 && items.length > 0) || i > 0 ? -overlap : undefined,
                 opacity: 0.06,
-                background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)",
-                borderLeft: "1px solid rgba(255,255,255,0.04)",
+                background: "linear-gradient(90deg, transparent 0%, rgb(var(--c-hi) / calc(0.03 * var(--tint-hi))) 50%, transparent 100%)",
+                borderLeft: "1px solid rgb(var(--c-hi) / calc(0.04 * var(--tint-hi)))",
               }}
             />
           ))}
@@ -116,7 +116,7 @@ export function ShelfRow({
         style={{
           height: 8,
           margin: "0 12px",
-          background: "linear-gradient(180deg, #221008 0%, #160c04 100%)",
+          background: "linear-gradient(180deg, rgb(var(--c-wood-dark)) 0%, rgb(var(--c-wood-darkest)) 100%)",
           boxShadow: "0 4px 12px rgba(0,0,0,0.7)",
         }}
       />

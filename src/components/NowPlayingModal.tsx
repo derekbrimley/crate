@@ -192,18 +192,18 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
         className="relative w-full max-w-md max-h-full sm:max-h-[90vh] overflow-y-auto scrollbar-hide
                    translate-y-8 opacity-0 transition-all duration-300 ease-out"
         style={{
-          background: "linear-gradient(180deg, #1a1210 0%, #0f0a0c 100%)",
-          border: "1px solid #3d2815",
-          boxShadow: "0 0 60px rgba(0,0,0,0.8), 0 0 20px rgba(255,94,0,0.08)",
+          background: "linear-gradient(180deg, rgb(var(--c-elevated)) 0%, rgb(var(--c-surface)) 100%)",
+          border: "1px solid rgb(var(--c-border))",
+          boxShadow: "0 0 60px rgba(0,0,0,0.8), 0 0 20px rgb(var(--c-accent) / calc(0.08 * var(--tint)))",
         }}
       >
         {/* Sticky header — always present, shows title when scrolled */}
         <div
           className="sticky top-0 z-10 flex items-center justify-between px-4 transition-all duration-200"
           style={{
-            background: scrolled ? "rgba(26,18,16,0.95)" : "transparent",
+            background: scrolled ? "rgb(var(--c-elevated) / calc(0.95 * var(--tint)))" : "transparent",
             backdropFilter: scrolled ? "blur(12px)" : "none",
-            borderBottom: scrolled ? "1px solid #3d2815" : "1px solid transparent",
+            borderBottom: scrolled ? "1px solid rgb(var(--c-border))" : "1px solid transparent",
             height: 44,
           }}
         >
@@ -273,7 +273,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
           {isAiSuggested ? (
             <div className="flex items-center gap-3 mt-4">
               {addedToList ? (
-                <span className="text-[10px] font-mono tracking-wider uppercase" style={{ color: addedToList === "favorite" ? "#ff5e00" : "#00b4c8" }}>
+                <span className="text-[10px] font-mono tracking-wider uppercase" style={{ color: addedToList === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
                   {addedToList === "favorite" ? "★ Added to Favorites" : "◈ Added to Recommendations"}
                 </span>
               ) : (
@@ -282,20 +282,20 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                     onClick={() => handleAddToLibrary("favorite")}
                     disabled={addingToList !== null}
                     className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150 disabled:opacity-50"
-                    style={{ color: "#ff5e00", borderColor: "rgba(255,94,0,0.5)", background: "rgba(255,94,0,0.1)" }}
+                    style={{ color: "rgb(var(--c-accent))", borderColor: "rgb(var(--c-accent) / calc(0.5 * var(--tint)))", background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" }}
                   >
                     {addingToList === "favorite" ? (
-                      <span className="inline-block w-3 h-3 border border-[#ff5e00] border-t-transparent rounded-full animate-spin" />
+                      <span className="inline-block w-3 h-3 border border-[rgb(var(--c-accent))] border-t-transparent rounded-full animate-spin" />
                     ) : "★ FAV"}
                   </button>
                   <button
                     onClick={() => handleAddToLibrary("recommendation")}
                     disabled={addingToList !== null}
                     className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150 disabled:opacity-50"
-                    style={{ color: "#00b4c8", borderColor: "rgba(0,180,200,0.4)", background: "rgba(0,180,200,0.1)" }}
+                    style={{ color: "rgb(var(--c-rec))", borderColor: "rgb(var(--c-rec) / calc(0.4 * var(--tint)))", background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))" }}
                   >
                     {addingToList === "recommendation" ? (
-                      <span className="inline-block w-3 h-3 border border-[#00b4c8] border-t-transparent rounded-full animate-spin" />
+                      <span className="inline-block w-3 h-3 border border-[rgb(var(--c-rec))] border-t-transparent rounded-full animate-spin" />
                     ) : "◈ REC"}
                   </button>
                 </>
@@ -304,19 +304,19 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
           ) : (onRemove || onListTypeChange) && (
             <div className="flex items-center gap-3 mt-4">
               {/* Segmented toggle */}
-              <div className="flex border border-[#3d2815] overflow-hidden">
+              <div className="flex border border-[rgb(var(--c-border))] overflow-hidden">
                 <button
                   onClick={() => handleMove("favorite")}
                   disabled={moving}
                   className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all duration-150 disabled:opacity-50"
                   style={
                     listType === "favorite"
-                      ? { background: "rgba(255,94,0,0.15)", color: "#ff5e00", borderRight: "1px solid #3d2815" }
-                      : { background: "transparent", color: "#907558", borderRight: "1px solid #3d2815" }
+                      ? { background: "rgb(var(--c-accent) / calc(0.15 * var(--tint)))", color: "rgb(var(--c-accent))", borderRight: "1px solid rgb(var(--c-border))" }
+                      : { background: "transparent", color: "rgb(var(--c-muted))", borderRight: "1px solid rgb(var(--c-border))" }
                   }
                 >
                   {moving && listType !== "favorite" ? (
-                    <span className="inline-block w-3 h-3 border border-[#ff5e00] border-t-transparent rounded-full animate-spin" />
+                    <span className="inline-block w-3 h-3 border border-[rgb(var(--c-accent))] border-t-transparent rounded-full animate-spin" />
                   ) : "★ FAV"}
                 </button>
                 <button
@@ -325,12 +325,12 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                   className="px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all duration-150 disabled:opacity-50"
                   style={
                     listType === "recommendation"
-                      ? { background: "rgba(0,180,200,0.15)", color: "#00b4c8" }
-                      : { background: "transparent", color: "#907558" }
+                      ? { background: "rgb(var(--c-rec) / calc(0.15 * var(--tint)))", color: "rgb(var(--c-rec))" }
+                      : { background: "transparent", color: "rgb(var(--c-muted))" }
                   }
                 >
                   {moving && listType !== "recommendation" ? (
-                    <span className="inline-block w-3 h-3 border border-[#00b4c8] border-t-transparent rounded-full animate-spin" />
+                    <span className="inline-block w-3 h-3 border border-[rgb(var(--c-rec))] border-t-transparent rounded-full animate-spin" />
                   ) : "◈ REC"}
                 </button>
               </div>
@@ -342,8 +342,8 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                   className="px-2.5 py-1.5 text-[10px] font-mono tracking-wider uppercase border transition-all duration-150"
                   style={
                     removeConfirm
-                      ? { background: "rgba(180,0,0,0.15)", color: "#ff5555", borderColor: "rgba(255,85,85,0.5)" }
-                      : { background: "transparent", color: "#907558", borderColor: "rgba(180,0,0,0.3)" }
+                      ? { background: "rgb(var(--c-danger-deep) / calc(0.15 * var(--tint)))", color: "rgb(var(--c-danger))", borderColor: "rgb(var(--c-danger) / calc(0.5 * var(--tint)))" }
+                      : { background: "transparent", color: "rgb(var(--c-muted))", borderColor: "rgb(var(--c-danger-deep) / calc(0.3 * var(--tint)))" }
                   }
                 >
                   {removeConfirm ? "Remove?" : "✕"}
@@ -360,9 +360,9 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
               onPlay?.();
               await player.playAlbum(uri);
             }}
-            className="mt-3 flex items-center gap-2 px-4 py-2 border border-[#1DB954]/40
+            className="mt-3 flex items-center gap-2 px-4 py-2 border border-[rgb(var(--c-spotify))]/40
                        text-[11px] font-mono tracking-widest uppercase cursor-pointer
-                       text-[#1DB954] hover:bg-[#1DB954]/10 transition-colors"
+                       text-[rgb(var(--c-spotify))] hover:bg-[rgb(var(--c-spotify))]/10 transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
@@ -374,7 +374,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
         {/* Divider */}
         <div
           className="mx-6 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, #3d2815, transparent)" }}
+          style={{ background: "linear-gradient(90deg, transparent, rgb(var(--c-border)), transparent)" }}
         />
 
         {/* Genres */}
@@ -434,7 +434,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
         {/* Divider */}
         <div
           className="mx-6 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, #3d2815, transparent)" }}
+          style={{ background: "linear-gradient(90deg, transparent, rgb(var(--c-border)), transparent)" }}
         />
 
         {/* More by artist */}
@@ -520,7 +520,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                               <button
                                 onClick={() => handleAddAlbum(album, "recommendation")}
                                 className="px-2 py-1 text-[9px] font-mono border transition-colors tracking-wider"
-                                style={{ color: "#00b4c8", borderColor: "rgba(0,180,200,0.4)", background: "rgba(0,180,200,0.1)" }}
+                                style={{ color: "rgb(var(--c-rec))", borderColor: "rgb(var(--c-rec) / calc(0.4 * var(--tint)))", background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))" }}
                                 title="Add to recommendations"
                               >
                                 ◈ REC
@@ -540,7 +540,7 @@ export function NowPlayingModal({ item, onClose, onPlay, onRemove, onListTypeCha
                     <a
                       href={album.spotify_uri}
                       className="mt-1 flex items-center gap-1 text-[9px] font-mono tracking-wider"
-                      style={{ color: "#1DB954" }}
+                      style={{ color: "rgb(var(--c-spotify))" }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <svg className="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">

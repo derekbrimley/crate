@@ -4,26 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        crate: {
-          bg:           "#09070a",
-          surface:      "#0f0a0c",
-          elevated:     "#1a1210",
-          wood:         "#2e1c0a",
-          border:       "#3d2815",
-          text:         "#f2e8d2",
-          muted:        "#907558",
-          accent:       "#ff5e00",
-          "accent-dim": "#d44f00",
-          vinyl:        "#101010",
-          label:        "#c4892a",
-          polaroid:     "#e8dbc4",
-          neon: {
-            green:  "#39ff14",
-            pink:   "#ff0091",
-            yellow: "#ffe400",
-            blue:   "#00e5ff",
-          },
-        },
+        // Every color resolves to a theme variable (see src/index.css), so the
+        // "paper" theme can swap the palette. Opacity modifiers are scaled by
+        // --tint, which the paper theme raises so faint tints stay visible.
+        crate: Object.fromEntries(
+          [
+            "bg", "surface", "elevated", "wood", "border", "text", "muted",
+            "accent", "accent-dim", "vinyl", "label", "danger",
+          ].map((name) => [name, `rgb(var(--c-${name}) / calc(<alpha-value> * var(--tint)))`])
+        ),
       },
       fontFamily: {
         sans:    ['"IBM Plex Mono"', "Courier New", "monospace"],

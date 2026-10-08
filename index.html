@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#09070a" />
+    <script>
+      // Apply the saved theme before first paint (see src/lib/theme.ts).
+      // Screens that report themselves as monochrome default to paper.
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("crate-theme"); } catch (e) {}
+        if (!theme && window.matchMedia && window.matchMedia("(monochrome)").matches) theme = "paper";
+        if (theme === "paper") {
+          document.documentElement.dataset.theme = "paper";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ffffff");
+        }
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />

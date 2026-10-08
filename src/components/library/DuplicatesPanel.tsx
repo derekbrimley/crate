@@ -65,21 +65,21 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
   return (
     <div style={{ padding: "0 12px", maxWidth: 896, margin: "0 auto" }}>
       <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-        <span className="font-mono" style={{ fontSize: 11, color: "#907558", letterSpacing: "0.12em" }}>
+        <span className="font-mono" style={{ fontSize: 11, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
           {groups.length === 0 ? "NO DUPLICATES FOUND" : `${groups.length} DUPLICATE GROUP${groups.length === 1 ? "" : "S"}`}
         </span>
         <button
           onClick={onClose}
           className="font-mono cursor-pointer"
-          style={{ fontSize: 10, padding: "2px 8px", border: "1px solid #3d2815", background: "transparent", color: "#907558" }}
+          style={{ fontSize: 10, padding: "2px 8px", border: "1px solid rgb(var(--c-border))", background: "transparent", color: "rgb(var(--c-muted))" }}
         >
           DONE
         </button>
       </div>
 
       {groups.map((g, gi) => (
-        <div key={gi} style={{ marginBottom: 16, border: `1px solid ${g.matchType === "fuzzy" ? "#a86a1f" : "#3d2815"}`, padding: 10 }}>
-          <div className="font-mono" style={{ fontSize: 10, letterSpacing: "0.12em", marginBottom: 8, color: g.matchType === "fuzzy" ? "#d99a3a" : "#907558" }}>
+        <div key={gi} style={{ marginBottom: 16, border: `1px solid ${g.matchType === "fuzzy" ? "rgb(var(--c-warn-dim))" : "rgb(var(--c-border))"}`, padding: 10 }}>
+          <div className="font-mono" style={{ fontSize: 10, letterSpacing: "0.12em", marginBottom: 8, color: g.matchType === "fuzzy" ? "rgb(var(--c-warn))" : "rgb(var(--c-muted))" }}>
             {g.matchType === "fuzzy" ? "◇ POSSIBLE DUPLICATE" : "◆ EXACT DUPLICATE"}
           </div>
           {g.items.map((it) => {
@@ -100,11 +100,11 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
                     <>
                       {it.image_url
                         ? <img src={it.image_url} alt="" style={{ width: 36, height: 36, objectFit: "cover" }} />
-                        : <div style={{ width: 36, height: 36, background: "#1a1210" }} />}
+                        : <div style={{ width: 36, height: 36, background: "rgb(var(--c-elevated))" }} />}
                       <div className="flex-1" style={{ minWidth: 0 }}>
-                        <div className="font-mono truncate" style={{ fontSize: 11, color: "#f2e8d2" }}>{it.title}</div>
-                        <div className="font-mono truncate" style={{ fontSize: 10, color: "#907558" }}>{metaLine}</div>
-                        {failed && <div className="font-mono" style={{ fontSize: 9, color: "#e0573e" }}>delete failed — try again</div>}
+                        <div className="font-mono truncate" style={{ fontSize: 11, color: "rgb(var(--c-text))" }}>{it.title}</div>
+                        <div className="font-mono truncate" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>{metaLine}</div>
+                        {failed && <div className="font-mono" style={{ fontSize: 9, color: "rgb(var(--c-danger-alt))" }}>delete failed — try again</div>}
                       </div>
                     </>
                   );
@@ -131,9 +131,9 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
                   className="font-mono cursor-pointer shrink-0"
                   style={{
                     fontSize: 10, padding: "2px 8px",
-                    border: isMarked ? "1px solid #e0573e" : "1px solid #3d2815",
-                    background: isMarked ? "rgba(224,87,62,0.12)" : "transparent",
-                    color: isMarked ? "#e0573e" : "#907558",
+                    border: isMarked ? "1px solid rgb(var(--c-danger-alt))" : "1px solid rgb(var(--c-border))",
+                    background: isMarked ? "rgb(var(--c-danger-alt) / calc(0.12 * var(--tint)))" : "transparent",
+                    color: isMarked ? "rgb(var(--c-danger-alt))" : "rgb(var(--c-muted))",
                   }}
                 >
                   {isMarked ? "✕ DELETE" : "DELETE"}
@@ -145,16 +145,16 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
       ))}
 
       {groups.length > 0 && (
-        <div className="sticky" style={{ bottom: 0, padding: "10px 0", background: "rgba(15,10,12,0.97)" }}>
+        <div className="sticky" style={{ bottom: 0, padding: "10px 0", background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))" }}>
           <button
             onClick={handleDelete}
             disabled={marked.size === 0 || deleting}
             className="font-mono cursor-pointer w-full"
             style={{
               fontSize: 11, padding: "8px", letterSpacing: "0.1em",
-              border: "1px solid #e0573e",
-              background: marked.size === 0 ? "transparent" : "rgba(224,87,62,0.15)",
-              color: marked.size === 0 ? "#6b5640" : "#e0573e",
+              border: "1px solid rgb(var(--c-danger-alt))",
+              background: marked.size === 0 ? "transparent" : "rgb(var(--c-danger-alt) / calc(0.15 * var(--tint)))",
+              color: marked.size === 0 ? "rgb(var(--c-muted-dim))" : "rgb(var(--c-danger-alt))",
               opacity: deleting ? 0.6 : 1,
             }}
           >

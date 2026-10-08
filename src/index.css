@@ -2,6 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ─────────────────────────────────────
+   Colors are RGB triplets so they can take an alpha: rgb(var(--c-x) / 0.5).
+   Components multiply alphas by --tint (--tint-hi for the --c-hi overlay),
+   which the paper theme raises so faint tints still read in grayscale. */
+:root {
+  --c-bg:         9 7 10;
+  --c-surface:    15 10 12;
+  --c-elevated:   26 18 16;
+  --c-border:     61 40 21;
+  --c-text:       242 232 210;
+  --c-muted:      144 117 88;
+  --c-accent:     255 94 0;
+  --c-accent-dim: 212 79 0;
+  --c-neon:       57 255 20;
+  --c-rec:        0 180 200;
+  --c-friend:     168 85 247;
+  --c-spotify:    29 185 84;
+  --c-muted-dim:  107 86 64;
+  --c-modal:      20 13 10;
+  --c-danger:     255 85 85;
+  --c-danger-alt: 224 87 62;
+  --c-danger-deep: 180 0 0;
+  --c-warn:       217 154 58;
+  --c-warn-dim:   168 106 31;
+  --c-label:      196 137 42;
+  --c-vinyl:      15 15 15;
+  --c-wood:       46 28 10;
+  --c-wood-hi:    90 56 24;
+  --c-wood-edge:  74 46 16;
+  --c-wood-mid:   61 34 16;
+  --c-wood-lo:    58 32 8;
+  --c-wood-side:  38 20 8;
+  --c-wood-dark:  34 16 8;
+  --c-wood-darker: 30 16 8;
+  --c-wood-darkest: 22 12 4;
+  --c-shelf:      14 6 9;
+  --c-shelf-lo:   9 4 8;
+  --c-knob-hi:    58 32 16;
+  --c-knob-lo:    38 20 6;
+  --c-hi:         255 255 255;
+  --tint: 1;
+  --tint-hi: 1;
+}
+
+/* Paper: for monochrome reflective screens (Daylight DC-1, e-ink). White
+   page and black ink only. Hue carries no information in grayscale, so
+   state is shown by fill, weight and borders, never by color alone. */
+:root[data-theme="paper"] {
+  --c-bg:         255 255 255;
+  --c-surface:    255 255 255;
+  --c-elevated:   238 238 238;
+  --c-border:     0 0 0;
+  --c-text:       0 0 0;
+  --c-muted:      64 64 64;
+  --c-accent:     0 0 0;
+  --c-accent-dim: 0 0 0;
+  --c-neon:       0 0 0;
+  --c-rec:        0 0 0;
+  --c-friend:     0 0 0;
+  --c-spotify:    0 0 0;
+  --c-muted-dim:  96 96 96;
+  --c-modal:      255 255 255;
+  --c-danger:     0 0 0;
+  --c-danger-alt: 0 0 0;
+  --c-danger-deep: 0 0 0;
+  --c-warn:       0 0 0;
+  --c-warn-dim:   0 0 0;
+  --c-label:      255 255 255;
+  --c-vinyl:      0 0 0;
+  /* The wooden shelf becomes a plain black frame: line art on white. */
+  --c-wood:       0 0 0;
+  --c-wood-hi:    0 0 0;
+  --c-wood-edge:  0 0 0;
+  --c-wood-mid:   0 0 0;
+  --c-wood-lo:    0 0 0;
+  --c-wood-side:  0 0 0;
+  --c-wood-dark:  0 0 0;
+  --c-wood-darker: 0 0 0;
+  --c-wood-darkest: 0 0 0;
+  --c-shelf:      255 255 255;
+  --c-shelf-lo:   255 255 255;
+  --c-knob-hi:    255 255 255;
+  --c-knob-lo:    255 255 255;
+  --c-hi:         0 0 0;
+  --tint: 3;
+  --tint-hi: 3;
+  color-scheme: light;
+}
+
 @layer base {
   html, body {
     @apply bg-crate-bg text-crate-text;
@@ -139,4 +228,90 @@ body::after {
 @keyframes crateSlideIn {
   from { transform: translateX(115%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Paper theme overrides ──────────────────────────
+   Glows, blur and grain turn to mud on a reflective screen. These beat the
+   components' inline styles (an !important rule outranks a plain inline one). */
+:root[data-theme="paper"] body {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  font-weight: 500;
+}
+:root[data-theme="paper"] body::after {
+  display: none;
+}
+:root[data-theme="paper"] *,
+:root[data-theme="paper"] *::before,
+:root[data-theme="paper"] *::after {
+  text-shadow: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root[data-theme="paper"] *:not(img) {
+  filter: none !important;
+}
+/* The screen renders art in grayscale anyway; a little extra contrast keeps
+   covers from going flat, and dimming filters would only lose detail. */
+:root[data-theme="paper"] img {
+  filter: grayscale(1) contrast(1.15) !important;
+}
+:root[data-theme="paper"] ::placeholder {
+  color: rgb(0 0 0 / 0.55);
+}
+
+/* Spines: text can't sit directly on cover art in grayscale, so titles get a
+   printed label and selection is a thick inset rule instead of a glow. */
+:root[data-theme="paper"] .spine {
+  border-right: 1px solid #fff;
+}
+:root[data-theme="paper"] .spine[data-selected="true"] {
+  outline: 3px solid #000;
+  outline-offset: -3px;
+}
+:root[data-theme="paper"] .spine-label {
+  background: #fff;
+  color: #000;
+  padding: 1px 4px;
+  border: 1px solid #000;
+}
+:root[data-theme="paper"] .spine[data-selected="true"] .spine-label {
+  background: #000;
+  color: #fff;
+}
+:root[data-theme="paper"] .spine-caption {
+  background: #fff !important;
+  border-top: 1px solid #000;
+  padding-top: 4px !important;
+}
+:root[data-theme="paper"] .spine-caption .spine-sub {
+  color: #404040 !important;
+}
+:root[data-theme="paper"] .spine-badge {
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+  padding: 0 3px;
+}
+:root[data-theme="paper"] .spine-ai {
+  height: 5px !important;
+  background: repeating-linear-gradient(90deg, #000 0 4px, #fff 4px 8px) !important;
+  border-top: 1px solid #000;
+}
+
+/* Bottom nav: the active tab is shown by a heavy rule, not by color. */
+:root[data-theme="paper"] .nav-indicator {
+  width: 28px !important;
+  height: 3px !important;
+  border-radius: 0 !important;
+}
+:root[data-theme="paper"] .nav-active-label {
+  font-weight: 700;
+}
+:root[data-theme="paper"] .spine-label {
+  -webkit-text-stroke: 0;
+}
+:root[data-theme="paper"] .ambient-glow {
+  display: none;
 }
