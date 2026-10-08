@@ -154,25 +154,6 @@ export async function searchAlbums(
   return data.albums.items.filter((a) => a.album_type !== "single");
 }
 
-/** Albums and playlists in one request, for the add-to-library search. */
-export async function searchCatalog(
-  query: string,
-  limit = 20
-): Promise<{ albums: SpotifyAlbum[]; playlists: SpotifyPlaylist[] }> {
-  const params = new URLSearchParams({ q: query, type: "album,playlist", limit: String(limit) });
-  const res = await spotifyPublicFetch(`/search?${params}`);
-  if (!res.ok) throw new Error(`Spotify search failed: ${res.status}`);
-  const data = (await res.json()) as {
-    albums?: { items: SpotifyAlbum[] };
-    // Playlist results can contain null entries for playlists Spotify won't serve.
-    playlists?: { items: (SpotifyPlaylist | null)[] };
-  };
-  return {
-    albums: (data.albums?.items ?? []).filter((a) => a.album_type !== "single"),
-    playlists: (data.playlists?.items ?? []).filter((p): p is SpotifyPlaylist => Boolean(p?.id)),
-  };
-}
-
 export interface SpotifySavedAlbum {
   added_at: string;
   album: SpotifyAlbum;

@@ -100,8 +100,8 @@ export async function moveAlbum(
 
 export async function searchSpotify(
   query: string
-): Promise<{ albums: LibraryAlbum[]; playlists: LibraryAlbum[] }> {
-  return request<{ albums: LibraryAlbum[]; playlists: LibraryAlbum[] }>(
+): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(
     `/albums/search?q=${encodeURIComponent(query)}`
   );
 }
@@ -128,6 +128,16 @@ export async function getSpotifyPlaylists(
   return request<{ playlists: SpotifyPlaylistInfo[]; total: number }>(
     `/spotify/playlists?limit=${limit}&offset=${offset}`
   );
+}
+
+/** Every playlist in the user's Spotify library, following pagination. */
+export async function getAllSpotifyPlaylists(): Promise<SpotifyPlaylistInfo[]> {
+  const all: SpotifyPlaylistInfo[] = [];
+  for (;;) {
+    const { playlists, total } = await getSpotifyPlaylists(50, all.length);
+    all.push(...playlists);
+    if (playlists.length === 0 || all.length >= total) return all;
+  }
 }
 
 export async function getPlaylistAlbums(

@@ -5,8 +5,9 @@ import { useAuth } from "../hooks/useAuth";
 import { usePlayer } from "../hooks/usePlayer";
 import {
   searchSpotify, addAlbum, getSpotifyLibrary, getSpotifyPlaylists,
-  getPlaylistAlbums, bulkAddAlbums,
+  getAllSpotifyPlaylists, getPlaylistAlbums, bulkAddAlbums,
 } from "../services/api";
+import { matchPlaylists } from "../lib/playlistSearch";
 import type { LibraryAlbum, SpotifyPlaylistInfo } from "../types";
 
 type ListType = "favorite" | "recommendation";
@@ -25,16 +26,64 @@ function SleeveArt({ url, title, size = 48 }: { url: string | null; title: strin
   );
 }
 
-function ResultHeading({ label }: { label: string }) {
+type SearchMode = "albums" | "playlists";
+
+// Search results share the album row, so a playlist is shaped like one, with
+// its owner standing in for the artist.
+function playlistAsRow(pl: SpotifyPlaylistInfo): LibraryAlbum {
+  return {
+    media_type: "playlist",
+    spotify_id: pl.id,
+    title: pl.name,
+    artist: pl.owner ?? "",
+    image_url: pl.image_url,
+    spotify_uri: pl.uri,
+    spotify_url: pl.url,
+    total_tracks: pl.track_count,
+    already_added: pl.already_added,
+  };
+}
+
+function ModeToggle({ mode, onChange, albumCount, playlistCount }: {
+  mode: SearchMode;
+  onChange: (m: SearchMode) => void;
+  albumCount: number | null;
+  playlistCount: number | null;
+}) {
+  const options: { key: SearchMode; label: string; count: number | null }[] = [
+    { key: "albums", label: "ALBUMS", count: albumCount },
+    { key: "playlists", label: "MY PLAYLISTS", count: playlistCount },
+  ];
   return (
-    <p className="font-mono text-[9px] text-crate-muted/60 mt-4 mb-1" style={{ letterSpacing: "0.15em" }}>{label}</p>
+    <div className="flex mb-4" style={{ border: "1px solid rgb(var(--c-border))" }}>
+      {options.map(({ key, label, count }) => {
+        const active = mode === key;
+        return (
+          <button
+            key={key}
+            onClick={() => onChange(key)}
+            className="flex-1 font-mono text-[10px] py-2 transition-all duration-150"
+            style={{
+              background: active ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",
+              color: active ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+              letterSpacing: "0.15em",
+            }}
+          >
+            {label}{count !== null && <span className="opacity-60"> · {count}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 function SearchTab() {
   const [query, setQuery]       = useState("");
+  const [mode, setMode]         = useState<SearchMode>("albums");
   const [results, setResults]   = useState<LibraryAlbum[]>([]);
-  const [playlists, setPlaylists] = useState<LibraryAlbum[]>([]);
+  // The user's own Spotify playlists, loaded once and filtered locally.
+  const [myPlaylists, setMyPlaylists] = useState<SpotifyPlaylistInfo[] | null>(null);
+  const [playlistError, setPlaylistError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [adding, setAdding]     = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Map<string, ListType>>(new Map());
@@ -52,21 +101,25 @@ function SearchTab() {
     }
   };
 
+  useEffect(() => {
+    getAllSpotifyPlaylists()
+      .then(setMyPlaylists)
+      .catch(() => { setPlaylistError("Couldn't load your Spotify playlists."); setMyPlaylists([]); });
+  }, []);
+
   const handleQuery = (q: string) => {
     setQuery(q);
     clearTimeout(timer.current);
-    if (!q.trim()) { setResults([]); setPlaylists([]); return; }
+    if (!q.trim()) { setResults([]); return; }
     timer.current = setTimeout(async () => {
       setSearching(true); setError(null);
-      try {
-        const data = await searchSpotify(q);
-        setResults(data.albums);
-        setPlaylists(data.playlists ?? []);
-      }
-      catch { setError("Search failed. Try again."); setResults([]); setPlaylists([]); }
+      try { const { albums } = await searchSpotify(q); setResults(albums); }
+      catch { setError("Search failed. Try again."); setResults([]); }
       finally { setSearching(false); }
     }, 400);
   };
+
+  const playlistRows = myPlaylists ? matchPlaylists(myPlaylists, query).map(playlistAsRow) : [];
 
   const handleAdd = async (album: LibraryAlbum, listType: ListType) => {
     const key = `${album.spotify_id}:${listType}`;
@@ -136,42 +189,54 @@ function SearchTab() {
       <div className="relative mb-5">
         <input
           type="search" value={query} onChange={(e) => handleQuery(e.target.value)}
-          placeholder="Search for an album or playlist..."
+          placeholder={mode === "albums" ? "Search for an album..." : "Filter your playlists..."}
           className="w-full font-mono text-sm text-crate-text placeholder-crate-muted/50 outline-none transition-all"
           style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", borderBottom: "2px solid rgb(var(--c-accent))", padding: "10px 40px 10px 14px", letterSpacing: "0.04em" }}
           onFocus={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgb(var(--c-accent) / calc(0.15 * var(--tint)))"; }}
           onBlur={(e)  => { e.currentTarget.style.boxShadow = "none"; }}
         />
-        {searching ? (
+        {searching && mode === "albums" ? (
           <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="w-3.5 h-3.5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
         ) : (
           <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crate-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         )}
       </div>
 
-      {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
+      <ModeToggle
+        mode={mode}
+        onChange={setMode}
+        albumCount={query.trim() && !searching ? results.length : null}
+        playlistCount={myPlaylists ? playlistRows.length : null}
+      />
 
-      {results.length > 0 && (
+      {mode === "albums" ? (
         <>
-          {playlists.length > 0 && <ResultHeading label="ALBUMS" />}
-          <ul>{results.map(renderRow)}</ul>
+          {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
+          {results.length > 0 && <ul>{results.map(renderRow)}</ul>}
+          {!searching && query && results.length === 0 && (
+            <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO RECORDS FOUND</p>
+          )}
+          {!query && (
+            <div className="mt-16 flex flex-col items-center gap-4">
+              <VinylDisc size={72} />
+              <p className="font-display text-3xl text-crate-muted/20 tracking-widest">Feel free to look around.</p>
+            </div>
+          )}
         </>
-      )}
-      {playlists.length > 0 && (
+      ) : (
         <>
-          <ResultHeading label="PLAYLISTS" />
-          <ul>{playlists.map(renderRow)}</ul>
+          {error && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{error}</p>}
+          {playlistError && <p className="mb-3 font-mono text-xs text-crate-danger" style={{ letterSpacing: "0.05em" }}>{playlistError}</p>}
+          {myPlaylists === null ? (
+            <div className="mt-10 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
+          ) : playlistRows.length > 0 ? (
+            <ul>{playlistRows.map(renderRow)}</ul>
+          ) : !playlistError ? (
+            <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>
+              {query ? "NO MATCHING PLAYLISTS" : "NO PLAYLISTS"}
+            </p>
+          ) : null}
         </>
-      )}
-
-      {!searching && query && results.length === 0 && playlists.length === 0 && (
-        <p className="mt-10 text-center font-mono text-xs text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO RECORDS FOUND</p>
-      )}
-      {!query && (
-        <div className="mt-16 flex flex-col items-center gap-4">
-          <VinylDisc size={72} />
-          <p className="font-display text-3xl text-crate-muted/20 tracking-widest">Feel free to look around.</p>
-        </div>
       )}
     </>
   );
