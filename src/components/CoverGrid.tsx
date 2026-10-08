@@ -15,7 +15,8 @@ interface CoverGridProps {
 /** Album and playlist covers in a responsive grid; tapping one opens it. */
 export function CoverGrid({ items, onSelect, dimmed, caption }: CoverGridProps) {
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-x-2.5 gap-y-3.5" style={{ padding: "0 12px" }}>
+    // Two big covers per row in portrait; more across in landscape.
+    <div className="grid grid-cols-2 landscape:grid-cols-4 lg:landscape:grid-cols-5 gap-x-3 gap-y-5" style={{ padding: "0 12px" }}>
       {items.map((item) => (
         <CoverTile key={item.id} item={item} onSelect={onSelect} dimmed={dimmed} caption={caption?.(item) ?? null} />
       ))}
@@ -47,33 +48,33 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
         {item.image_url ? (
           <img src={item.image_url} alt="" loading="lazy" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <VinylDisc size={40} />
+          <VinylDisc size={64} />
         )}
         {item.list_type === "recommendation" && (
           <span
-            className="absolute top-1 left-1 font-mono pointer-events-none"
-            style={{ fontSize: 10, color: "rgb(var(--c-rec))", textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
+            className="absolute top-1.5 left-2 font-mono pointer-events-none"
+            style={{ fontSize: 14, color: "rgb(var(--c-rec))", textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
           >
             ◈
           </span>
         )}
         {playlist && (
           <span
-            className="absolute bottom-1 left-1 font-mono pointer-events-none px-1"
-            style={{ fontSize: 9, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
+            className="absolute bottom-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 10, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
           >
             ≡ PLAYLIST
           </span>
         )}
       </div>
-      <div className="font-mono truncate mt-1.5" style={{ fontSize: 10, color: "rgb(var(--c-text))" }}>
+      <div className="font-mono truncate mt-2" style={{ fontSize: 13, color: "rgb(var(--c-text))" }}>
         {item.title}
       </div>
-      <div className="font-mono truncate" style={{ fontSize: 9, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
+      <div className="font-mono truncate mt-0.5" style={{ fontSize: 11, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
         {item.creator}
       </div>
       {caption && (
-        <div className="font-mono truncate" style={{ fontSize: 9, color: "rgb(var(--c-friend))" }}>
+        <div className="font-mono truncate" style={{ fontSize: 11, color: "rgb(var(--c-friend))" }}>
           {caption}
         </div>
       )}

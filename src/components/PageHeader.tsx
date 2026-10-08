@@ -5,7 +5,11 @@ import { ProfileDropdown } from "./library/ProfileDropdown";
 interface PageHeaderProps {
   title: string;
   onLogout: () => void;
-  /** Where the back arrow goes. Omitted on top-level pages. */
+  /**
+   * Where the back arrow goes. "back" returns to the previous page (falling
+   * back to Home when there is none, e.g. on a fresh load). Omitted on
+   * top-level pages.
+   */
   backTo?: string;
   /** Extra buttons, shown left of the profile button. */
   actions?: React.ReactNode;
@@ -29,7 +33,13 @@ export function PageHeader({ title, onLogout, backTo, actions }: PageHeaderProps
       <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center gap-2" style={{ padding: "10px 12px 9px" }}>
         {backTo && (
           <button
-            onClick={() => navigate(backTo)}
+            onClick={() => {
+              // React Router numbers history entries; idx 0 means nothing to go back to.
+              const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+              if (backTo !== "back") navigate(backTo);
+              else if (idx > 0) navigate(-1);
+              else navigate("/");
+            }}
             className="flex items-center justify-center cursor-pointer shrink-0"
             style={{ width: 28, height: 28, color: "rgb(var(--c-accent))", background: "transparent", border: "none" }}
             title="Back"
