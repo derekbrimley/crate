@@ -183,7 +183,15 @@ export async function getAlbumDetails(
 
 /** Crate definitions and play stats, without running any crates. */
 export async function getCrateMeta(): Promise<DashboardData> {
-  return request<DashboardData>("/picks/dashboard?meta=1");
+  return request<DashboardData>("/picks/dashboard");
+}
+
+/**
+ * Claude's suggestions for new albums: for a crate (by id) or for Discover.
+ * Slow (a Claude call plus Spotify searches), so callers cache the result.
+ */
+export async function getSuggestions(target: string): Promise<{ suggestions: Item[] }> {
+  return request<{ suggestions: Item[] }>(`/picks/dashboard?suggest=${encodeURIComponent(target)}`);
 }
 
 /**

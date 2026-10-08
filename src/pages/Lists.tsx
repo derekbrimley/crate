@@ -10,11 +10,10 @@ import AdvancedFilters from "../components/library/AdvancedFilters";
 import DuplicatesPanel from "../components/library/DuplicatesPanel";
 import CoveragePanel from "../components/library/CoveragePanel";
 import { findUncovered } from "../lib/coverage";
-import { applyFilters, getItemGenres } from "../lib/filters";
-import type { FilterRule } from "../lib/filters";
+import { applyFilters, getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
+import { everythingRule } from "../../lib/crates";
 import { backfillReleaseDates } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
-import { foldListFilterIntoRules } from "../lib/crateFilters";
 
 const SPINES_PER_ROW = 14;
 
@@ -35,6 +34,28 @@ const GROUP_OPTIONS: { key: GroupKey; label: string }[] = [
   { key: "artist", label: "ARTIST" },
   { key: "genre", label: "GENRE" },
 ];
+
+/**
+ * A new crate that reproduces the Library's current view. The quick list
+ * filter maps onto the crate's recommendations toggle; showing recommendations
+ * only can't be expressed, so that view becomes favorites + recommendations.
+ */
+function crateFromLibraryView(
+  position: number,
+  rules: FilterRule[],
+  matchMode: "AND" | "OR",
+  listFilter: ListFilter
+): CrateDefinition {
+  const favoritesOnly =
+    listFilter === "favorite" || rules.some((r) => r.field === "list" && r.value === "favorite");
+  const kept = rules.filter((r) => r.field !== "list" && ruleIsComplete(r));
+  return {
+    ...makeEmptyCrate(position),
+    // An unfiltered view is the whole library, which a crate spells "Everything".
+    filters: { rules: kept.length > 0 ? kept : [everythingRule()], matchMode },
+    include_recommendations: !favoritesOnly,
+  };
+}
 
 interface ListsProps {
   onLogout: () => void;
@@ -395,7 +416,7 @@ export function Lists({ onLogout }: ListsProps) {
               GAPS
             </button>
             <button
-              onClick={() => setEditing({ ...makeEmptyCrate(crateDefs.length), filters: foldListFilterIntoRules(rules, matchMode, listFilter) })}
+              onClick={() => setEditing(crateFromLibraryView(crateDefs.length, rules, matchMode, listFilter))}
               className="font-mono shrink-0 cursor-pointer"
               style={{
                 fontSize: 10,
@@ -415,6 +436,7 @@ export function Lists({ onLogout }: ListsProps) {
             availableGenres={availableGenres}
             onChangeRules={(r) => { setRules(r); setSelectedAlbumId(null); }}
             onChangeMatchMode={setMatchMode}
+            hiddenFields={["all"]}
           />
         </div>
         {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
@@ -468,7 +490,6 @@ export function Lists({ onLogout }: ListsProps) {
       {editing && (
         <CrateEditorModal
           initial={editing}
-          availableGenres={availableGenres}
           onSave={async (crate) => {
             try {
               await saveCrateDefs([...crateDefs, crate]);

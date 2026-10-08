@@ -1,4 +1,4 @@
-import type { FilterRule } from "../lib/filters";
+import type { CrateDefinition } from "../../lib/crates";
 
 export interface User {
   id: number;
@@ -112,39 +112,8 @@ export interface AlbumDetails {
   playlist?: PlaylistInfo;
 }
 
-export interface Weighting {
-  cooldown_days: number;
-  weight_recent_days: number;
-  weight_medium_days: number;
-  weight_low: number;
-  weight_medium: number;
-  weight_high: number;
-  weight_never_picked_bonus: number;
-  recently_added_days: number;
-  recently_added_bonus: number;
-  randomness_factor: number;
-}
-
-export type CrateStrategy =
-  | { type: "weighted"; weighting: Weighting }
-  | { type: "random" }
-  | { type: "ai_pool"; prompt?: string }
-  | { type: "ai_new"; prompt?: string }
-  | { type: "hybrid"; prompt?: string; weighting: Weighting };
-
-export interface CrateFilters { rules: FilterRule[]; matchMode: "AND" | "OR"; }
-
-export interface CrateDefinition {
-  id: string;
-  name: string;
-  position: number;
-  source: "library" | "friends";
-  count: number;
-  filters: CrateFilters;
-  strategy: CrateStrategy;
-}
-
-export type DashboardMode = "favorites" | "discover" | "for_right_now" | "surprise" | "from_friends";
+// Crates are defined once, in lib/crates.ts, and shared with the server.
+export type { CrateDefinition, CrateFilters, Membership } from "../../lib/crates";
 
 export interface PickStat {
   item_id: number;
@@ -176,27 +145,9 @@ export interface FriendRecommendation {
   sender_email: string | null;
 }
 
-export interface RightNowContext {
-  key: string;
-  label: string;
-  emoji: string;
-  prefer_genres: string[];
-}
-
 export interface AppConfig {
-  dashboard_modes: string[];
-  cards_per_mode: number;
-  cooldown_days: number;
-  weight_recent_days: number;
-  weight_medium_days: number;
-  weight_low: number;
-  weight_medium: number;
-  weight_high: number;
-  weight_never_picked_bonus: number;
-  contexts: string[];
-  randomness_factor: number;
-  right_now_contexts: RightNowContext[];
   crates?: CrateDefinition[];
+  [key: string]: unknown;
 }
 
 /** A Spotify Connect target — a phone, tablet, desktop app, speaker, etc. */

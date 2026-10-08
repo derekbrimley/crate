@@ -1,24 +1,4 @@
-import { applyFilters, type PickStat } from "./filters";
-import { DEFAULT_WEIGHTING } from "../../lib/crates";
-import type { SelectionConfig } from "../../lib/selection";
-import type { Item, CrateDefinition } from "../types";
-
-/**
- * Crates whose contents come from the library, i.e. everything except AI
- * "new music" crates and the friends crate. Only these get a crate page.
- */
-export function isBrowsableCrate(crate: CrateDefinition): boolean {
-  return crate.source === "library" && crate.strategy.type !== "ai_new";
-}
-
-/** Every library item the crate's filters let in. */
-export function cratePool(crate: CrateDefinition, items: Item[], pickStats: Map<number, PickStat>): Item[] {
-  return applyFilters(items, crate.filters.rules, crate.filters.matchMode, pickStats);
-}
-
-export function crateWeighting(crate: CrateDefinition): SelectionConfig {
-  return "weighting" in crate.strategy ? crate.strategy.weighting : DEFAULT_WEIGHTING;
-}
+import type { Item } from "../types";
 
 /**
  * Lays a frozen order over the current pool. Items that have left the pool are

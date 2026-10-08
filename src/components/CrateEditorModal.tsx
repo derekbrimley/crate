@@ -1,332 +1,241 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import AdvancedFilters from "./library/AdvancedFilters";
-import type { CrateDefinition, Weighting, CrateStrategy } from "../types";
-import type { FilterRule } from "../lib/filters";
+import { VinylDisc } from "./VinylDisc";
+import { useDataCache } from "../contexts/DataCache";
+import { cratePool, makeEmptyCrate, everythingRule } from "../../lib/crates";
+import { getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
+import { isPlaylist } from "../lib/media";
+import type { CrateDefinition, Item } from "../types";
 
-export const CLIENT_DEFAULT_WEIGHTING: Weighting = {
-  cooldown_days: 3,
-  weight_recent_days: 14,
-  weight_medium_days: 30,
-  weight_low: 1,
-  weight_medium: 3,
-  weight_high: 5,
-  weight_never_picked_bonus: 2,
-  recently_added_days: 14,
-  recently_added_bonus: 0,
-  randomness_factor: 1.0,
-};
-
-export function makeEmptyCrate(position: number): CrateDefinition {
-  return {
-    id: `crate_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
-    name: "",
-    position,
-    source: "library",
-    count: 4,
-    filters: { rules: [], matchMode: "AND" },
-    strategy: { type: "weighted", weighting: { ...CLIENT_DEFAULT_WEIGHTING } },
-  };
-}
-
-const COOLDOWN_STOPS = [0, 3, 7, 14, 31];
-const COOLDOWN_LABELS = ["None", "A few days", "A week", "Two weeks", "A month"];
-const VARIETY_STOPS = [2.0, 1.5, 1.0, 0.7, 0.4];
-const VARIETY_LABELS = ["Predictable", "Consistent", "Balanced", "Random", "Chaotic"];
-const DISCOVERY_STOPS = [0, 1, 2, 3, 5];
-const DISCOVERY_LABELS = ["Off", "Subtle", "Moderate", "Strong", "Maximum"];
-const FRESH_STOPS = [0, 1, 2, 3, 5];
-const FRESH_LABELS = ["Off", "Subtle", "Moderate", "Strong", "Maximum"];
-
-function nearestIdx(value: number, stops: number[]): number {
-  return stops.reduce((best, v, i) => (Math.abs(v - value) < Math.abs(stops[best] - value) ? i : best), 0);
-}
-
-type StrategyType = CrateStrategy["type"];
-const STRATEGY_OPTIONS: { key: StrategyType; label: string }[] = [
-  { key: "weighted", label: "WEIGHTED" },
-  { key: "random", label: "RANDOM" },
-  { key: "ai_pool", label: "AI · LIBRARY" },
-  { key: "ai_new", label: "AI · NEW" },
-  { key: "hybrid", label: "HYBRID" },
-];
-
-const STRATEGY_HELP: Record<StrategyType, string> = {
-  weighted: "Weighted random from your filtered albums, tuned by the sliders below.",
-  random: "Plain random pick from your filtered albums.",
-  ai_pool: "AI picks from your filtered albums. Blank = weighted pick.",
-  ai_new: "AI suggests albums outside your library.",
-  hybrid: "Mixes ~1/3 fresh AI suggestions with weighted picks from your library.",
-};
-
-// Human-readable descriptions shown under each tuning slider.
-const SLIDER_HELP = {
-  cooldown: "How long to wait before an album can be picked again.",
-  variety: "How predictable vs. surprising the picks are.",
-  discovery: "Extra weight for albums you've never picked before.",
-  fresh: "Extra weight for albums added to your library recently (last 2 weeks).",
-};
-
-const sliderStyle = `
-  .algo-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    border-radius: 2px;
-    background: rgb(var(--c-border) / calc(0.8 * var(--tint)));
-    outline: none;
-    cursor: pointer;
-  }
-  .algo-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgb(var(--c-accent));
-    cursor: pointer;
-    box-shadow: 0 0 6px rgb(var(--c-accent) / calc(0.5 * var(--tint)));
-  }
-  .algo-slider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgb(var(--c-accent));
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 0 6px rgb(var(--c-accent) / calc(0.5 * var(--tint)));
-  }
-  .algo-slider:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
+export { makeEmptyCrate };
 
 interface CrateEditorModalProps {
   initial: CrateDefinition;
-  availableGenres: string[];
   onSave: (crate: CrateDefinition) => void | Promise<void>;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
 
-export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, onClose }: CrateEditorModalProps) {
+const SEARCH_LIMIT = 8;
+
+/**
+ * Create or edit a crate: a name, optional library filters (with or without
+ * recommendations), and records added or left out by hand. Every crate is
+ * ranked with the same built-in weighting, so there's nothing to tune.
+ */
+export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEditorModalProps) {
+  const { favorites, recommendations, pickStats } = useDataCache();
+  const allItems = useMemo(() => [...favorites, ...recommendations], [favorites, recommendations]);
+
   const [name, setName] = useState(initial.name);
-  const [count, setCount] = useState(initial.count);
+  const [aiSuggestions, setAiSuggestions] = useState(initial.ai_suggestions);
+  const [includeRecs, setIncludeRecs] = useState(initial.include_recommendations);
   const [rules, setRules] = useState<FilterRule[]>(initial.filters.rules);
   const [matchMode, setMatchMode] = useState<"AND" | "OR">(initial.filters.matchMode);
-  const [strategyType, setStrategyType] = useState<StrategyType>(initial.strategy.type);
-  const [weighting, setWeighting] = useState<Weighting>(
-    initial.strategy.type === "weighted" ? initial.strategy.weighting : { ...CLIENT_DEFAULT_WEIGHTING }
-  );
-  const [prompt, setPrompt] = useState<string>(
-    initial.strategy.type === "ai_pool" || initial.strategy.type === "ai_new" || initial.strategy.type === "hybrid"
-      ? initial.strategy.prompt ?? ""
-      : ""
-  );
+  const [includeIds, setIncludeIds] = useState<number[]>(initial.include_ids);
+  const [excludeIds, setExcludeIds] = useState<number[]>(initial.exclude_ids);
+  const [query, setQuery] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Lock background scroll while the modal is open (#2).
+  // Lock background scroll while the modal is open.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
-  const cooldownIdx = nearestIdx(weighting.cooldown_days, COOLDOWN_STOPS);
-  const varietyIdx = nearestIdx(weighting.randomness_factor, VARIETY_STOPS);
-  const discoveryIdx = nearestIdx(weighting.weight_never_picked_bonus, DISCOVERY_STOPS);
-  const freshIdx = nearestIdx(weighting.recently_added_bonus, FRESH_STOPS);
+  const draft: CrateDefinition = {
+    ...initial,
+    name: name.trim() || "Untitled Crate",
+    ai_suggestions: aiSuggestions,
+    include_recommendations: includeRecs,
+    filters: { rules, matchMode },
+    include_ids: includeIds,
+    exclude_ids: excludeIds,
+  };
+  const pool = cratePool(draft, allItems, pickStats);
+  const poolIds = new Set(pool.map((i) => i.id));
 
-  function buildStrategy(): CrateStrategy {
-    if (strategyType === "weighted") return { type: "weighted", weighting };
-    if (strategyType === "random") return { type: "random" };
-    if (strategyType === "hybrid") return { type: "hybrid", weighting, prompt: prompt.trim() || undefined };
-    return { type: strategyType, prompt: prompt.trim() || undefined };
-  }
+  const byId = useMemo(() => new Map(allItems.map((i) => [i.id, i])), [allItems]);
+  const handPicked = includeIds.map((id) => byId.get(id)).filter((i): i is Item => !!i);
+  const leftOut = excludeIds.map((id) => byId.get(id)).filter((i): i is Item => !!i);
+
+  const availableGenres = useMemo(
+    () => Array.from(new Set(allItems.flatMap((i) => getItemGenres(i)))).sort(),
+    [allItems]
+  );
+
+  // Library items not already in the crate, matching every word of the query.
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const searchResults = words.length === 0 ? [] : allItems
+    .filter((i) => !poolIds.has(i.id))
+    .filter((i) => words.every((w) => `${i.title} ${i.creator}`.toLowerCase().includes(w)))
+    .slice(0, SEARCH_LIMIT);
+
+  const addByHand = (item: Item) => {
+    setExcludeIds((ids) => ids.filter((id) => id !== item.id));
+    setIncludeIds((ids) => (ids.includes(item.id) ? ids : [...ids, item.id]));
+  };
 
   async function handleSave() {
     if (saving) return;
     setSaving(true);
     try {
-      await onSave({
-        ...initial,
-        name: name.trim() || "Untitled Crate",
-        count,
-        filters: { rules, matchMode },
-        strategy: buildStrategy(),
-      });
+      await onSave(draft);
     } finally {
       setSaving(false);
     }
   }
 
-  const label: React.CSSProperties = {
-    fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: "0.2em",
-    textTransform: "uppercase", color: "rgb(var(--c-muted))", display: "block", marginBottom: 6,
-  };
-  const input: React.CSSProperties = {
-    background: "rgb(var(--c-hi) / calc(0.03 * var(--tint-hi)))", border: "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))", borderRadius: 4,
-    color: "rgb(var(--c-text))", fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, padding: "6px 10px",
-    width: "100%", outline: "none",
-  };
-
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.7)" }}
       onClick={onClose}
     >
-      <style>{sliderStyle}</style>
       <div
         className="w-full max-w-lg flex flex-col"
-        style={{ background: "rgb(var(--c-modal))", border: "1px solid rgb(var(--c-border))", borderRadius: 10, maxHeight: "90vh" }}
+        style={{ background: "rgb(var(--c-modal))", border: "1px solid rgb(var(--c-border))", borderRadius: 12, maxHeight: "92dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header (fixed) */}
-        <div
-          className="flex items-center justify-between shrink-0"
-          style={{ padding: "20px 20px 12px", borderBottom: "1px solid rgb(var(--c-border))" }}
-        >
-          <span className="font-display" style={{ fontSize: 16, color: "rgb(var(--c-text))", letterSpacing: "0.15em" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between shrink-0" style={{ padding: "14px 12px 12px 20px", borderBottom: "1px solid rgb(var(--c-border))" }}>
+          <span className="font-display" style={{ fontSize: 22, color: "rgb(var(--c-text))", letterSpacing: "0.15em" }}>
             {initial.name ? "EDIT CRATE" : "NEW CRATE"}
           </span>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: 18, cursor: "pointer" }}>✕</button>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center cursor-pointer"
+            style={{ width: 44, height: 44, background: "transparent", border: "none", color: "rgb(var(--c-muted))", fontSize: 22 }}
+            title="Close"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto" style={{ padding: "16px 20px", flex: 1 }}>
-
-        {/* Name */}
-        <div className="mb-4">
-          <label style={label}>Name</label>
-          <input style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="My Crate" />
-        </div>
-
-        {/* Count */}
-        <div className="mb-4">
-          <label style={label}>Albums per crate</label>
-          <div className="flex gap-2 flex-wrap">
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-              <button
-                key={n}
-                onClick={() => setCount(n)}
-                style={{
-                  width: 36, height: 36, borderRadius: 4, cursor: "pointer",
-                  border: count === n ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
-                  background: count === n ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",
-                  color: count === n ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-                  fontFamily: '"IBM Plex Mono", monospace', fontSize: 13,
-                }}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-4">
-          <label style={label}>Filters</label>
-          <AdvancedFilters
-            rules={rules}
-            matchMode={matchMode}
-            availableGenres={availableGenres}
-            onChangeRules={setRules}
-            onChangeMatchMode={setMatchMode}
-            defaultOpen
+        {/* Body */}
+        <div className="overflow-y-auto" style={{ padding: "18px 20px", flex: 1 }}>
+          <label style={labelStyle}>Name</label>
+          <input
+            style={inputStyle}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Sunday Morning"
           />
-        </div>
+          <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-accent))", margin: "10px 0 22px" }}>
+            {pool.length} record{pool.length === 1 ? "" : "s"} in this crate
+          </p>
 
-        {/* Strategy */}
-        <div className="mb-4">
-          <label style={label}>Pick strategy</label>
-          <div className="flex gap-1 flex-wrap">
-            {STRATEGY_OPTIONS.map((o) => (
-              <button
-                key={o.key}
-                onClick={() => setStrategyType(o.key)}
-                className="font-mono cursor-pointer"
-                style={{
-                  fontSize: 10, padding: "4px 8px", letterSpacing: "0.08em",
-                  border: strategyType === o.key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
-                  background: strategyType === o.key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
-                  color: strategyType === o.key ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-                }}
-              >
-                {o.label}
-              </button>
+          {/* Filters */}
+          <Section>
+            <label style={labelStyle}>Filters</label>
+            {!rules.some(ruleIsComplete) && (
+              <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))", marginBottom: 10, lineHeight: 1.5 }}>
+                Records matching a filter join this crate automatically. With no filters, it holds only what you add by hand.{" "}
+                <button
+                  type="button"
+                  onClick={() => setRules([...rules.filter(ruleIsComplete), everythingRule(`r-all-${Date.now()}`)])}
+                  className="font-mono cursor-pointer"
+                  style={{ background: "transparent", border: "none", padding: 0, color: "rgb(var(--c-accent))", fontSize: 13, textDecoration: "underline" }}
+                >
+                  Include everything
+                </button>
+              </p>
+            )}
+            <AdvancedFilters
+              rules={rules}
+              matchMode={matchMode}
+              availableGenres={availableGenres}
+              onChangeRules={setRules}
+              onChangeMatchMode={setMatchMode}
+              hiddenFields={["list"]}
+              size="large"
+              alwaysOpen
+            />
+            <div style={{ marginTop: 12 }}>
+              <Switch
+                label="Include recommendations"
+                help="Off: only your favorites can match the filters."
+                on={includeRecs}
+                onChange={setIncludeRecs}
+              />
+            </div>
+          </Section>
+
+          {/* Added by hand */}
+          <Section>
+            <label style={labelStyle}>Added by hand{handPicked.length > 0 ? ` · ${handPicked.length}` : ""}</label>
+            {handPicked.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                action="Remove"
+                onAction={() => setIncludeIds((ids) => ids.filter((id) => id !== item.id))}
+              />
             ))}
-          </div>
+            <input
+              style={{ ...inputStyle, marginTop: handPicked.length > 0 ? 10 : 0 }}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search your library to add…"
+            />
+            {searchResults.map((item) => (
+              <ItemRow key={item.id} item={item} action="+ Add" accent onAction={() => { addByHand(item); setQuery(""); }} />
+            ))}
+            {words.length > 0 && searchResults.length === 0 && (
+              <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))", marginTop: 10 }}>
+                Nothing else in your library matches.
+              </p>
+            )}
+          </Section>
+
+          {/* Left out */}
+          {leftOut.length > 0 && (
+            <Section>
+              <label style={labelStyle}>Left out · {leftOut.length}</label>
+              {leftOut.map((item) => (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  action="Put back"
+                  onAction={() => setExcludeIds((ids) => ids.filter((id) => id !== item.id))}
+                />
+              ))}
+            </Section>
+          )}
+
+          {/* Claude */}
+          <Section>
+            <Switch
+              label="✦ Claude suggestions"
+              help="Claude suggests new albums that fit this crate, shown on its page."
+              on={aiSuggestions}
+              onChange={setAiSuggestions}
+            />
+          </Section>
         </div>
 
-        {/* Strategy detail */}
-        <p className="font-mono mb-3" style={{ fontSize: 10, color: "rgb(var(--c-muted))", lineHeight: 1.5 }}>
-          {STRATEGY_HELP[strategyType]}
-        </p>
-
-        {(strategyType === "weighted" || strategyType === "hybrid") && (
-          <div className="mb-4 flex flex-col gap-4">
-            <Slider label="Cooldown" valueLabel={`${COOLDOWN_LABELS[cooldownIdx]} (${COOLDOWN_STOPS[cooldownIdx]}d)`}
-              help={SLIDER_HELP.cooldown}
-              idx={cooldownIdx} onChange={(i) => setWeighting((w) => ({ ...w, cooldown_days: COOLDOWN_STOPS[i] }))} />
-            <Slider label="Variety" valueLabel={VARIETY_LABELS[varietyIdx]}
-              help={SLIDER_HELP.variety}
-              idx={varietyIdx} onChange={(i) => setWeighting((w) => ({ ...w, randomness_factor: VARIETY_STOPS[i] }))} />
-            <Slider label="Discovery bias" valueLabel={DISCOVERY_LABELS[discoveryIdx]}
-              help={SLIDER_HELP.discovery}
-              idx={discoveryIdx} onChange={(i) => setWeighting((w) => ({ ...w, weight_never_picked_bonus: DISCOVERY_STOPS[i] }))} />
-            <Slider label="Recently added" valueLabel={FRESH_LABELS[freshIdx]}
-              help={SLIDER_HELP.fresh}
-              idx={freshIdx} onChange={(i) => setWeighting((w) => ({ ...w, recently_added_bonus: FRESH_STOPS[i] }))} />
-          </div>
-        )}
-
-        {(strategyType === "ai_pool" || strategyType === "ai_new" || strategyType === "hybrid") && (
-          <div className="mb-4">
-            <label style={label}>Vibe / prompt (optional)</label>
-            <input style={input} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g. rainy Sunday morning" />
-          </div>
-        )}
-
-        </div>
-        {/* Actions (sticky footer) */}
+        {/* Footer */}
         <div
-          className="flex items-center justify-between shrink-0"
-          style={{ padding: "12px 20px", borderTop: "1px solid rgb(var(--c-border))", background: "rgb(var(--c-modal))" }}
+          className="flex items-center justify-between gap-2 shrink-0"
+          style={{ padding: "12px 16px", borderTop: "1px solid rgb(var(--c-border))", background: "rgb(var(--c-modal))" }}
         >
           {onDelete ? (
             confirmDelete ? (
               <div className="flex items-center gap-2">
-                <button onClick={() => onDelete(initial.id)} className="font-mono cursor-pointer"
-                  style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-danger))", border: "1px solid rgb(var(--c-danger) / calc(0.4 * var(--tint)))", background: "transparent", borderRadius: 3 }}>
-                  DELETE
-                </button>
-                <button onClick={() => setConfirmDelete(false)} className="font-mono cursor-pointer"
-                  style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 3 }}>
-                  CANCEL
-                </button>
+                <FooterButton onClick={() => onDelete(initial.id)} color="--c-danger">Delete</FooterButton>
+                <FooterButton onClick={() => setConfirmDelete(false)}>Keep</FooterButton>
               </div>
             ) : (
-              <button onClick={() => setConfirmDelete(true)} className="font-mono cursor-pointer"
-                style={{ fontSize: 10, padding: "4px 8px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 3 }}>
-                DELETE CRATE
-              </button>
+              <FooterButton onClick={() => setConfirmDelete(true)}>Delete…</FooterButton>
             )
           ) : <span />}
-
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="font-mono cursor-pointer"
-              style={{ fontSize: 10, padding: "6px 12px", color: "rgb(var(--c-muted))", border: "1px solid rgb(var(--c-border))", background: "transparent", borderRadius: 4 }}>
-              CANCEL
-            </button>
-            <button onClick={handleSave} disabled={saving} className="font-mono cursor-pointer disabled:opacity-60"
-              style={{ fontSize: 10, padding: "6px 12px", color: "rgb(var(--c-accent))", border: "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))", background: "rgb(var(--c-accent) / calc(0.12 * var(--tint)))", borderRadius: 4, letterSpacing: "0.1em" }}>
-              {saving ? "SAVING…" : "SAVE"}
-            </button>
+            <FooterButton onClick={onClose}>Cancel</FooterButton>
+            <FooterButton onClick={handleSave} color="--c-accent" filled disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </FooterButton>
           </div>
         </div>
       </div>
@@ -334,21 +243,108 @@ export function CrateEditorModal({ initial, availableGenres, onSave, onDelete, o
   );
 }
 
-function Slider({ label, valueLabel, help, idx, onChange }: { label: string; valueLabel: string; help?: string; idx: number; onChange: (i: number) => void }) {
+const labelStyle: React.CSSProperties = {
+  fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, letterSpacing: "0.16em",
+  textTransform: "uppercase", color: "rgb(var(--c-muted))", display: "block", marginBottom: 8,
+};
+
+// 16px keeps iOS from zooming into the field on focus.
+const inputStyle: React.CSSProperties = {
+  background: "rgb(var(--c-hi) / calc(0.03 * var(--tint-hi)))", border: "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))", borderRadius: 6,
+  color: "rgb(var(--c-text))", fontFamily: '"IBM Plex Mono", monospace', fontSize: 16, padding: "11px 12px",
+  width: "100%", outline: "none",
+};
+
+function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: help ? 2 : 6 }}>
-        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgb(var(--c-text))" }}>{label}</span>
-        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: "rgb(var(--c-accent))" }}>{valueLabel}</span>
-      </div>
-      {help && (
-        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: "rgb(var(--c-muted))", lineHeight: 1.4, marginBottom: 6 }}>
-          {help}
-        </p>
-      )}
-      <input type="range" className="algo-slider" min={0} max={4} step={1} value={idx}
-        style={{ width: "100%" }}
-        onChange={(e) => onChange(Number(e.target.value))} />
+    <div style={{ borderTop: "1px solid rgb(var(--c-border))", paddingTop: 18, marginBottom: 22 }}>
+      {children}
     </div>
+  );
+}
+
+function Switch({ label, help, on, onChange }: { label: string; help: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="w-full flex items-center gap-3 text-left cursor-pointer"
+      style={{ background: "transparent", border: "none", padding: "6px 0", minHeight: 48 }}
+    >
+      <span className="flex-1 min-w-0">
+        <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>{label}</span>
+        <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{help}</span>
+      </span>
+      <span
+        className="shrink-0 relative transition-colors"
+        style={{
+          width: 50, height: 30, borderRadius: 15,
+          background: on ? "rgb(var(--c-accent))" : "rgb(var(--c-border))",
+        }}
+      >
+        <span
+          className="absolute transition-all"
+          style={{ top: 3, left: on ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "rgb(var(--c-text))" }}
+        />
+      </span>
+    </button>
+  );
+}
+
+function ItemRow({ item, action, onAction, accent }: { item: Item; action: string; onAction: () => void; accent?: boolean }) {
+  return (
+    <div className="flex items-center gap-3" style={{ padding: "8px 0", borderBottom: "1px solid rgb(var(--c-border) / calc(0.5 * var(--tint)))" }}>
+      <div className="shrink-0 flex items-center justify-center overflow-hidden" style={{ width: 44, height: 44, background: "rgb(var(--c-elevated))" }}>
+        {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <VinylDisc size={30} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-mono truncate" style={{ fontSize: 14, color: "rgb(var(--c-text))" }}>{item.title}</div>
+        <div className="font-mono truncate" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>
+          {isPlaylist(item) ? "Playlist · " : ""}{item.creator}
+          {item.list_type === "recommendation" ? " · rec" : ""}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onAction}
+        className="shrink-0 font-mono cursor-pointer"
+        style={{
+          fontSize: 13, minHeight: 40, padding: "0 12px", borderRadius: 6,
+          border: accent ? "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))" : "1px solid rgb(var(--c-border))",
+          color: accent ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+          background: "transparent",
+        }}
+      >
+        {action}
+      </button>
+    </div>
+  );
+}
+
+function FooterButton({ children, onClick, color, filled, disabled }: {
+  children: React.ReactNode;
+  onClick: () => void;
+  color?: string;
+  filled?: boolean;
+  disabled?: boolean;
+}) {
+  const c = color ? `rgb(var(${color}))` : "rgb(var(--c-muted))";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="font-mono cursor-pointer disabled:opacity-60"
+      style={{
+        fontSize: 14, minHeight: 44, padding: "0 16px", borderRadius: 6, letterSpacing: "0.06em",
+        color: c,
+        border: color ? `1px solid rgb(var(${color}) / calc(0.6 * var(--tint)))` : "1px solid rgb(var(--c-border))",
+        background: filled && color ? `rgb(var(${color}) / calc(0.14 * var(--tint)))` : "transparent",
+      }}
+    >
+      {children}
+    </button>
   );
 }

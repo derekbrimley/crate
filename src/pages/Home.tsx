@@ -4,7 +4,6 @@ import { Layout } from "../components/Layout";
 import { PageHeader } from "../components/PageHeader";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { usePlayer } from "../hooks/usePlayer";
-import { isBrowsableCrate } from "../lib/crateBrowse";
 
 interface HomeProps {
   onLogout: () => void;
@@ -15,7 +14,7 @@ export function Home({ onLogout }: HomeProps) {
   const navigate = useNavigate();
   const { crateDefs, recommendations, ready } = useLibraryData();
   const { currentTrack } = usePlayer();
-  const crateCount = crateDefs.filter(isBrowsableCrate).length;
+  const crateCount = crateDefs.length;
 
   return (
     <Layout>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
-import { getCrateMeta, getAlbums, getHistory, saveCrates } from "../services/api";
+import { getCrateMeta, getAlbums, getHistory, saveCrates, updateConfig } from "../services/api";
 import type { Item, PickHistoryEntry, PickStat, CrateDefinition } from "../types";
 
 /** A frozen browse order: item ids, playable first, then resting (in cooldown). */
@@ -23,6 +23,15 @@ interface DataCacheState {
   // the session so going back and forth doesn't reshuffle a list.
   getRankOrder: (key: string) => RankOrder | undefined;
   setRankOrder: (key: string, order: RankOrder | undefined) => void;
+
+  // Claude's suggestions, keyed by crate id or "discover". Kept for the
+  // session: each fetch is a slow, paid Claude call.
+  getCachedSuggestions: (key: string) => Item[] | undefined;
+  setCachedSuggestions: (key: string, items: Item[] | undefined) => void;
+
+  // Discover's "Claude suggestions" switch, stored in user config.
+  discoverSuggestions: boolean;
+  setDiscoverSuggestions: (on: boolean) => Promise<void>;
 
   // Lists
   favorites: Item[];
@@ -52,6 +61,8 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   // A ref, not state: orders are written while rendering a list and read back
   // on the next visit, so changing one must not re-render anything.
   const rankOrders = useRef(new Map<string, RankOrder>());
+  const suggestionCache = useRef(new Map<string, Item[]>());
+  const [discoverSuggestions, setDiscoverSuggestionsState] = useState(false);
 
   // Lists state
   const [favorites, setFavorites] = useState<Item[]>([]);
@@ -73,7 +84,10 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const loadCrateMeta = useCallback(async () => {
     try {
       const result = await getCrateMeta();
-      if (result._config) setCrateDefs(sortByPosition(result._config.crates));
+      if (result._config) {
+        setCrateDefs(sortByPosition(result._config.crates));
+        setDiscoverSuggestionsState(result._config.discover_ai_suggestions === true);
+      }
       if (result._picks) setPickInfos(result._picks);
       setCrateMetaLoaded(true);
     } catch (err) {
@@ -90,6 +104,22 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const setRankOrder = useCallback((key: string, order: RankOrder | undefined) => {
     if (order) rankOrders.current.set(key, order);
     else rankOrders.current.delete(key);
+  }, []);
+
+  const getCachedSuggestions = useCallback((key: string) => suggestionCache.current.get(key), []);
+  const setCachedSuggestions = useCallback((key: string, items: Item[] | undefined) => {
+    if (items) suggestionCache.current.set(key, items);
+    else suggestionCache.current.delete(key);
+  }, []);
+
+  const setDiscoverSuggestions = useCallback(async (on: boolean) => {
+    setDiscoverSuggestionsState(on); // optimistic
+    try {
+      await updateConfig({ discover_ai_suggestions: on });
+    } catch (err) {
+      setDiscoverSuggestionsState(!on);
+      console.error("Failed to save Discover setting:", err);
+    }
   }, []);
 
   const loadLists = useCallback(async () => {
@@ -125,6 +155,10 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
         pickInfos,
         getRankOrder,
         setRankOrder,
+        getCachedSuggestions,
+        setCachedSuggestions,
+        discoverSuggestions,
+        setDiscoverSuggestions,
         favorites,
         recommendations,
         listsLoaded,

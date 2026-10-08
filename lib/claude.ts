@@ -1,167 +1,68 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Item, LastPickInfo, RightNowContext } from "./types";
-import { selectAlbums, type SelectionConfig } from "./selection";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
+import type { Item } from "./types";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Reads ANTHROPIC_API_KEY from the environment.
+const client = new Anthropic();
 
-// ── Context → Genre Profiles ─────────────────────────────────────────────────
+const MODEL = "claude-haiku-5-5";
 
-const CONTEXT_GENRE_PROFILES: Record<string, string[]> = {
-  morning: ["classical", "ambient", "electronic", "instrumental", "lo-fi", "neo-classical", "folk", "acoustic", "singer-songwriter", "jazz"],
-  gym: ["hip hop", "rap", "metal", "rock", "electronic", "edm", "pop", "punk", "hard rock", "drum and bass"],
-  driving: ["rock", "classic rock", "pop", "hip hop", "country", "alternative", "indie", "electronic"],
-  deep_work: ["ambient", "electronic", "post-rock", "classical", "instrumental", "jazz", "lo-fi", "neo-classical"],
-  cooking: ["pop", "soul", "r&b", "jazz", "funk", "bossa nova", "latin", "indie pop"],
-  hosting: ["pop", "indie pop", "soul", "r&b", "funk", "jazz", "latin", "dance"],
-  walking: ["pop", "indie", "rock", "hip hop", "electronic", "folk", "jazz", "classical"],
-  chill: ["lo-fi", "chillhop", "indie", "soul", "r&b", "jazz", "ambient", "neo-soul", "folk"],
-  winding_down: ["ambient", "folk", "acoustic", "indie folk", "classical", "singer-songwriter", "jazz", "lo-fi", "neo-soul"],
-};
+const SuggestionsSchema = z.object({
+  albums: z.array(z.object({ title: z.string(), artist: z.string() })),
+});
 
-function albumMatchesGenres(item: Item, preferGenres: string[]): boolean {
-  if (preferGenres.length === 0) return true;
-  const genres = (item.metadata?.genres as string[] | undefined) ?? [];
-  if (genres.length === 0) return false;
-  const normalizedGenres = new Set(genres.map(g => g.toLowerCase()));
-  return preferGenres.some(term => normalizedGenres.has(term.toLowerCase()));
+export type AlbumSuggestion = z.infer<typeof SuggestionsSchema>["albums"][number];
+
+const SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crates.
+The user gives you albums that represent a taste (sometimes with a theme for the set), plus albums already in their library.
+Suggest albums they would love that are NOT in their library and NOT by an artist already heavily represented there: records they likely haven't heard but would genuinely enjoy.
+Make the suggestions varied (different artists, eras and moods) while fitting the taste and theme.
+Only suggest real, released full-length albums.`;
+
+function genresOf(item: Item): string[] {
+  const m = item.metadata;
+  if (!m || typeof m !== "object") return [];
+  const g = (m as Record<string, unknown>).genres;
+  return Array.isArray(g) ? (g as string[]) : [];
 }
 
-function resolvePreferGenres(context: string, contextProfile?: RightNowContext): string[] {
-  if (contextProfile?.prefer_genres?.length) return contextProfile.prefer_genres;
-  const lower = context.toLowerCase();
-  for (const [keyword, genres] of Object.entries(CONTEXT_GENRE_PROFILES)) {
-    if (lower.includes(keyword.replace("_", " ")) || lower.includes(keyword)) {
-      return genres;
-    }
-  }
-  return [];
-}
+/**
+ * Asks Claude for `count` albums that fit `seed` (the taste to match) and aren't
+ * in `library`. `theme` is an optional hint, e.g. the crate's name. Returns []
+ * when there's nothing to go on or the call fails; callers treat suggestions
+ * as a nice-to-have.
+ */
+export async function suggestAlbums(
+  seed: Item[],
+  library: Item[],
+  theme: string | undefined,
+  count = 6
+): Promise<AlbumSuggestion[]> {
+  if (seed.length === 0) return [];
 
-const SURPRISE_SYSTEM_PROMPT = `You are a music curator for a personal album-picker app called Crates.
-The user has a set of favorite albums that represent their taste, plus a list of albums already in their library.
-Suggest 5 albums they would love that are NOT in their library and NOT by an artist already heavily represented there — albums they likely haven't heard but would genuinely enjoy.
-Make the suggestions varied: different artists, different eras, different moods — but all fitting the taste profile.
-Consider genre overlap, artist style, era, and mood from their favorites.
-Do not suggest any album that appears in the "Already in my library" list.
-Return ONLY a JSON array with 5 objects: [{"title": "Album Title", "artist": "Artist Name"}, ...]
-No explanation, no markdown, just the raw JSON array.`;
-
-export async function getSurpriseSuggestion(
-  favorites: Item[],
-  ownedAlbums: Item[] = [],
-  prompt?: string
-): Promise<{ title: string; artist: string }[]> {
-  if (favorites.length === 0) return [];
-
-  const favoritesPayload = favorites.slice(0, 15).map((item) => ({
-    title: item.title,
-    artist: item.creator,
-    genres: (item.metadata?.genres as string[]) || [],
-  }));
-
-  // Give Claude the full set of owned albums (title — artist) to avoid, capped
-  // so we don't blow the token budget on huge libraries.
-  const ownedList = ownedAlbums.slice(0, 200).map((i) => `${i.title} — ${i.creator}`);
+  const taste = seed.slice(0, 20).map((i) => ({ title: i.title, artist: i.creator, genres: genresOf(i) }));
+  // Capped so a huge library doesn't blow the token budget.
+  const owned = library.slice(0, 250).map((i) => `${i.title} — ${i.creator}`);
 
   const userMessage =
-    `My favorite albums:\n${JSON.stringify(favoritesPayload)}\n\n` +
-    `Already in my library (do NOT suggest these):\n${ownedList.join("\n")}\n\n` +
-    (prompt && prompt.trim() ? `Vibe to aim for: ${prompt.trim()}\n\n` : "") +
-    `Suggest 5 varied albums I would love that are NOT in my library.`;
+    `Albums that represent the taste:\n${JSON.stringify(taste)}\n\n` +
+    (theme?.trim() ? `Theme for this set: ${theme.trim()}\n\n` : "") +
+    `Already in my library (do NOT suggest these):\n${owned.join("\n")}\n\n` +
+    `Suggest ${count} albums.`;
 
   try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 256,
-      system: SURPRISE_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userMessage,
-        },
-      ],
+    const response = await client.messages.parse({
+      model: MODEL,
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+      output_config: { format: zodOutputFormat(SuggestionsSchema) },
     });
-
-    const raw =
-      message.content[0].type === "text" ? message.content[0].text.trim() : "[]";
-    const text = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (s): s is { title: string; artist: string } =>
-          typeof s?.title === "string" && typeof s?.artist === "string"
-      );
-    }
-  } catch {
-    // Return empty on failure
+    if (response.stop_reason === "refusal") return [];
+    return response.parsed_output?.albums.slice(0, count) ?? [];
+  } catch (err) {
+    console.error("Claude suggestions failed:", err);
+    return [];
   }
-
-  return [];
-}
-
-export function getContextSuggestions(
-  context: string,
-  items: Item[],
-  count: number,
-  contextProfile: RightNowContext | undefined,
-  recentPicks: LastPickInfo[],
-  selectionConfig: SelectionConfig
-): Item[] {
-  if (items.length === 0) return [];
-
-  const preferGenres = resolvePreferGenres(context, contextProfile);
-  const filtered = items.filter(item => albumMatchesGenres(item, preferGenres));
-  const pool = filtered.length > 0 ? filtered : items;
-
-  return selectAlbums(pool, count, recentPicks, selectionConfig);
-}
-
-const POOL_SYSTEM_PROMPT = `You are a music curator for an album-picker app called Crates.
-From the user's provided list of albums, choose the ones that best fit the user's described vibe.
-Return ONLY a JSON array of the chosen albums' "id" values (numbers), most-fitting first.
-No explanation, no markdown, just the raw JSON array of numbers.`;
-
-export async function getPoolSuggestions(
-  prompt: string | undefined,
-  pool: Item[],
-  count: number,
-  recentPicks: LastPickInfo[],
-  selectionConfig: SelectionConfig
-): Promise<Item[]> {
-  // No prompt → behave like a weighted pick from the pool.
-  if (!prompt || pool.length === 0) {
-    return selectAlbums(pool, count, recentPicks, selectionConfig);
-  }
-
-  const payload = pool.slice(0, 60).map((i) => ({
-    id: i.id,
-    title: i.title,
-    artist: i.creator,
-    genres: ((typeof i.metadata === "object" && i.metadata ? (i.metadata as Record<string, unknown>).genres : []) as string[]) || [],
-  }));
-
-  try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 256,
-      system: POOL_SYSTEM_PROMPT,
-      messages: [
-        { role: "user", content: `Vibe: ${prompt}\n\nMy albums:\n${JSON.stringify(payload)}\n\nChoose up to ${count}.` },
-      ],
-    });
-    const raw = message.content[0].type === "text" ? message.content[0].text.trim() : "[]";
-    const text = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    const ids = JSON.parse(text) as unknown;
-    if (Array.isArray(ids)) {
-      const byId = new Map(pool.map((i) => [i.id, i]));
-      const chosen = ids
-        .map((id) => byId.get(Number(id)))
-        .filter((i): i is Item => Boolean(i))
-        .slice(0, count);
-      if (chosen.length > 0) return chosen;
-    }
-  } catch {
-    // fall through
-  }
-  return selectAlbums(pool, count, recentPicks, selectionConfig);
 }

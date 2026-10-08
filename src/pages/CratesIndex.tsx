@@ -6,8 +6,7 @@ import { VinylDisc } from "../components/VinylDisc";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
-import { isBrowsableCrate, cratePool, crateWeighting } from "../lib/crateBrowse";
-import { getItemGenres } from "../lib/filters";
+import { cratePool, DEFAULT_WEIGHTING } from "../../lib/crates";
 import type { CrateDefinition, Item } from "../types";
 
 interface CratesIndexProps {
@@ -19,12 +18,7 @@ export function CratesIndex({ onLogout }: CratesIndexProps) {
   const navigate = useNavigate();
   const { crateDefs, saveCrateDefs, allItems, pickStats, ready } = useLibraryData();
   const [creating, setCreating] = useState<CrateDefinition | null>(null);
-
-  const crates = crateDefs.filter(isBrowsableCrate);
-  const availableGenres = useMemo(
-    () => Array.from(new Set(allItems.flatMap((i) => getItemGenres(i)))).sort(),
-    [allItems]
-  );
+  const crates = crateDefs;
 
   const handleCreate = async (crate: CrateDefinition) => {
     await saveCrateDefs([...crateDefs, crate]);
@@ -73,7 +67,6 @@ export function CratesIndex({ onLogout }: CratesIndexProps) {
       {creating && (
         <CrateEditorModal
           initial={creating}
-          availableGenres={availableGenres}
           onSave={handleCreate}
           onClose={() => setCreating(null)}
         />
@@ -90,13 +83,13 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
 }) {
   const pool = useMemo(() => cratePool(crate, items, pickStats), [crate, items, pickStats]);
   // Shares the crate page's order, so the covers here are the ones it opens with.
-  const { ranked, resting } = useRankedPool(`crate:${crate.id}`, pool, crateWeighting(crate));
+  const { ranked, resting } = useRankedPool(`crate:${crate.id}`, pool, DEFAULT_WEIGHTING);
   const covers = [...ranked, ...resting].slice(0, 4);
 
   return (
     <button
       onClick={onOpen}
-      className="text-left cursor-pointer transition-transform duration-150 active:scale-[0.98]"
+      className="w-full text-left cursor-pointer transition-transform duration-150 active:scale-[0.98]"
       style={{ background: "rgb(var(--c-elevated))", border: "1px solid rgb(var(--c-border))", padding: 8 }}
     >
       <div className="grid grid-cols-2 gap-0.5 aspect-square overflow-hidden" style={{ background: "rgb(var(--c-surface))" }}>
@@ -114,10 +107,13 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
         })}
       </div>
       <div className="flex items-baseline gap-2 mt-2">
-        <span className="font-display flex-1 truncate" style={{ fontSize: 15, color: "rgb(var(--c-text))", letterSpacing: "0.14em" }}>
+        <span className="font-display flex-1 truncate" style={{ fontSize: 18, color: "rgb(var(--c-text))", letterSpacing: "0.14em" }}>
           {crate.name.toUpperCase() || "UNTITLED"}
         </span>
-        <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>{pool.length}</span>
+        {crate.ai_suggestions && (
+          <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-rec))" }} title="Claude suggestions on">✦</span>
+        )}
+        <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{pool.length}</span>
       </div>
     </button>
   );

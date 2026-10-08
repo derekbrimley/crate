@@ -54,6 +54,14 @@ export function ItemSheet({ item, playSource, onClose, onRemove, onPromote, hide
     setCurrent(asFavorite);
   }, [onPromote, setFavorites, setRecommendations]);
 
+  // Adding a suggestion (or anything not yet saved) swaps in the real library
+  // row, so the pane's library actions, like "Add to crate", become available.
+  const handleAdd = useCallback((created: Item) => {
+    if (created.list_type === "favorite") setFavorites((prev) => [...prev, created]);
+    else setRecommendations((prev) => [...prev, created]);
+    setCurrent(created);
+  }, [setFavorites, setRecommendations]);
+
   const stats = hideStats ? undefined : pickStats.get(current.id);
 
   return (
@@ -71,6 +79,7 @@ export function ItemSheet({ item, playSource, onClose, onRemove, onPromote, hide
           onClose={onClose}
           onRemove={handleRemove}
           onPromote={current.list_type === "recommendation" ? handlePromote : undefined}
+          onAdd={handleAdd}
           playSource={playSource}
         />
       </div>

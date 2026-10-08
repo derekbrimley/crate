@@ -1,5 +1,4 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { DEFAULT_CONFIG } from "./defaults";
 import { isRepeatPlay, type PlayTarget } from "./plays";
 import type { User, Item, Pick, LastPickInfo, FriendRecommendation } from "./types";
 
@@ -11,7 +10,7 @@ export async function getAllConfig(userId: number): Promise<Record<string, unkno
     .select("key, value")
     .eq("user_id", userId);
 
-  const result: Record<string, unknown> = { ...DEFAULT_CONFIG };
+  const result: Record<string, unknown> = {};
   for (const row of data ?? []) {
     result[row.key] = row.value;
   }

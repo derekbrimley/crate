@@ -3,6 +3,7 @@ import { Layout } from "../components/Layout";
 import { PageHeader, HeaderAction } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { CoverGrid, GridHeading } from "../components/CoverGrid";
+import { SuggestionsSection } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
@@ -38,7 +39,7 @@ function friendRecToItem(rec: FriendRecommendation): Item {
 
 /** Recommendations, weighted hard toward what you haven't heard; friend recs on top. */
 export function Discover({ onLogout }: DiscoverProps) {
-  const { recommendations, ready, loadLists } = useLibraryData();
+  const { recommendations, ready, loadLists, discoverSuggestions, setDiscoverSuggestions } = useLibraryData();
   const [selected, setSelected] = useState<{ item: Item; fromFriend: boolean } | null>(null);
   const [friendRecs, setFriendRecs] = useState<Item[]>([]);
 
@@ -95,12 +96,31 @@ export function Discover({ onLogout }: DiscoverProps) {
       />
 
       <div style={{ paddingBottom: 100 }}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={discoverSuggestions}
+          onClick={() => void setDiscoverSuggestions(!discoverSuggestions)}
+          className="w-full flex items-center gap-3 text-left cursor-pointer"
+          style={{ background: "transparent", border: "none", borderBottom: "1px solid rgb(var(--c-border))", padding: "12px 12px", minHeight: 56 }}
+        >
+          <span className="flex-1 min-w-0">
+            <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>✦ Claude suggestions</span>
+            <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>New albums picked to match your favorites</span>
+          </span>
+          <span className="shrink-0 relative transition-colors" style={{ width: 50, height: 30, borderRadius: 15, background: discoverSuggestions ? "rgb(var(--c-rec))" : "rgb(var(--c-border))" }}>
+            <span className="absolute transition-all" style={{ top: 3, left: discoverSuggestions ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "rgb(var(--c-text))" }} />
+          </span>
+        </button>
+
         {friendRecs.length > 0 && (
           <>
             <GridHeading label="FROM FRIENDS" count={friendRecs.length} />
             <CoverGrid items={friendRecs} onSelect={(item) => setSelected({ item, fromFriend: true })} caption={senderCaption} />
           </>
         )}
+
+        {discoverSuggestions && <SuggestionsSection target="discover" onSelect={(item) => setSelected({ item, fromFriend: false })} />}
 
         {!ready ? (
           <div className="mt-16 flex justify-center">
