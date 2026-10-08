@@ -42,7 +42,7 @@ function AppInner() {
           <Route path="/crates/:id" element={<CratePage onLogout={logout} />} />
           <Route path="/discover" element={<Discover onLogout={logout} />} />
           <Route path="/library" element={<Lists onLogout={logout} />} />
-          <Route path="/add" element={<AddAlbums />} />
+          <Route path="/add" element={<AddAlbums onLogout={logout} />} />
           <Route path="/history" element={<History onLogout={logout} />} />
           <Route path="/callback" element={<Home onLogout={logout} />} />
         </Routes>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
+import { PageHeader } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { useAuth } from "../hooks/useAuth";
 import { usePlayer } from "../hooks/usePlayer";
@@ -574,13 +575,18 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "playlists", label: "PLAYLISTS" },
 ];
 
-export function AddAlbums() {
+interface AddAlbumsProps {
+  onLogout: () => void;
+}
+
+export function AddAlbums({ onLogout }: AddAlbumsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("search");
   const { user, login } = useAuth();
   const spotifyConnected = !!user?.spotifyId;
 
   return (
-    <Layout title="Dig for Records">
+    <Layout>
+      <PageHeader title="Dig for Records" backTo="back" onLogout={onLogout} />
       <div className="px-5 pt-5">
         <div className="flex mb-5 border-b border-crate-border">
           {TABS.map((tab) => {

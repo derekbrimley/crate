@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { PageHeader } from "../components/PageHeader";
 import { useLibraryData } from "../hooks/useLibraryData";
+import { usePlayer } from "../hooks/usePlayer";
 import { isBrowsableCrate } from "../lib/crateBrowse";
 
 interface HomeProps {
@@ -13,15 +14,21 @@ interface HomeProps {
 export function Home({ onLogout }: HomeProps) {
   const navigate = useNavigate();
   const { crateDefs, recommendations, ready } = useLibraryData();
+  const { currentTrack } = usePlayer();
   const crateCount = crateDefs.filter(isBrowsableCrate).length;
 
   return (
     <Layout>
       <PageHeader title="Crates" onLogout={onLogout} />
-      <div className="flex flex-col gap-3" style={{ padding: "22px 12px 100px" }}>
+      {/* The tiles share the screen between header and nav (and the player bar
+          when something is playing), so there's no dead space below them. */}
+      <div
+        className="flex flex-col gap-3"
+        style={{ padding: "14px 12px", height: `calc(100dvh - 49px - ${currentTrack ? 176 : 96}px)`, minHeight: 500 }}
+      >
         <HomeTile
           label="CRATES"
-          blurb="Pick a crate and dig through it, best bets first."
+          blurb="Dig through a crate, best bets first"
           meta={ready ? `${crateCount} crate${crateCount === 1 ? "" : "s"}` : null}
           color="--c-accent"
           onClick={() => navigate("/crates")}
@@ -31,7 +38,7 @@ export function Home({ onLogout }: HomeProps) {
         />
         <HomeTile
           label="SEARCH"
-          blurb="Find an album or one of your playlists."
+          blurb="Find an album or one of your playlists"
           meta={null}
           color="--c-neon"
           onClick={() => navigate("/add")}
@@ -39,7 +46,7 @@ export function Home({ onLogout }: HomeProps) {
         />
         <HomeTile
           label="DISCOVER"
-          blurb="Your recommendations, least heard first."
+          blurb="Recommendations, least heard first"
           meta={ready ? `${recommendations.length} rec${recommendations.length === 1 ? "" : "s"}` : null}
           color="--c-rec"
           onClick={() => navigate("/discover")}
@@ -68,33 +75,48 @@ function HomeTile({ label, blurb, meta, color, icon, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 text-left cursor-pointer transition-transform duration-150 active:scale-[0.98]"
+      className="relative flex-1 w-full overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer transition-transform duration-150 active:scale-[0.98]"
       style={{
-        padding: "22px 18px",
-        background: `linear-gradient(135deg, rgb(var(${color}) / calc(0.10 * var(--tint))) 0%, rgb(var(--c-elevated)) 70%)`,
-        border: `1px solid rgb(var(${color}) / calc(0.45 * var(--tint)))`,
-        boxShadow: `0 4px 18px rgba(0,0,0,0.5), inset 0 0 18px rgb(var(${color}) / calc(0.05 * var(--tint)))`,
+        minHeight: 150,
+        padding: "18px 20px",
+        background: `radial-gradient(ellipse at 50% 40%, rgb(var(${color}) / calc(0.16 * var(--tint))) 0%, rgb(var(--c-elevated)) 75%)`,
+        border: `1.5px solid rgb(var(${color}) / calc(0.55 * var(--tint)))`,
+        boxShadow: `0 4px 22px rgba(0,0,0,0.55), inset 0 0 28px rgb(var(${color}) / calc(0.08 * var(--tint)))`,
       }}
     >
-      <span
-        className="shrink-0 flex items-center justify-center"
-        style={{ width: 48, height: 48, color: c, filter: `drop-shadow(0 0 6px rgb(var(${color}) / calc(0.6 * var(--tint))))` }}
+      {/* Oversized faint copy of the icon, so the tile reads as a poster, not a form field. */}
+      <svg
+        className="absolute pointer-events-none"
+        style={{ right: -28, bottom: -36, width: 190, height: 190, color: c, opacity: 0.07 }}
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2}
       >
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>{icon}</svg>
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block font-display leading-none" style={{ fontSize: 26, color: c, letterSpacing: "0.22em" }}>
-          {label}
-        </span>
-        <span className="block font-mono mt-2" style={{ fontSize: 11, color: "rgb(var(--c-muted))", letterSpacing: "0.03em" }}>
-          {blurb}
-        </span>
-      </span>
+        {icon}
+      </svg>
+
       {meta && (
-        <span className="shrink-0 font-mono self-start" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
+        <span
+          className="absolute font-mono"
+          style={{ top: 12, right: 14, fontSize: 12, color: c, letterSpacing: "0.1em", opacity: 0.85 }}
+        >
           {meta}
         </span>
       )}
+
+      <svg
+        width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4}
+        style={{ color: c, filter: `drop-shadow(0 0 8px rgb(var(${color}) / calc(0.75 * var(--tint)))) drop-shadow(0 0 22px rgb(var(${color}) / calc(0.35 * var(--tint))))` }}
+      >
+        {icon}
+      </svg>
+      <span
+        className="block font-display leading-none mt-3"
+        style={{ fontSize: 38, color: c, letterSpacing: "0.24em", textShadow: `0 0 14px rgb(var(${color}) / calc(0.45 * var(--tint)))` }}
+      >
+        {label}
+      </span>
+      <span className="block font-mono mt-2.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.02em" }}>
+        {blurb}
+      </span>
     </button>
   );
 }
