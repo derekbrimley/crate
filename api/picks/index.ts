@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from "../../lib/auth";
 import { getPickHistory } from "../../lib/queries";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  const user = await getAuthenticatedUser(req.headers.authorization, "read");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {

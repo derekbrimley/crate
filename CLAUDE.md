@@ -31,7 +31,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 ### API (`api/`)
 - Vercel serverless functions — each file exports a default `handler(req, res)`
 - **Hobby plan limit: 12 serverless functions per deployment.** When adding new endpoints, consolidate related routes into a single catch-all file (e.g. `[[...path]].ts`) instead of creating separate files.
-- Auth: `lib/auth.ts` — verifies Bearer JWT via Supabase admin client, returns `public.users` row
+- Auth: `lib/auth.ts` — verifies Bearer JWT via Supabase admin client, returns `public.users` row. Also accepts **household tokens** (`crate_hh_…`, `lib/householdTokens.ts`, table `household_tokens`): long-lived read+play tokens for shared devices such as the kitchen dashboard. `getAuthenticatedUser(header, scope)` takes the scope a route needs (`"read"`, `"play"`, or the default `"edit"`); a household token never satisfies `"edit"`, so any route that doesn't pass a scope rejects it. Tokens are created/revoked from the profile menu (Household Tokens) via `POST/DELETE /api/config?household_tokens=1`.
 - Routes:
   - `api/auth/sync.ts` — POST: called after OAuth, upserts Spotify tokens into `public.users`
   - `api/albums/index.ts` — GET/POST library items (albums, or playlists with `media_type: "playlist"`)

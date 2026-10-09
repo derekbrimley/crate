@@ -4,7 +4,7 @@ import { deleteItem, promoteItem, updateItemListType, getItems, getSentRecommend
 import { getAlbumFull, getAlbumTracks, getArtistAlbums, getAlbumsBatch, getBestImageUrl, getArtistGenres, getPlaylistDetails } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  const user = await getAuthenticatedUser(req.headers.authorization, req.method === "GET" ? "read" : "edit");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   const rawId = req.query.id as string;
