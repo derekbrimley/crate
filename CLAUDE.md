@@ -46,7 +46,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
     - `GET /api/spotify/state` — current playback state (track + device)
     - `PUT /api/spotify/play` — start an album or playlist on a device, and record the pick (see below)
     - `PUT /api/spotify/control` — transport commands (resume/pause/next/previous/seek/volume)
-  - `api/picks/dashboard.ts` — GET crate definitions + per-item play stats (what the client ranks from). Seeds crates on first load and converts older crate shapes (`normalizeCrates`), saving the result. `?suggest=<crateId>|discover` returns Claude's new-album suggestions instead (`lib/suggestions.ts`).
+  - `api/picks/dashboard.ts` — GET crate definitions + per-item play stats (what the client ranks from). Seeds crates on first load and converts older crate shapes (`normalizeCrates`), saving the result. `?suggest=<crateId>|discover` returns Claude's new-album suggestions instead (`lib/suggestions.ts`). `?shelves=<n>` returns every crate as a shelf of up to n ranked picks (`lib/shelves.ts`), for the kitchen dashboard.
   - `api/picks/index.ts` — GET pick history
   - `api/config/index.ts` — GET/PATCH user config
 
