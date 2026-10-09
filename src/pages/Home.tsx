@@ -40,7 +40,7 @@ export function Home({ onLogout }: HomeProps) {
           blurb="Find an album or one of your playlists"
           meta={null}
           color="--c-neon"
-          onClick={() => navigate("/add")}
+          onClick={() => navigate("/search")}
           icon={<path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />}
         />
         <HomeTile

@@ -1,22 +1,33 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
-import { getAllConfig, getItems, getLastPicksForUser, setConfig } from "../../lib/queries";
+import { getAllConfig, getItems, getLastPicksForUser, setConfig, deleteConfigKeys } from "../../lib/queries";
 import { normalizeCrates, seedCrates, cratePool } from "../../lib/crates";
 import { suggestionItems } from "../../lib/suggestions";
 import type { PickStat } from "../../lib/filters";
 import type { User } from "../../lib/types";
 
+/**
+ * Settings from the old shelf dashboard (cards per mode, global weighting,
+ * "For right now" contexts). Nothing reads them any more; they're deleted
+ * the first time they're seen.
+ */
+const LEGACY_CONFIG_KEYS = [
+  "dashboard_modes", "cards_per_mode", "cooldown_days", "weight_recent_days", "weight_medium_days",
+  "weight_low", "weight_medium", "weight_high", "weight_never_picked_bonus", "recently_added_days",
+  "recently_added_bonus", "randomness_factor", "contexts", "right_now_contexts",
+];
+
 // Claude plus a handful of Spotify searches can take several seconds.
 export const config = { maxDuration: 30 };
 
 /**
- * GET /api/picks/dashboard — the user's crate definitions and per-item play
+ * GET /api/crates — the user's crate definitions and per-item play
  * stats. The client ranks crates and Discover from these plus the library.
  *
  * Crates are seeded on first load and converted to the current shape when an
  * older one is found; either way the result is saved so later loads are stable.
  *
- * GET /api/picks/dashboard?suggest=<crateId>|discover — Claude's suggestions
+ * GET /api/crates?suggest=<crateId>|discover — Claude's suggestions
  * for new albums: for a crate, matching its records (and named after it); for
  * Discover, matching the user's favorites.
  */
@@ -40,6 +51,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     changed = true;
   }
   if (changed) await setConfig(user.id, "crates", crates);
+
+  const legacy = LEGACY_CONFIG_KEYS.filter((k) => k in config);
+  if (legacy.length > 0) {
+    await deleteConfigKeys(user.id, legacy);
+    for (const k of legacy) delete config[k];
+  }
 
   res.json({ _config: { ...config, crates }, _picks: recentPicks });
 }

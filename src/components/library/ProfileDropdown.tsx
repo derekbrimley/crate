@@ -17,6 +17,7 @@ export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
 
   const items = [
     { label: "View History", action: () => { onClose(); navigate("/history"); } },
+    { label: "Import from Spotify", action: () => { onClose(); navigate("/import"); } },
     { label: theme === "paper" ? "Display: Paper (high contrast)" : "Display: Neon", action: toggleTheme },
     { label: "Household Tokens", action: () => setShowTokens(true) },
     { label: "Sign Out", action: onLogout, color: "rgb(var(--c-danger))" },

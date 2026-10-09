@@ -13,10 +13,12 @@ interface PageHeaderProps {
   backTo?: string;
   /** Extra buttons, shown left of the profile button. */
   actions?: React.ReactNode;
+  /** Hides the search button (on the Search page itself). */
+  hideSearch?: boolean;
 }
 
 /** Sticky page header: optional back arrow, title, actions, profile menu. */
-export function PageHeader({ title, onLogout, backTo, actions }: PageHeaderProps) {
+export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: PageHeaderProps) {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const isTop = !backTo;
@@ -61,6 +63,7 @@ export function PageHeader({ title, onLogout, backTo, actions }: PageHeaderProps
         </h1>
         <div className="flex items-center gap-2 shrink-0">
           {actions}
+          {!hideSearch && <SearchButton />}
           <button
             onClick={() => setShowProfile((v) => !v)}
             className="flex items-center justify-center cursor-pointer"
@@ -109,5 +112,17 @@ export function HeaderAction({ onClick, title, children, disabled }: {
     >
       {children}
     </button>
+  );
+}
+
+/** Opens the Search page; shown in every page header so search is one tap away. */
+export function SearchButton() {
+  const navigate = useNavigate();
+  return (
+    <HeaderAction onClick={() => navigate("/search")} title="Search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </HeaderAction>
   );
 }

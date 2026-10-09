@@ -4,7 +4,7 @@ import type {
   LibraryAlbum,
   SpotifyPlaylistInfo,
   PickHistoryEntry,
-  DashboardData,
+  CrateMeta,
   AppConfig,
   AlbumDetails,
   CrateDefinition,
@@ -89,22 +89,27 @@ export async function promoteAlbum(id: number): Promise<void> {
   await request(`/albums/${id}`, { method: "POST" });
 }
 
-export async function moveAlbum(
-  id: number,
-  listType: "favorite" | "recommendation"
-): Promise<void> {
-  await request(`/albums/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ list_type: listType }),
-  });
-}
-
 export async function searchSpotify(
   query: string
 ): Promise<{ albums: LibraryAlbum[] }> {
   return request<{ albums: LibraryAlbum[] }>(
     `/albums/search?q=${encodeURIComponent(query)}`
   );
+}
+
+export interface ArtistResult {
+  id: string;
+  name: string;
+  image_url: string | null;
+  genres: string[];
+}
+
+export async function searchArtists(query: string): Promise<{ artists: ArtistResult[] }> {
+  return request<{ artists: ArtistResult[] }>(`/albums/search?type=artist&q=${encodeURIComponent(query)}`);
+}
+
+export async function getArtistAlbums(artistId: string): Promise<{ albums: LibraryAlbum[] }> {
+  return request<{ albums: LibraryAlbum[] }>(`/albums/search?artist=${encodeURIComponent(artistId)}`);
 }
 
 export async function backfillReleaseDates(): Promise<{ updated: number }> {
@@ -179,11 +184,11 @@ export async function getAlbumDetails(
   return request<AlbumDetails>(`/albums/${spotifyId}${query}`);
 }
 
-// ── Picks / Dashboard ─────────────────────────────────────────────────────────
+// ── Crates / Picks ─────────────────────────────────────────────────────────
 
 /** Crate definitions and play stats, without running any crates. */
-export async function getCrateMeta(): Promise<DashboardData> {
-  return request<DashboardData>("/picks/dashboard");
+export async function getCrateMeta(): Promise<CrateMeta> {
+  return request<CrateMeta>("/crates");
 }
 
 /**
@@ -191,7 +196,7 @@ export async function getCrateMeta(): Promise<DashboardData> {
  * Slow (a Claude call plus Spotify searches), so callers cache the result.
  */
 export async function getSuggestions(target: string): Promise<{ suggestions: Item[] }> {
-  return request<{ suggestions: Item[] }>(`/picks/dashboard?suggest=${encodeURIComponent(target)}`);
+  return request<{ suggestions: Item[] }>(`/crates?suggest=${encodeURIComponent(target)}`);
 }
 
 /**
@@ -289,10 +294,6 @@ export async function actOnRecommendation(
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-
-export async function getConfig(): Promise<{ config: AppConfig }> {
-  return request<{ config: AppConfig }>("/config");
-}
 
 export async function updateConfig(
   updates: Partial<AppConfig>

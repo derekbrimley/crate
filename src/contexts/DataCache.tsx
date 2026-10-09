@@ -9,7 +9,7 @@ export interface RankOrder {
 }
 
 interface DataCacheState {
-  // Crate definitions + all-time play stats (GET /picks/dashboard?meta=1)
+  // Crate definitions + all-time play stats (GET /api/crates)
   crateDefs: CrateDefinition[];
   crateMetaLoaded: boolean;
   loadCrateMeta: () => Promise<void>;

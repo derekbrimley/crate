@@ -53,6 +53,7 @@ export interface LibraryAlbum extends SpotifySearchResult {
   /** Absent on endpoints that only ever return albums. */
   media_type?: MediaType;
   total_tracks?: number;
+  release_date?: string;
   already_added: "favorite" | "recommendation" | null;
 }
 
@@ -121,8 +122,8 @@ export interface PickStat {
   pick_count: number;
 }
 
-export interface DashboardData {
-  crates?: { id: string; items: Item[]; deferred?: boolean }[];
+/** GET /api/crates: crate definitions (inside the user's config) and play stats. */
+export interface CrateMeta {
   _config?: AppConfig;
   _picks?: PickStat[];
 }

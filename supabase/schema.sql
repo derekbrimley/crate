@@ -70,7 +70,7 @@ RETURNS TABLE(
   LIMIT p_limit OFFSET p_offset;
 $$ LANGUAGE SQL SECURITY DEFINER;
 
--- Used by api/picks/dashboard.ts (aggregated per-item pick info)
+-- Used by api/crates/index.ts (aggregated per-item pick info)
 CREATE OR REPLACE FUNCTION get_last_picks_for_user(p_user_id INTEGER)
 RETURNS TABLE(item_id INTEGER, picked_at INTEGER, pick_count BIGINT) AS $$
   SELECT item_id,
