@@ -304,6 +304,32 @@ export async function updateConfig(
   });
 }
 
+// ── Household tokens ──────────────────────────────────────────────────────────
+// Bearer tokens for shared devices (the kitchen dashboard): read + play, no edit.
+
+export interface HouseholdToken {
+  id: number;
+  name: string;
+  scopes: string[];
+  created_at: number;
+  last_used_at: number | null;
+}
+
+export async function getHouseholdTokens(): Promise<{ tokens: HouseholdToken[] }> {
+  return request<{ tokens: HouseholdToken[] }>("/config?household_tokens=1");
+}
+
+export async function createHouseholdToken(name: string): Promise<HouseholdToken & { token: string }> {
+  return request<HouseholdToken & { token: string }>("/config?household_tokens=1", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function revokeHouseholdToken(id: number): Promise<void> {
+  return request<void>(`/config?household_tokens=1&id=${id}`, { method: "DELETE" });
+}
+
 export async function saveCrates(crates: CrateDefinition[]): Promise<{ config: AppConfig }> {
   return request<{ config: AppConfig }>("/config", {
     method: "PATCH",

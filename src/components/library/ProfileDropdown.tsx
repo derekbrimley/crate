@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../lib/theme";
+import { HouseholdTokensModal } from "./HouseholdTokensModal";
 
 interface ProfileDropdownProps {
   onClose: () => void;
@@ -10,11 +11,15 @@ interface ProfileDropdownProps {
 export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const [showTokens, setShowTokens] = useState(false);
+
+  if (showTokens) return <HouseholdTokensModal onClose={onClose} />;
 
   const items = [
     { label: "View History", action: () => { onClose(); navigate("/history"); } },
     { label: "Import from Spotify", action: () => { onClose(); navigate("/import"); } },
     { label: theme === "paper" ? "Display: Paper (high contrast)" : "Display: Neon", action: toggleTheme },
+    { label: "Household Tokens", action: () => setShowTokens(true) },
     { label: "Sign Out", action: onLogout, color: "rgb(var(--c-danger))" },
   ];
 

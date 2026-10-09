@@ -483,3 +483,68 @@ export async function getItemsMissingMetadata(userId: number): Promise<Item[]> {
     return !m || !m.release_date || m.total_tracks === undefined;
   });
 }
+
+// ── Household tokens ──────────────────────────────────────────────────────────
+
+export interface HouseholdTokenRow {
+  id: number;
+  user_id: number;
+  name: string;
+  scopes: string[];
+  created_at: number;
+  last_used_at: number | null;
+}
+
+export async function findHouseholdToken(
+  tokenHash: string
+): Promise<(HouseholdTokenRow & { user: User }) | null> {
+  const { data } = await supabaseAdmin
+    .from("household_tokens")
+    .select("id, user_id, name, scopes, created_at, last_used_at, user:users(*)")
+    .eq("token_hash", tokenHash)
+    .maybeSingle();
+  if (!data) return null;
+  const row = data as unknown as HouseholdTokenRow & { user: User | User[] | null };
+  const user = Array.isArray(row.user) ? row.user[0] : row.user;
+  if (!user) return null;
+  return { ...row, user };
+}
+
+export async function touchHouseholdToken(id: number): Promise<void> {
+  try {
+    await supabaseAdmin
+      .from("household_tokens")
+      .update({ last_used_at: Math.floor(Date.now() / 1000) })
+      .eq("id", id);
+  } catch {
+    // last_used_at is informational; never fail a request over it
+  }
+}
+
+export async function createHouseholdToken(
+  userId: number,
+  name: string,
+  tokenHash: string,
+  scopes: string[]
+): Promise<HouseholdTokenRow> {
+  const { data, error } = await supabaseAdmin
+    .from("household_tokens")
+    .insert({ user_id: userId, name, token_hash: tokenHash, scopes })
+    .select("id, user_id, name, scopes, created_at, last_used_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as HouseholdTokenRow;
+}
+
+export async function listHouseholdTokens(userId: number): Promise<HouseholdTokenRow[]> {
+  const { data } = await supabaseAdmin
+    .from("household_tokens")
+    .select("id, user_id, name, scopes, created_at, last_used_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return (data as HouseholdTokenRow[] | null) ?? [];
+}
+
+export async function revokeHouseholdToken(userId: number, id: number): Promise<void> {
+  await supabaseAdmin.from("household_tokens").delete().eq("user_id", userId).eq("id", id);
+}

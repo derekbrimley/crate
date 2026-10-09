@@ -34,7 +34,7 @@ export const config = { maxDuration: 30 };
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
 
-  const user = await getAuthenticatedUser(req.headers.authorization);
+  const user = await getAuthenticatedUser(req.headers.authorization, "read");
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   const suggest = typeof req.query.suggest === "string" ? req.query.suggest : null;
