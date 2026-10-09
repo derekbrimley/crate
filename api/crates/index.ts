@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "../../lib/auth";
 import { getAllConfig, getItems, getLastPicksForUser, setConfig, deleteConfigKeys } from "../../lib/queries";
 import { normalizeCrates, seedCrates, cratePool } from "../../lib/crates";
 import { suggestionItems } from "../../lib/suggestions";
+import { buildShelves, DEFAULT_SHELF_SIZE } from "../../lib/shelves";
 import type { PickStat } from "../../lib/filters";
 import type { User } from "../../lib/types";
 
@@ -30,6 +31,10 @@ export const config = { maxDuration: 30 };
  * GET /api/crates?suggest=<crateId>|discover — Claude's suggestions
  * for new albums: for a crate, matching its records (and named after it); for
  * Discover, matching the user's favorites.
+ *
+ * GET /api/crates?shelves=<n> — every crate as a shelf of up to n
+ * ranked picks, for devices that can't rank on their own (the kitchen
+ * dashboard, through a household token).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
@@ -39,6 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const suggest = typeof req.query.suggest === "string" ? req.query.suggest : null;
   if (suggest) return sendSuggestions(user, suggest, res);
+
+  if (req.query.shelves !== undefined) {
+    const size = parseInt(String(req.query.shelves), 10) || DEFAULT_SHELF_SIZE;
+    const [config, items, picks] = await Promise.all([getAllConfig(user.id), getItems(user.id), getLastPicksForUser(user.id)]);
+    return res.json({ shelves: buildShelves(config.crates, items, picks, size) });
+  }
 
   const [config, recentPicks] = await Promise.all([
     getAllConfig(user.id),
