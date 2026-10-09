@@ -10,6 +10,10 @@ interface GenrePickerProps {
 
 export function GenrePicker({ selected, onChange, available, large = false }: GenrePickerProps) {
   const [filter, setFilter] = useState("");
+  // The genres floated to the top: those selected when the picker opened or the
+  // filter last changed. Clicking a chip doesn't re-sort, so it stays in place
+  // and you don't lose your spot in the list.
+  const [pinned, setPinned] = useState(selected);
 
   const toggle = (genre: string) => {
     if (selected.includes(genre)) {
@@ -22,17 +26,19 @@ export function GenrePicker({ selected, onChange, available, large = false }: Ge
   const lower = filter.toLowerCase();
   const filtered = available.filter((g) => g.toLowerCase().includes(lower));
 
-  // Selected genres float to top
   const sorted = [
-    ...filtered.filter((g) => selected.includes(g)),
-    ...filtered.filter((g) => !selected.includes(g)),
+    ...filtered.filter((g) => pinned.includes(g)),
+    ...filtered.filter((g) => !pinned.includes(g)),
   ];
 
   return (
     <div>
       <input
         value={filter}
-        onChange={(e) => setFilter(e.target.value)}
+        onChange={(e) => {
+          setFilter(e.target.value);
+          setPinned(selected);
+        }}
         placeholder="filter genres..."
         style={{
           background: "rgb(var(--c-hi) / calc(0.03 * var(--tint-hi)))",
