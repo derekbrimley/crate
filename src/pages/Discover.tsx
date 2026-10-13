@@ -107,7 +107,7 @@ export function Discover({ onLogout }: DiscoverProps) {
         >
           <span className="flex-1 min-w-0">
             <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>✦ Claude suggestions</span>
-            <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>New albums picked to match your favorites</span>
+            <span className="block font-mono mt-0.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>New albums picked to match your favorites</span>
           </span>
           <SwitchTrack on={discoverSuggestions} color="--c-rec" />
         </button>
@@ -128,7 +128,7 @@ export function Discover({ onLogout }: DiscoverProps) {
         ) : ranked.length + resting.length === 0 ? (
           <div className="mt-16 flex flex-col items-center gap-3">
             <VinylDisc size={56} />
-            <p className="font-mono text-xs text-crate-muted text-center" style={{ letterSpacing: "0.1em" }}>
+            <p className="font-mono text-[13px] text-crate-muted text-center" style={{ letterSpacing: "0.1em" }}>
               NO RECOMMENDATIONS YET — ADD SOME WITH + RECOMMENDATION
             </p>
           </div>

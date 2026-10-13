@@ -100,7 +100,7 @@ export function NowPlayingSheet({ album, onClose }: NowPlayingSheetProps) {
       />
       <div
         className="relative z-40 max-w-xl lg:max-w-4xl mx-auto w-full overflow-y-auto scrollbar-hide"
-        style={{ maxHeight: "calc(100vh - 230px)" }}
+        style={{ maxHeight: "calc(100dvh - var(--nav-h) - var(--safe-b) - var(--player-h) - var(--safe-t) - 48px)" }}
       >
         {item ? (
           <DetailPanel

@@ -33,8 +33,10 @@ export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: Pag
         background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid rgb(var(--c-border))",
+        paddingTop: "var(--safe-t)",
       }}
     >
+      {/* 44px buttons + 8px padding each side + 1px border = --header-h. */}
       <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center gap-2" style={{ padding: "8px 12px" }}>
         {backTo && (
           <button

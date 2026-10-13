@@ -6,7 +6,7 @@ const NAV_ITEMS = [
     to: "/",
     label: "HOME",
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round"
           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
         />
@@ -17,7 +17,7 @@ const NAV_ITEMS = [
     to: "/library",
     label: "LIBRARY",
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round"
           d="M3 6h2v14H3V6zm4 0h2v14H7V6zm4 0h2v14h-2V6zm4-2h2v16h-2V4zm4 1h2v14h-2V5z"
         />
@@ -41,15 +41,16 @@ export function BottomNav() {
         background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
         backdropFilter: "blur(16px)",
         boxShadow: "0 -4px 24px rgba(0,0,0,0.6)",
+        paddingBottom: "var(--safe-b)",
       }}
     >
-      <div className="flex max-w-xl lg:max-w-4xl mx-auto">
+      <div className="flex max-w-xl lg:max-w-4xl mx-auto" style={{ height: "var(--nav-h)" }}>
         {NAV_ITEMS.map(({ to, label, icon }) => (
-          <NavLink key={to} to={to} className="flex-1">
+          <NavLink key={to} to={to} className="flex-1 flex">
             {() => {
               const isActive = isNavActive(to, pathname);
               return (
-                <span className="flex flex-col items-center gap-1 pt-3 pb-2 w-full transition-all duration-200">
+                <span className="flex flex-col items-center justify-center gap-1 w-full transition-all duration-200">
                   <span
                     className="transition-all duration-200"
                     style={{
@@ -62,7 +63,7 @@ export function BottomNav() {
                     {icon}
                   </span>
                   <span
-                    className={`font-display text-[11px] transition-all duration-200 ${isActive ? "nav-active-label" : ""}`}
+                    className={`font-display text-[15px] leading-none transition-all duration-200 ${isActive ? "nav-active-label" : ""}`}
                     style={{
                       color: isActive ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
                       letterSpacing: "0.18em",
@@ -74,8 +75,8 @@ export function BottomNav() {
                   <span
                     className={`rounded-full transition-all duration-300 ${isActive ? "nav-indicator" : ""}`}
                     style={{
-                      width: 3,
-                      height: 3,
+                      width: 4,
+                      height: 4,
                       background: isActive ? "rgb(var(--c-accent))" : "transparent",
                       boxShadow: isActive ? "0 0 6px rgb(var(--c-accent)), 0 0 12px rgb(var(--c-accent))" : "none",
                     }}

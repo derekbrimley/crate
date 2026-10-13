@@ -44,6 +44,14 @@
   --c-hi:         255 255 255;
   --tint: 1;
   --tint-hi: 1;
+
+  /* Layout. The viewport extends under system bars (viewport-fit=cover), so
+     anything pinned to the top or bottom edge adds these insets. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --header-h: 61px;  /* PageHeader, without --safe-t */
+  --nav-h: 68px;     /* BottomNav, without --safe-b */
+  --player-h: 112px; /* PlayerBar */
 }
 
 /* Paper: for monochrome reflective screens (Daylight DC-1, e-ink). White
@@ -332,6 +340,13 @@ body::after {
 :root[data-theme="paper"] .switch-track[data-on="true"] .switch-knob {
   left: 21px !important;
   background: #fff !important;
+}
+
+/* Cover badges (REC / NEW / PLAYLIST): a printed label, not tinted text on art. */
+:root[data-theme="paper"] .tile-badge {
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid #000;
 }
 
 /* Bottom nav: the active tab is shown by a heavy rule, not by color. */

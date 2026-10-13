@@ -25,7 +25,7 @@ export function PlayerBar() {
   const album = currentTrack.album;
 
   return (
-    <div className="fixed bottom-[70px] left-0 right-0 z-50">
+    <div className="fixed left-0 right-0 z-50" style={{ bottom: "calc(var(--nav-h) + var(--safe-b))" }}>
       {/* Details for the playing album, stacked directly above the bar so the
           transport controls stay visible and usable while it's open. */}
       {detailsOpen && album && (
@@ -58,7 +58,7 @@ export function PlayerBar() {
 
             <div className="min-w-0 flex-1">
               <p className="truncate font-mono text-[14px] text-crate-text">{currentTrack.name}</p>
-              <p className="truncate font-mono text-[12px] text-crate-muted">{currentTrack.artist}</p>
+              <p className="truncate font-mono text-[13px] text-crate-muted">{currentTrack.artist}</p>
             </div>
           </button>
 
@@ -71,7 +71,7 @@ export function PlayerBar() {
               <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 6h16v10H4zm0 12h16v2H4zM6 8v6h12V8z" opacity="0.9" />
               </svg>
-              <span className="truncate font-mono text-[10px]">{deviceName}</span>
+              <span className="truncate font-mono text-[12px]">{deviceName}</span>
             </div>
           )}
 
@@ -95,7 +95,7 @@ export function PlayerBar() {
           )}
 
           {/* Transport */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <button aria-label="Previous" className={btn} onClick={() => { void previous(); }}>
               <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
             </button>
@@ -114,7 +114,7 @@ export function PlayerBar() {
 
         {/* Seek bar */}
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-crate-muted shrink-0 w-10 text-right">{fmt(position)}</span>
+          <span className="font-mono text-[13px] text-crate-muted shrink-0 w-12 text-right">{fmt(position)}</span>
           <input
             type="range"
             min={0}
@@ -125,7 +125,7 @@ export function PlayerBar() {
             className="flex-1 touch-range accent-crate-accent cursor-pointer"
             aria-label="Seek"
           />
-          <span className="font-mono text-[11px] text-crate-muted shrink-0 w-10">{fmt(duration)}</span>
+          <span className="font-mono text-[13px] text-crate-muted shrink-0 w-12">{fmt(duration)}</span>
         </div>
       </div>
     </div>

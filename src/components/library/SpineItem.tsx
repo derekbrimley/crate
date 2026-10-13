@@ -118,9 +118,9 @@ export function SpineItem({ item, isSelected, onClick, overlap = 0, spineWidth =
       {item.list_type === "recommendation" && (
         <div
           className="spine-badge absolute top-1 left-1 pointer-events-none font-mono"
-          style={{ fontSize: 9, color: "rgb(var(--c-rec))", zIndex: 3, textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
+          style={{ fontSize: 10, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", padding: "0 2px", letterSpacing: "0.05em", zIndex: 3 }}
         >
-          ◈
+          REC
         </div>
       )}
 

@@ -76,7 +76,7 @@ export function LibraryShelf({
             {groupLabel.toUpperCase()}
           </span>
           <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
-          <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
+          <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
             {albums.length}
           </span>
         </div>

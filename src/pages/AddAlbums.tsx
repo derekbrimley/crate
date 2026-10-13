@@ -32,14 +32,14 @@ function SelectableRow({ album, selected, onToggle }: { album: LibraryAlbum; sel
       <input type="checkbox" checked={selected} disabled={disabled} onChange={() => onToggle(album.spotify_id)} className="w-4 h-4 shrink-0 accent-crate-accent" />
       <SleeveArt url={album.image_url} title={album.title} size={40} />
       <div className="flex-1 min-w-0">
-        <p className="font-mono text-xs font-medium text-crate-text truncate">{album.title}</p>
-        <p className="font-mono text-[10px] text-crate-muted truncate mt-0.5">
+        <p className="font-mono text-[13px] font-medium text-crate-text truncate">{album.title}</p>
+        <p className="font-mono text-[12px] text-crate-muted truncate mt-0.5">
           {album.artist}
           {album.total_tracks != null && <span className="opacity-50"> · {album.total_tracks} tracks</span>}
         </p>
       </div>
       {album.already_added && (
-        <span className="font-mono text-[11px] text-crate-accent shrink-0 px-1" style={{ letterSpacing: "0.1em" }}>
+        <span className="font-mono text-[13px] text-crate-accent shrink-0 px-1" style={{ letterSpacing: "0.1em" }}>
           {album.already_added === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
         </span>
       )}
@@ -50,18 +50,18 @@ function SelectableRow({ album, selected, onToggle }: { album: LibraryAlbum; sel
 function BulkBar({ count, adding, onAdd }: { count: number; adding: boolean; onAdd: (t: ListType) => void }) {
   if (count === 0) return null;
   return (
-    <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
+    <div className="fixed left-0 right-0 z-50 px-4" style={{ bottom: "calc(var(--nav-h) + var(--safe-b) + 12px)" }}>
       <div className="max-w-xl mx-auto flex items-center justify-between gap-3 p-3"
         style={{ background: "rgb(var(--c-elevated) / calc(0.97 * var(--tint)))", border: "1px solid rgb(var(--c-border))", backdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.7)" }}>
-        <span className="font-mono text-xs text-crate-text" style={{ letterSpacing: "0.08em" }}>{count} SELECTED</span>
+        <span className="font-mono text-[13px] text-crate-text" style={{ letterSpacing: "0.08em" }}>{count} SELECTED</span>
         <div className="flex gap-2">
           <button onClick={() => onAdd("favorite")} disabled={adding}
-            className="font-mono text-[12px] px-3 min-h-[44px] transition-all disabled:opacity-40"
+            className="font-mono text-[13px] px-3 min-h-[44px] transition-all disabled:opacity-40"
             style={{ background: "rgb(var(--c-accent) / calc(0.15 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
             {adding ? "ADDING…" : "+ FAVORITES"}
           </button>
           <button onClick={() => onAdd("recommendation")} disabled={adding}
-            className="font-mono text-[12px] px-3 min-h-[44px] transition-all disabled:opacity-40"
+            className="font-mono text-[13px] px-3 min-h-[44px] transition-all disabled:opacity-40"
             style={{ background: "transparent", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
             {adding ? "ADDING…" : "+ RECOMMENDATIONS"}
           </button>
@@ -77,11 +77,11 @@ function SpotifyConnectPrompt({ onConnect }: { onConnect: () => void }) {
       <VinylDisc size={64} />
       <div className="text-center">
         <p className="font-display text-base text-crate-muted/40 tracking-widest mb-1">SPOTIFY IMPORT</p>
-        <p className="font-mono text-[10px] text-crate-muted/40 tracking-widest">CONNECT TO IMPORT YOUR LIBRARY</p>
+        <p className="font-mono text-[12px] text-crate-muted/40 tracking-widest">CONNECT TO IMPORT YOUR LIBRARY</p>
       </div>
       <button
         onClick={onConnect}
-        className="flex items-center gap-2.5 px-5 py-3 font-display text-xs transition-all duration-150 active:scale-[0.97]"
+        className="flex items-center gap-2.5 px-5 py-3 font-display text-[13px] transition-all duration-150 active:scale-[0.97]"
         style={{
           background: "transparent",
           border: "1px solid rgb(var(--c-neon))",
@@ -96,7 +96,7 @@ function SpotifyConnectPrompt({ onConnect }: { onConnect: () => void }) {
         </svg>
         CONNECT SPOTIFY
       </button>
-      <p className="font-mono text-[9px] text-crate-muted/30 tracking-widest">READ-ONLY ACCESS</p>
+      <p className="font-mono text-[12px] text-crate-muted/30 tracking-widest">READ-ONLY ACCESS</p>
     </div>
   );
 }
@@ -145,17 +145,17 @@ function LibraryTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: 
   };
 
   if (loading) return <div className="mt-16 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>;
-  if (error && !albums.length) return <p className="mt-10 text-center font-mono text-xs text-crate-danger">{error}</p>;
+  if (error && !albums.length) return <p className="mt-10 text-center font-mono text-[13px] text-crate-danger">{error}</p>;
   if (!albums.length) return <div className="mt-16 flex flex-col items-center gap-4"><VinylDisc size={60} /><p className="font-display text-3xl text-crate-muted/20 tracking-widest">EMPTY</p></div>;
 
   return (
     <>
-      {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
-      {error && <p className="mb-2 font-mono text-xs text-crate-danger">{error}</p>}
+      {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[12px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
+      {error && <p className="mb-2 font-mono text-[13px] text-crate-danger">{error}</p>}
       <div className="flex items-center justify-between mb-3">
-        <p className="font-mono text-[9px] text-crate-muted/60" style={{ letterSpacing: "0.12em" }}>{albums.length}/{total} RECORDS</p>
+        <p className="font-mono text-[12px] text-crate-muted/60" style={{ letterSpacing: "0.12em" }}>{albums.length}/{total} RECORDS</p>
         {selectableAlbums.length > 0 && (
-          <button onClick={toggleAll} className="font-mono text-[9px] text-crate-accent hover:text-crate-accent-dim transition-colors" style={{ letterSpacing: "0.12em" }}>
+          <button onClick={toggleAll} className="font-mono text-[12px] text-crate-accent hover:text-crate-accent-dim transition-colors" style={{ letterSpacing: "0.12em" }}>
             {selected.size === selectableAlbums.length ? "DESELECT ALL" : "SELECT ALL"}
           </button>
         )}
@@ -163,7 +163,7 @@ function LibraryTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected: 
       <ul>{albums.map((a) => <SelectableRow key={a.spotify_id} album={a} selected={selected.has(a.spotify_id)} onToggle={toggleSelect} />)}</ul>
       {albums.length < total && (
         <button onClick={async () => { setLoadingMore(true); await loadPage(albums.length); setLoadingMore(false); }} disabled={loadingMore}
-          className="mt-4 w-full py-3 font-mono text-[10px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
+          className="mt-4 w-full py-3 font-mono text-[12px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
           style={{ border: "1px solid rgb(var(--c-border))", letterSpacing: "0.15em" }}>
           {loadingMore ? "LOADING…" : `LOAD MORE (${total - albums.length} REMAINING)`}
         </button>
@@ -248,7 +248,7 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
   if (active) {
     return (
       <>
-        <button onClick={goBack} className="flex items-center gap-1.5 font-mono text-[10px] text-crate-accent hover:text-crate-accent-dim transition-colors mb-4" style={{ letterSpacing: "0.12em" }}>
+        <button onClick={goBack} className="flex items-center gap-1.5 font-mono text-[12px] text-crate-accent hover:text-crate-accent-dim transition-colors mb-4" style={{ letterSpacing: "0.12em" }}>
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           BACK
         </button>
@@ -256,52 +256,52 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
           <SleeveArt url={active.image_url} title={active.name} size={48} />
           <div className="min-w-0">
             <p className="font-display text-lg text-crate-text truncate" style={{ letterSpacing: "0.1em" }}>{active.name.toUpperCase()}</p>
-            <p className="font-mono text-[10px] text-crate-muted">{active.track_count} TRACKS</p>
+            <p className="font-mono text-[12px] text-crate-muted">{active.track_count} TRACKS</p>
           </div>
         </div>
-        <div className="flex gap-1.5 items-center mb-5">
+        <div className="flex flex-wrap gap-2 items-center mb-5">
           <button
             onClick={() => { player.playAlbum(active.uri, undefined, "search").catch(() => setError("Playback failed")); }}
             title="Play on Spotify"
             className="flex items-center justify-center cursor-pointer"
-            style={{ width: 28, height: 28, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
+            style={{ width: 44, height: 44, border: "1px solid rgb(var(--c-spotify) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.08 * var(--tint)))" }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
           </button>
           {active.already_added ? (
-            <span className="font-mono text-[9px] px-2 py-1"
+            <span className="font-mono text-[12px] px-2 py-1"
               style={{ color: active.already_added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-              {active.already_added === "favorite" ? "★ PLAYLIST IN FAVS" : "◈ PLAYLIST IN RECS"}
+              {active.already_added === "favorite" ? "PLAYLIST IN FAVORITES" : "PLAYLIST IN RECOMMENDATIONS"}
             </span>
           ) : (
             <>
-              <span className="font-mono text-[9px] text-crate-muted/60 mr-1" style={{ letterSpacing: "0.12em" }}>SAVE PLAYLIST</span>
+              <span className="font-mono text-[12px] text-crate-muted/60 mr-1" style={{ letterSpacing: "0.12em" }}>SAVE PLAYLIST</span>
               <button onClick={() => savePlaylist(active, "favorite")} disabled={savingAs !== null}
-                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                className="font-mono text-[13px] px-3 min-h-[44px] transition-all duration-150 disabled:opacity-40"
                 style={{ background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
-                {savingAs === "favorite" ? "…" : "★ FAV"}
+                {savingAs === "favorite" ? "…" : "+ FAVORITES"}
               </button>
               <button onClick={() => savePlaylist(active, "recommendation")} disabled={savingAs !== null}
-                className="font-mono text-[9px] px-2.5 py-1.5 transition-all duration-150 disabled:opacity-40"
+                className="font-mono text-[13px] px-3 min-h-[44px] transition-all duration-150 disabled:opacity-40"
                 style={{ background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", letterSpacing: "0.12em" }}>
-                {savingAs === "recommendation" ? "…" : "◈ REC"}
+                {savingAs === "recommendation" ? "…" : "+ RECOMMENDATIONS"}
               </button>
             </>
           )}
         </div>
-        <p className="font-mono text-[9px] text-crate-muted/60 mb-2" style={{ letterSpacing: "0.12em" }}>OR ADD ITS ALBUMS</p>
-        {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[10px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
-        {error && <p className="mb-2 font-mono text-xs text-crate-danger">{error}</p>}
+        <p className="font-mono text-[12px] text-crate-muted/60 mb-2" style={{ letterSpacing: "0.12em" }}>OR ADD ITS ALBUMS</p>
+        {successMsg && <div className="mb-4 px-3 py-2 font-mono text-[12px] text-center" style={{ background: "rgb(var(--c-neon) / calc(0.06 * var(--tint)))", border: "1px solid rgb(var(--c-neon) / calc(0.2 * var(--tint)))", color: "rgb(var(--c-neon))", letterSpacing: "0.12em" }}>{successMsg}</div>}
+        {error && <p className="mb-2 font-mono text-[13px] text-crate-danger">{error}</p>}
         {loadingAlbums ? (
           <div className="mt-10 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>
         ) : plAlbums.length === 0 ? (
-          <p className="mt-10 text-center font-mono text-[10px] text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO ALBUMS IN THIS PLAYLIST</p>
+          <p className="mt-10 text-center font-mono text-[12px] text-crate-muted/50" style={{ letterSpacing: "0.1em" }}>NO ALBUMS IN THIS PLAYLIST</p>
         ) : (
           <>
             <div className="flex items-center justify-between mb-3">
-              <p className="font-mono text-[9px] text-crate-muted/60" style={{ letterSpacing: "0.12em" }}>{selectableAlbums.length} AVAILABLE</p>
+              <p className="font-mono text-[12px] text-crate-muted/60" style={{ letterSpacing: "0.12em" }}>{selectableAlbums.length} AVAILABLE</p>
               {selectableAlbums.length > 0 && (
-                <button onClick={toggleAll} className="font-mono text-[9px] text-crate-accent hover:text-crate-accent-dim transition-colors" style={{ letterSpacing: "0.12em" }}>
+                <button onClick={toggleAll} className="font-mono text-[12px] text-crate-accent hover:text-crate-accent-dim transition-colors" style={{ letterSpacing: "0.12em" }}>
                   {selected.size === selectableAlbums.length ? "DESELECT ALL" : "SELECT ALL"}
                 </button>
               )}
@@ -315,24 +315,24 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
   }
 
   if (loadingPl) return <div className="mt-16 flex justify-center"><div className="w-5 h-5 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" /></div>;
-  if (error && !playlists.length) return <p className="mt-10 text-center font-mono text-xs text-crate-danger">{error}</p>;
+  if (error && !playlists.length) return <p className="mt-10 text-center font-mono text-[13px] text-crate-danger">{error}</p>;
   if (!playlists.length) return <div className="mt-16 flex flex-col items-center gap-4"><VinylDisc size={60} /><p className="font-display text-3xl text-crate-muted/20 tracking-widest">EMPTY</p></div>;
 
   return (
     <>
-      <p className="font-mono text-[9px] text-crate-muted/60 mb-3" style={{ letterSpacing: "0.12em" }}>{playlists.length}/{totalPl} PLAYLISTS</p>
+      <p className="font-mono text-[12px] text-crate-muted/60 mb-3" style={{ letterSpacing: "0.12em" }}>{playlists.length}/{totalPl} PLAYLISTS</p>
       <ul>
         {playlists.map((pl) => (
           <li key={pl.id} className="border-b border-crate-border/50 last:border-0">
             <button onClick={() => openPlaylist(pl)} className="w-full flex items-center gap-3 py-3 text-left transition-colors hover:bg-crate-elevated/30 -mx-1 px-1">
               <SleeveArt url={pl.image_url} title={pl.name} size={40} />
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-xs font-medium text-crate-text truncate">{pl.name}</p>
-                <p className="font-mono text-[10px] text-crate-muted mt-0.5">{pl.track_count} TRACKS · {pl.owner}</p>
+                <p className="font-mono text-[13px] font-medium text-crate-text truncate">{pl.name}</p>
+                <p className="font-mono text-[12px] text-crate-muted mt-0.5">{pl.track_count} TRACKS · {pl.owner}</p>
               </div>
               {pl.already_added && (
-                <span className="font-mono text-[9px] shrink-0 px-1" style={{ color: pl.already_added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.1em" }}>
-                  {pl.already_added === "favorite" ? "★" : "◈"}
+                <span className="font-mono text-[12px] shrink-0 px-1" style={{ color: pl.already_added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.1em" }}>
+                  {pl.already_added === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
                 </span>
               )}
               <svg className="w-3 h-3 text-crate-muted/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
@@ -342,7 +342,7 @@ function PlaylistsTab({ spotifyConnected, onConnectSpotify }: { spotifyConnected
       </ul>
       {playlists.length < totalPl && (
         <button onClick={async () => { setLoadingMorePl(true); await loadPlaylists(playlists.length); setLoadingMorePl(false); }} disabled={loadingMorePl}
-          className="mt-4 w-full py-3 font-mono text-[10px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
+          className="mt-4 w-full py-3 font-mono text-[12px] text-crate-muted hover:text-crate-text disabled:opacity-40 transition-all"
           style={{ border: "1px solid rgb(var(--c-border))", letterSpacing: "0.15em" }}>
           {loadingMorePl ? "LOADING…" : `LOAD MORE (${totalPl - playlists.length} LEFT)`}
         </button>

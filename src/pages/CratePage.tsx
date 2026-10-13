@@ -79,13 +79,13 @@ export function CratePage({ onLogout }: CratePageProps) {
             <div className="w-6 h-6 rounded-full border-2 border-crate-accent border-t-transparent animate-spin" />
           </div>
         ) : !crate ? (
-          <p className="mt-16 text-center font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>
+          <p className="mt-16 text-center font-mono text-[13px] text-crate-muted" style={{ letterSpacing: "0.1em" }}>
             THIS CRATE NO LONGER EXISTS
           </p>
         ) : ranked.length + resting.length === 0 && !crate.ai_suggestions ? (
           <div className="mt-16 flex flex-col items-center gap-3">
             <VinylDisc size={56} />
-            <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE YET — EDIT IT, OR ADD RECORDS WITH "ADD TO CRATE"</p>
+            <p className="font-mono text-[13px] text-crate-muted" style={{ letterSpacing: "0.1em" }}>NOTHING IN THIS CRATE YET — EDIT IT, OR ADD RECORDS WITH "ADD TO CRATE"</p>
           </div>
         ) : ranked.length + resting.length === 0 ? (
           // Nothing of its own (e.g. Surprise Me): Claude's picks get the whole page.

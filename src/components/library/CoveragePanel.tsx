@@ -16,14 +16,14 @@ export default function CoveragePanel({ albums, genres, onClose }: CoveragePanel
           <span className="font-display" style={{ fontSize: 15, color: "rgb(var(--c-text))", letterSpacing: "0.15em" }}>
             GAPS
           </span>
-          <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+          <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>
             not in any crate
           </span>
           <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
           <button
             onClick={onClose}
             className="font-mono cursor-pointer"
-            style={{ fontSize: 10, padding: "2px 6px", border: "1px solid rgb(var(--c-border))", background: "transparent", color: "rgb(var(--c-muted))" }}
+            style={{ fontSize: 12, padding: "2px 6px", border: "1px solid rgb(var(--c-border))", background: "transparent", color: "rgb(var(--c-muted))" }}
           >
             CLOSE
           </button>
@@ -31,12 +31,12 @@ export default function CoveragePanel({ albums, genres, onClose }: CoveragePanel
 
         {genres.length > 0 && (
           <div className="mb-4">
-            <div className="font-mono uppercase" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 6 }}>
+            <div className="font-mono uppercase" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 6 }}>
               UNCOVERED GENRES ({genres.length})
             </div>
             <div className="flex flex-wrap gap-1">
               {genres.map((g) => (
-                <span key={g} className="font-mono" style={{ fontSize: 10, padding: "2px 6px", border: "1px solid rgb(var(--c-accent) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-accent))" }}>
+                <span key={g} className="font-mono" style={{ fontSize: 12, padding: "2px 6px", border: "1px solid rgb(var(--c-accent) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-accent))" }}>
                   {g}
                 </span>
               ))}
@@ -44,13 +44,13 @@ export default function CoveragePanel({ albums, genres, onClose }: CoveragePanel
           </div>
         )}
 
-        <div className="font-mono uppercase" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 6 }}>
+        <div className="font-mono uppercase" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 6 }}>
           UNCOVERED ALBUMS ({albums.length})
         </div>
         {albums.length === 0 ? (
           <div className="flex items-center gap-3 py-6">
             <VinylDisc size={32} />
-            <p className="font-mono italic" style={{ fontSize: 11, color: "rgb(var(--c-muted))", opacity: 0.7 }}>
+            <p className="font-mono italic" style={{ fontSize: 13, color: "rgb(var(--c-muted))", opacity: 0.7 }}>
               every album lives in at least one crate
             </p>
           </div>
@@ -66,10 +66,10 @@ export default function CoveragePanel({ albums, genres, onClose }: CoveragePanel
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono truncate" style={{ fontSize: 12, color: "rgb(var(--c-text))" }}>{a.title}</p>
-                  <p className="font-mono truncate" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>{a.creator}</p>
+                  <p className="font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-text))" }}>{a.title}</p>
+                  <p className="font-mono truncate" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{a.creator}</p>
                 </div>
-                <span className="font-mono shrink-0" style={{ fontSize: 10, color: a.list_type === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
+                <span className="font-mono shrink-0" style={{ fontSize: 12, color: a.list_type === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
                   {a.list_type === "favorite" ? "FAVORITE" : "REC"}
                 </span>
               </li>

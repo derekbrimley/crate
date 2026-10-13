@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VinylDisc } from "../components/VinylDisc";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
+import { ProfileButton } from "../components/PageHeader";
 import { DetailPanel } from "../components/library/DetailPanel";
 import { useDataCache } from "../contexts/DataCache";
 import { CONTEXT_LABELS, PickHistoryEntry, Item } from "../types";
@@ -83,24 +84,7 @@ export function History({ onLogout }: HistoryProps) {
 
   const profileButton = (
     <div className="relative">
-      <button
-        onClick={() => setShowProfile((v) => !v)}
-        className="flex items-center justify-center cursor-pointer"
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
-          border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
-          color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-          boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
-        }}
-        title="Profile"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-        </svg>
-      </button>
+      <ProfileButton open={showProfile} onClick={() => setShowProfile((v) => !v)} />
       {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
     </div>
   );
@@ -123,7 +107,7 @@ export function History({ onLogout }: HistoryProps) {
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <VinylDisc size={56} />
           <p className="font-display text-3xl text-crate-muted/25 tracking-widest">EMPTY</p>
-          <p className="font-mono text-[10px] text-crate-muted/40 text-center" style={{ letterSpacing: "0.12em" }}>
+          <p className="font-mono text-[12px] text-crate-muted/40 text-center" style={{ letterSpacing: "0.12em" }}>
             START PICKING RECORDS
             <br />TO BUILD YOUR LOG
           </p>
@@ -135,7 +119,7 @@ export function History({ onLogout }: HistoryProps) {
               {/* Date divider tab */}
               <div
                 className="sticky z-10 flex items-center gap-3 px-5 py-2"
-                style={{ top: 56, background: "rgb(var(--c-bg) / calc(0.97 * var(--tint)))", backdropFilter: "blur(12px)" }}
+                style={{ top: "calc(var(--header-h) + var(--safe-t))", background: "rgb(var(--c-bg) / calc(0.97 * var(--tint)))", backdropFilter: "blur(12px)" }}
               >
                 <div
                   className="font-display text-sm px-3 py-0.5"
@@ -149,7 +133,7 @@ export function History({ onLogout }: HistoryProps) {
                   {label.toUpperCase()}
                 </div>
                 <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border) / calc(0.4 * var(--tint)))" }} />
-                <span className="font-mono text-[9px]" style={{ color: "rgb(var(--c-muted) / calc(0.4 * var(--tint)))", letterSpacing: "0.1em" }}>
+                <span className="font-mono text-[12px]" style={{ color: "rgb(var(--c-muted) / calc(0.4 * var(--tint)))", letterSpacing: "0.1em" }}>
                   {entries.length} {entries.length === 1 ? "RECORD" : "RECORDS"}
                 </span>
               </div>
@@ -208,14 +192,14 @@ export function History({ onLogout }: HistoryProps) {
                         </p>
                         <p
                           className="font-mono truncate mt-0.5"
-                          style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.06em" }}
+                          style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.06em" }}
                         >
                           {entry.creator}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <span
                             className="font-mono"
-                            style={{ fontSize: 9, color: "rgb(var(--c-muted) / calc(0.5 * var(--tint)))", letterSpacing: "0.08em" }}
+                            style={{ fontSize: 12, color: "rgb(var(--c-muted) / calc(0.5 * var(--tint)))", letterSpacing: "0.08em" }}
                           >
                             {entry.context && contextInfo
                               ? `${modeInfo.label} · ${contextInfo.label.toUpperCase()}`
@@ -227,7 +211,7 @@ export function History({ onLogout }: HistoryProps) {
                       {/* Time */}
                       <span
                         className="font-mono shrink-0 tabular-nums"
-                        style={{ fontSize: 10, color: "rgb(var(--c-muted) / calc(0.45 * var(--tint)))", letterSpacing: "0.05em" }}
+                        style={{ fontSize: 12, color: "rgb(var(--c-muted) / calc(0.45 * var(--tint)))", letterSpacing: "0.05em" }}
                       >
                         {formatTime(entry.picked_at_ts)}
                       </span>

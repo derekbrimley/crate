@@ -21,7 +21,7 @@ interface AdvancedFiltersProps {
 const largeControl: React.CSSProperties = { fontSize: 14, padding: "8px 10px", minHeight: 40 };
 
 const selectStyle: React.CSSProperties = {
-  fontSize: 10,
+  fontSize: 12,
   padding: "2px 4px",
   border: "1px solid rgb(var(--c-border))",
   background: "rgb(var(--c-elevated))",
@@ -30,7 +30,7 @@ const selectStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  fontSize: 10,
+  fontSize: 12,
   padding: "2px 6px",
   width: 64,
   border: "1px solid rgb(var(--c-border))",
@@ -60,10 +60,10 @@ export default function AdvancedFilters({
   const sel = large ? { ...selectStyle, ...largeControl } : selectStyle;
   const inp = large ? { ...inputStyle, ...largeControl, width: 90 } : inputStyle;
   const genreInp = large ? { ...genreInputStyle, ...largeControl, width: "100%", maxWidth: 220 } : genreInputStyle;
-  const textSize = large ? 13 : 10;
+  const textSize = large ? 13 : 12;
   const smallButton: React.CSSProperties = large
     ? { fontSize: 13, padding: "8px 12px", minHeight: 40 }
-    : { fontSize: 10, padding: "2px 6px" };
+    : { fontSize: 12, padding: "2px 6px" };
 
   function addRule() {
     const field: FieldKey = fieldKeys.includes("genre") ? "genre" : fieldKeys[0];
@@ -105,7 +105,7 @@ export default function AdvancedFilters({
         onClick={() => setOpen((v) => !v)}
         className="font-mono cursor-pointer"
         style={{
-          fontSize: large ? 13 : 10,
+          fontSize: large ? 13 : 12,
           letterSpacing: "0.12em",
           background: "transparent",
           border: "none",
@@ -190,7 +190,7 @@ export default function AdvancedFilters({
 
                   {needsV2 && (
                     <>
-                      <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>–</span>
+                      <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>–</span>
                       <input
                         type="number"
                         value={rule.value2 ?? ""}
@@ -246,7 +246,7 @@ export default function AdvancedFilters({
             </button>
 
             {rules.length > 1 && (
-              <div className="flex items-center gap-1">
+              <div className={`flex items-center ${large ? "gap-2" : "gap-1"}`}>
                 <span className="font-mono" style={{ fontSize: textSize, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
                   MATCH
                 </span>

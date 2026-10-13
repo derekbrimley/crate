@@ -53,24 +53,24 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
         )}
         {item.list_type === "recommendation" && (item.metadata as Record<string, unknown> | null)?._ai_suggested !== true && (
           <span
-            className="absolute top-1.5 left-2 font-mono pointer-events-none"
-            style={{ fontSize: 14, color: "rgb(var(--c-rec))", textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
+            className="tile-badge absolute top-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
           >
-            ◈
+            REC
           </span>
         )}
         {(item.metadata as Record<string, unknown> | null)?._ai_suggested === true && (
           <span
-            className="absolute top-1.5 right-1.5 font-mono pointer-events-none px-1.5 py-0.5"
-            style={{ fontSize: 10, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
+            className="tile-badge absolute top-1.5 right-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
           >
             ✦ NEW
           </span>
         )}
         {playlist && (
           <span
-            className="absolute bottom-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
-            style={{ fontSize: 10, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
+            className="tile-badge absolute bottom-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
           >
             ≡ PLAYLIST
           </span>
@@ -100,7 +100,7 @@ export function GridHeading({ label, count, action }: { label: string; count?: n
       </span>
       <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
       {count !== undefined && (
-        <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{count}</span>
+        <span className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{count}</span>
       )}
       {action}
     </div>

@@ -20,9 +20,10 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
           style={{
             background: "rgb(var(--c-bg) / calc(0.97 * var(--tint)))",
             backdropFilter: "blur(12px)",
+            paddingTop: "var(--safe-t)",
           }}
         >
-          <div className="max-w-xl lg:max-w-4xl mx-auto px-5 h-14 flex items-center justify-between">
+          <div className="max-w-xl lg:max-w-4xl mx-auto px-5 h-[60px] flex items-center justify-between">
             <h1
               className="font-display text-[22px] leading-none text-crate-text tracking-widest"
               style={{ letterSpacing: "0.18em" }}
@@ -33,7 +34,13 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
           </div>
         </header>
       )}
-      <main className={`flex-1 max-w-xl lg:max-w-4xl mx-auto w-full ${barVisible ? "pb-52" : "pb-24"}`}>{children}</main>
+      {/* Room to scroll the last row clear of the bottom nav (and player bar). */}
+      <main
+        className="flex-1 max-w-xl lg:max-w-4xl mx-auto w-full"
+        style={{ paddingBottom: `calc(var(--nav-h) + var(--safe-b) + ${barVisible ? "var(--player-h) + 32px" : "32px"})` }}
+      >
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

@@ -49,7 +49,7 @@ export function CratesIndex({ onLogout }: CratesIndexProps) {
       ) : crates.length === 0 ? (
         <div className="mt-16 flex flex-col items-center gap-3">
           <VinylDisc size={56} />
-          <p className="font-mono text-xs text-crate-muted" style={{ letterSpacing: "0.1em" }}>NO CRATES YET — TAP + TO MAKE ONE</p>
+          <p className="font-mono text-[13px] text-crate-muted" style={{ letterSpacing: "0.1em" }}>NO CRATES YET — TAP + TO MAKE ONE</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3" style={{ padding: "18px 12px 100px" }}>
@@ -125,9 +125,9 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
           {crate.name.toUpperCase() || "UNTITLED"}
         </span>
         {crate.ai_suggestions && (
-          <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-rec))" }} title="Claude suggestions on">✦</span>
+          <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-rec))" }} title="Claude suggestions on">✦</span>
         )}
-        <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{pool.length}</span>
+        <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{pool.length}</span>
       </div>
     </button>
   );

@@ -245,7 +245,7 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, letterSpacing: "0.16em",
+  fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, letterSpacing: "0.16em",
   textTransform: "uppercase", color: "rgb(var(--c-muted))", display: "block", marginBottom: 8,
 };
 
@@ -276,7 +276,7 @@ function Switch({ label, help, on, onChange }: { label: string; help: string; on
     >
       <span className="flex-1 min-w-0">
         <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>{label}</span>
-        <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{help}</span>
+        <span className="block font-mono mt-0.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{help}</span>
       </span>
       <SwitchTrack on={on} />
     </button>
@@ -291,7 +291,7 @@ function ItemRow({ item, action, onAction, accent }: { item: Item; action: strin
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-mono truncate" style={{ fontSize: 14, color: "rgb(var(--c-text))" }}>{item.title}</div>
-        <div className="font-mono truncate" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>
+        <div className="font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>
           {isPlaylist(item) ? "Playlist · " : ""}{item.creator}
           {item.list_type === "recommendation" ? " · rec" : ""}
         </div>

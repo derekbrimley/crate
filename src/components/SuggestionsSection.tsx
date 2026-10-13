@@ -67,15 +67,16 @@ export function SuggestionsRail({ target, onSelect }: SuggestionsSectionProps) {
   const { suggestions, loading, error, refresh } = useSuggestions(target, true);
   const { currentTrack } = usePlayer();
   // Header above; bottom nav (and the player bar, when it's showing) below.
-  const below = currentTrack ? 176 : 96;
+  const above = "var(--header-h) + var(--safe-t)";
+  const below = `var(--nav-h) + var(--safe-b)${currentTrack ? " + var(--player-h)" : ""} + 24px`;
 
   return (
     <aside
       className="shrink-0 sticky overflow-y-auto scrollbar-hide"
       style={{
-        top: 49,
+        top: `calc(${above})`,
         width: "clamp(112px, 30vw, 220px)",
-        maxHeight: `calc(100dvh - 49px - ${below}px)`,
+        maxHeight: `calc(100dvh - ${above} - ${below})`,
         padding: "14px 12px 16px 10px",
         borderLeft: "1px solid rgb(var(--c-border))",
       }}
@@ -96,7 +97,7 @@ export function SuggestionsRail({ target, onSelect }: SuggestionsSectionProps) {
           ))}
         </div>
       ) : suggestions.length === 0 ? (
-        <p className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))", lineHeight: 1.5 }}>
+        <p className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))", lineHeight: 1.5 }}>
           {error ? "Claude couldn't answer. Tap ↻ to retry." : "No new picks. Tap ↻ for more."}
         </p>
       ) : (
@@ -114,8 +115,8 @@ export function SuggestionsRail({ target, onSelect }: SuggestionsSectionProps) {
                   ? <img src={item.image_url} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   : <VinylDisc size={40} />}
               </div>
-              <div className="font-mono truncate mt-1.5" style={{ fontSize: 12, color: "rgb(var(--c-text))" }}>{item.title}</div>
-              <div className="font-mono truncate" style={{ fontSize: 11, color: "rgb(var(--c-muted))" }}>{item.creator}</div>
+              <div className="font-mono truncate mt-1.5" style={{ fontSize: 13, color: "rgb(var(--c-text))" }}>{item.title}</div>
+              <div className="font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{item.creator}</div>
             </button>
           ))}
         </div>

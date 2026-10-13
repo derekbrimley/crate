@@ -238,6 +238,7 @@ export function Lists({ onLogout }: ListsProps) {
           background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
           backdropFilter: "blur(12px)",
           borderBottom: "1px solid rgb(var(--c-border))",
+          paddingTop: "var(--safe-t)",
         }}
       >
         <div className="max-w-xl lg:max-w-4xl mx-auto" style={{ padding: "10px 12px 9px" }}>
@@ -289,8 +290,8 @@ export function Lists({ onLogout }: ListsProps) {
           </div>
 
           {/* Sort + Group controls */}
-          <div className="flex gap-x-1.5 gap-y-2 items-center flex-wrap">
-            <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               SORT
             </span>
             {SORT_OPTIONS.map(({ key, label }) => (
@@ -312,7 +313,7 @@ export function Lists({ onLogout }: ListsProps) {
 
             <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               LIST
             </span>
             {([["all", "ALL"], ["favorite", "FAVORITES"], ["recommendation", "RECOMMENDATIONS"]] as [ListFilter, string][]).map(([key, label]) => (
@@ -334,7 +335,7 @@ export function Lists({ onLogout }: ListsProps) {
 
             <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               GROUP
             </span>
             <select
@@ -353,7 +354,7 @@ export function Lists({ onLogout }: ListsProps) {
               ))}
             </select>
             <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
-            <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
               {ruleFiltered.length} {ruleFiltered.length === 1 ? "ALBUM" : "ALBUMS"}
             </span>
             <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
@@ -434,7 +435,7 @@ export function Lists({ onLogout }: ListsProps) {
         ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <VinylDisc size={56} />
-            <p className="font-mono text-center" style={{ fontSize: 11, color: "rgb(var(--c-muted))", opacity: 0.5 }}>
+            <p className="font-mono text-center" style={{ fontSize: 13, color: "rgb(var(--c-muted))", opacity: 0.5 }}>
               {search ? "no albums match" : listFilter === "recommendation" ? "no recommendations yet" : listFilter === "favorite" ? "no favorites yet — add some records" : "no albums yet — add some records"}
             </p>
           </div>
