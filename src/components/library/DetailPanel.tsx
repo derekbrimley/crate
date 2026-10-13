@@ -56,6 +56,10 @@ interface CachedDetails {
 
 const detailsCache = new Map<string, CachedDetails>();
 
+/** "More by" album tiles: wide enough for a spelled-out button label. */
+const ARTIST_TILE = 140;
+const ARTIST_ADD_BUTTON: React.CSSProperties = { fontSize: 13, padding: "0 4px", minHeight: 34, width: "100%" };
+
 export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, onPlay, playSource, onPromote, onAdd, readOnly = false }: DetailPanelProps) {
   const player = usePlayer();
   const mediaType = mediaTypeOf(item);
@@ -328,22 +332,22 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           </div>
           <div
             className="font-mono uppercase mb-1"
-            style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}
+            style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}
           >
             {item.creator}
           </div>
           {isPlaylistItem && (
-            <div className="font-mono mb-1" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
+            <div className="font-mono mb-1" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
               ≡ PLAYLIST{playlistInfo ? ` · ${playlistInfo.total_tracks} TRACKS` : ""}
             </div>
           )}
           {item.list_type === "recommendation" && !isFriendRec && (
-            <div className="font-mono mb-1" style={{ fontSize: 10, color: "rgb(var(--c-rec))", letterSpacing: "0.08em" }}>
-              ◈ RECOMMENDATION
+            <div className="font-mono mb-1" style={{ fontSize: 12, color: "rgb(var(--c-rec))", letterSpacing: "0.08em" }}>
+              RECOMMENDATION
             </div>
           )}
           {isFriendRec && friendSenderName && (
-            <div className="font-mono mb-1" style={{ fontSize: 10, color: "rgb(var(--c-friend))", letterSpacing: "0.05em" }}>
+            <div className="font-mono mb-1" style={{ fontSize: 12, color: "rgb(var(--c-friend))", letterSpacing: "0.05em" }}>
               From {friendSenderName}
             </div>
           )}
@@ -353,10 +357,10 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               className="flex-1"
               style={{ background: "rgb(var(--c-surface))", border: "1px solid rgb(var(--c-border))", padding: "4px 5px" }}
             >
-              <div className="font-mono uppercase" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 1 }}>
+              <div className="font-mono uppercase" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 1 }}>
                 LAST PLAYED
               </div>
-              <div className="font-mono" style={{ fontSize: 10, color: isRecent ? "rgb(var(--c-neon))" : "rgb(var(--c-text))", fontWeight: 500 }}>
+              <div className="font-mono" style={{ fontSize: 12, color: isRecent ? "rgb(var(--c-neon))" : "rgb(var(--c-text))", fontWeight: 500 }}>
                 {formatLastPlayed(lastPickedTs)}
               </div>
             </div>
@@ -364,10 +368,10 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               className="flex-1"
               style={{ background: "rgb(var(--c-surface))", border: "1px solid rgb(var(--c-border))", padding: "4px 5px" }}
             >
-              <div className="font-mono uppercase" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 1 }}>
+              <div className="font-mono uppercase" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 1 }}>
                 PLAYS
               </div>
-              <div className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-accent))", fontWeight: 600 }}>
+              <div className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-accent))", fontWeight: 600 }}>
                 {pickCount > 0 ? `×${pickCount}` : "—"}
               </div>
             </div>
@@ -378,12 +382,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           onClick={onClose}
           className="shrink-0 self-start flex items-center justify-center cursor-pointer"
           style={{
-            width: 22,
-            height: 22,
+            width: 40,
+            height: 40,
             background: "transparent",
             border: "1px solid rgb(var(--c-border))",
             color: "rgb(var(--c-muted))",
-            fontSize: 10,
+            fontSize: 16,
           }}
         >
           ✕
@@ -391,24 +395,24 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       </div>
       
       {/* Actions */}
-      <div className="flex gap-1.5" style={{ marginBottom: 10 }}>
+      <div className="flex flex-wrap gap-2" style={{ marginBottom: 10 }}>
         <button
           onClick={async () => {
             if (!contextUri) return;
             onPlay?.();
             await player.playAlbum(contextUri, undefined, playSource);
           }}
-          className="flex-1 flex items-center justify-center gap-1 text-center font-mono cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 text-center font-mono cursor-pointer"
           style={{
-            fontSize: 10,
-            padding: "6px 0",
+            fontSize: 13,
+            padding: "10px 0",
             border: "1px solid rgb(var(--c-spotify) / calc(0.3 * var(--tint)))",
             color: "rgb(var(--c-spotify))",
             background: "rgb(var(--c-spotify) / calc(0.07 * var(--tint)))",
             letterSpacing: "0.1em",
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
           </svg>
           PLAY ON SPOTIFY
@@ -416,28 +420,28 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
         {!inLibrary ? (
           addedToList ? (
             <span
-              className="font-mono flex items-center px-2"
-              style={{ fontSize: 10, color: addedToList === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", border: "1px solid currentColor", background: addedToList === "favorite" ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "rgb(var(--c-rec) / calc(0.1 * var(--tint)))" }}
+              className="font-mono flex items-center px-3"
+              style={{ fontSize: 13, color: addedToList === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", border: "1px solid currentColor", background: addedToList === "favorite" ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "rgb(var(--c-rec) / calc(0.1 * var(--tint)))" }}
             >
-              {addedToList === "favorite" ? "★ ADDED" : "◈ ADDED"}
+              {addedToList === "favorite" ? "ADDED TO FAVORITES" : "ADDED TO RECOMMENDATIONS"}
             </span>
           ) : (
             <>
               <button
                 onClick={() => handleAddToLibrary("favorite")}
                 disabled={addingToList !== null}
-                className="font-mono cursor-pointer disabled:opacity-50"
-                style={{ fontSize: 10, padding: "6px 10px", border: "1px solid rgb(var(--c-accent) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-accent))", background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
+                className="font-mono cursor-pointer min-h-[44px] disabled:opacity-50"
+                style={{ fontSize: 13, padding: "10px 14px", border: "1px solid rgb(var(--c-accent) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-accent))", background: "rgb(var(--c-accent) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
               >
-                {addingToList === "favorite" ? "…" : "★ FAV"}
+                {addingToList === "favorite" ? "…" : "+ FAVORITE"}
               </button>
               <button
                 onClick={() => handleAddToLibrary("recommendation")}
                 disabled={addingToList !== null}
-                className="font-mono cursor-pointer disabled:opacity-50"
-                style={{ fontSize: 10, padding: "6px 10px", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
+                className="font-mono cursor-pointer min-h-[44px] disabled:opacity-50"
+                style={{ fontSize: 13, padding: "10px 14px", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", background: "rgb(var(--c-rec) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
               >
-                {addingToList === "recommendation" ? "…" : "◈ REC"}
+                {addingToList === "recommendation" ? "…" : "+ RECOMMENDATION"}
               </button>
             </>
           )
@@ -447,10 +451,10 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               <button
                 onClick={handlePromote}
                 disabled={promoting || promoted}
-                className="font-mono cursor-pointer disabled:opacity-60"
+                className="font-mono cursor-pointer min-h-[44px] disabled:opacity-60"
                 style={{
-                  fontSize: 10,
-                  padding: "6px 10px",
+                  fontSize: 13,
+                  padding: "10px 14px",
                   border: promoted ? "1px solid rgb(var(--c-accent) / calc(0.6 * var(--tint)))" : "1px solid rgb(var(--c-accent) / calc(0.35 * var(--tint)))",
                   color: "rgb(var(--c-accent))",
                   background: promoted ? "rgb(var(--c-accent) / calc(0.15 * var(--tint)))" : "transparent",
@@ -458,17 +462,17 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                 }}
                 title="Move to favorites"
               >
-                {promoting ? "★ …" : promoted ? "★ FAVED" : isFriendRec ? "★ ADD TO FAVORITES" : "★ FAVORITE"}
+                {promoting ? "…" : promoted ? "MOVED TO FAVORITES" : isFriendRec ? "ADD TO FAVORITES" : "MOVE TO FAVORITES"}
               </button>
             )}
             {!promoted && !readOnly && (
               <button
                 onClick={handleRemoveClick}
                 disabled={removing}
-                className="font-mono cursor-pointer disabled:opacity-60"
+                className="font-mono cursor-pointer min-h-[44px] disabled:opacity-60"
                 style={{
-                  fontSize: 10,
-                  padding: "6px 10px",
+                  fontSize: 13,
+                  padding: "10px 14px",
                   border: removeConfirm ? "1px solid rgb(var(--c-danger) / calc(0.5 * var(--tint)))" : "1px solid rgb(var(--c-danger-deep) / calc(0.35 * var(--tint)))",
                   color: "rgb(var(--c-danger))",
                   background: removeConfirm ? "rgb(var(--c-danger-deep) / calc(0.15 * var(--tint)))" : "transparent",
@@ -486,8 +490,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           onClick={() => setShowCrates(true)}
           className="font-mono cursor-pointer w-full"
           style={{
-            fontSize: 12,
-            padding: "9px 0",
+            fontSize: 13,
+            padding: "12px 0",
             marginBottom: 8,
             border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))",
             color: "rgb(var(--c-accent))",
@@ -508,8 +512,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               onClick={() => setSendFormOpen(true)}
               className="font-mono cursor-pointer w-full"
               style={{
-                fontSize: 10,
-                padding: "5px 0",
+                fontSize: 13,
+                padding: "12px 0",
                 border: "1px solid rgb(var(--c-friend) / calc(0.35 * var(--tint)))",
                 color: "rgb(var(--c-friend))",
                 background: "transparent",
@@ -521,15 +525,16 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
           ) : (
             <div style={{ border: "1px solid rgb(var(--c-friend) / calc(0.35 * var(--tint)))", padding: "8px" }}>
               {recentRecipients.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
+                <div className="flex flex-wrap gap-2 mb-2">
                   {recentRecipients.map((r) => (
                     <button
                       key={r.email}
                       onClick={() => setSendEmail(r.email || "")}
                       className="font-mono cursor-pointer"
                       style={{
-                        fontSize: 10,
-                        padding: "2px 6px",
+                        fontSize: 13,
+                        padding: "8px 12px",
+                        minHeight: 40,
                         border: sendEmail === r.email ? "1px solid rgb(var(--c-friend) / calc(0.7 * var(--tint)))" : "1px solid rgb(var(--c-border))",
                         color: sendEmail === r.email ? "rgb(var(--c-friend))" : "rgb(var(--c-text))",
                         background: sendEmail === r.email ? "rgb(var(--c-friend) / calc(0.1 * var(--tint)))" : "transparent",
@@ -540,14 +545,14 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                   ))}
                 </div>
               )}
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <input
                   type="email"
                   value={sendEmail}
                   onChange={(e) => { setSendEmail(e.target.value); if (sendStatus === "error") setSendStatus("idle"); }}
                   placeholder="friend@email.com"
                   className="flex-1 bg-transparent outline-none font-mono"
-                  style={{ fontSize: 10, color: "rgb(var(--c-text))", border: "1px solid rgb(var(--c-border))", padding: "4px 6px" }}
+                  style={{ fontSize: 16, color: "rgb(var(--c-text))", border: "1px solid rgb(var(--c-border))", padding: "8px 10px", minHeight: 44 }}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
                   disabled={sendStatus === "sending" || sendStatus === "sent"}
                 />
@@ -555,20 +560,20 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                   onClick={handleSend}
                   disabled={sendStatus === "sending" || sendStatus === "sent" || !sendEmail.trim()}
                   className="font-mono cursor-pointer disabled:opacity-50"
-                  style={{ fontSize: 10, padding: "4px 8px", border: "1px solid rgb(var(--c-friend) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-friend))", background: "rgb(var(--c-friend) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
+                  style={{ fontSize: 13, padding: "0 14px", minHeight: 44, border: "1px solid rgb(var(--c-friend) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-friend))", background: "rgb(var(--c-friend) / calc(0.1 * var(--tint)))", letterSpacing: "0.08em" }}
                 >
                   {sendStatus === "sending" ? "…" : sendStatus === "sent" ? "SENT!" : "SEND"}
                 </button>
                 <button
                   onClick={() => { setSendFormOpen(false); setSendEmail(""); setSendStatus("idle"); setSendError(""); }}
                   className="font-mono cursor-pointer"
-                  style={{ fontSize: 10, padding: "4px 6px", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", background: "transparent" }}
+                  style={{ fontSize: 16, width: 44, minHeight: 44, border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", background: "transparent" }}
                 >
                   ✕
                 </button>
               </div>
               {sendStatus === "error" && sendError && (
-                <div className="font-mono mt-1" style={{ fontSize: 10, color: "rgb(var(--c-danger))" }}>
+                <div className="font-mono mt-1" style={{ fontSize: 12, color: "rgb(var(--c-danger))" }}>
                   {sendError}
                 </div>
               )}
@@ -580,7 +585,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       {/* Sent to */}
       {!isFriendRec && inLibrary && sentTo.length > 0 && (
         <div style={{ marginBottom: 10 }}>
-          <div className="font-mono uppercase" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 4 }}>
+          <div className="font-mono uppercase" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em", marginBottom: 4 }}>
             SENT TO
           </div>
           <div className="flex flex-wrap gap-1">
@@ -588,7 +593,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               <span
                 key={i}
                 className="font-mono"
-                style={{ fontSize: 10, padding: "2px 6px", border: "1px solid rgb(var(--c-friend) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-friend))" }}
+                style={{ fontSize: 12, padding: "2px 6px", border: "1px solid rgb(var(--c-friend) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-friend))" }}
               >
                 {s.recipient_name || s.recipient_email || "Unknown"}
               </span>
@@ -600,7 +605,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       {/* Genres — albums only. A playlist shows its description instead. */}
       {isPlaylistItem ? (
         playlistInfo?.description ? (
-          <p className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))", marginBottom: 10, lineHeight: 1.5 }}>
+          <p className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))", marginBottom: 10, lineHeight: 1.5 }}>
             {playlistInfo.description}
           </p>
         ) : null
@@ -618,7 +623,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                 <span
                   key={g}
                   className="font-mono"
-                  style={{ fontSize: 10, padding: "2px 6px", border: "1px solid rgb(var(--c-accent) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.08em" }}
+                  style={{ fontSize: 12, padding: "2px 6px", border: "1px solid rgb(var(--c-accent) / calc(0.35 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.08em" }}
                 >
                   {g}
                 </span>
@@ -631,12 +636,12 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       {/* Track list */}
       <div style={{ marginBottom: 10 }}>
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono uppercase shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
+          <span className="font-mono uppercase shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
             TRACKS
           </span>
           <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
           {!loadingDetails && tracks.length > 0 && (
-            <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+            <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>
               {tracks.length}
             </span>
           )}
@@ -655,7 +660,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                 return (
                   <React.Fragment key={`${track.disc}-${track.number}`}>
                     {showDiscHeader && (
-                      <div className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-accent))", letterSpacing: "0.15em", paddingTop: 4, paddingBottom: 2 }}>
+                      <div className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-accent))", letterSpacing: "0.15em", paddingTop: 4, paddingBottom: 2 }}>
                         DISC {track.disc}
                       </div>
                     )}
@@ -667,13 +672,13 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                       }}
                       title="Play this track"
                     >
-                      <span className="font-mono shrink-0 text-right" style={{ fontSize: 10, color: playingUri && track.uri === playingUri ? "rgb(var(--c-spotify))" : "rgb(var(--c-muted) / calc(0.5 * var(--tint)))", width: 18 }}>
+                      <span className="font-mono shrink-0 text-right" style={{ fontSize: 12, color: playingUri && track.uri === playingUri ? "rgb(var(--c-spotify))" : "rgb(var(--c-muted) / calc(0.5 * var(--tint)))", width: 24 }}>
                         {playingUri && track.uri === playingUri ? "▶" : track.number}
                       </span>
-                      <span className="font-mono truncate flex-1" style={{ fontSize: 10, color: playingUri && track.uri === playingUri ? "rgb(var(--c-spotify))" : "rgb(var(--c-text))" }}>
+                      <span className="font-mono truncate flex-1" style={{ fontSize: 12, color: playingUri && track.uri === playingUri ? "rgb(var(--c-spotify))" : "rgb(var(--c-text))" }}>
                         {track.name}
                       </span>
-                      <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted) / calc(0.4 * var(--tint)))" }}>
+                      <span className="font-mono shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted) / calc(0.4 * var(--tint)))" }}>
                         {formatDuration(track.duration_ms)}
                       </span>
                     </div>
@@ -689,32 +694,32 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
       {!isPlaylistItem && (
         <div style={{ minHeight: 100, marginBottom: 10 }}>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="font-mono uppercase shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
+            <span className="font-mono uppercase shrink-0" style={{ fontSize: 12, color: "rgb(var(--c-muted))", letterSpacing: "0.1em" }}>
               MORE BY {item.creator.toUpperCase()}
             </span>
             <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
           </div>
           {loadingDetails ? (
-            <div className="flex gap-1.5 pb-1">
+            <div className="flex gap-3 pb-1">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="shrink-0" style={{ width: 72 }}>
-                  <div className="animate-pulse" style={{ width: 72, height: 72, background: "rgb(var(--c-surface))" }} />
+                <div key={i} className="shrink-0" style={{ width: ARTIST_TILE }}>
+                  <div className="animate-pulse" style={{ width: ARTIST_TILE, height: ARTIST_TILE, background: "rgb(var(--c-surface))" }} />
                   <div className="animate-pulse" style={{ height: 12, marginTop: 3, background: "rgb(var(--c-surface))", width: "80%" }} />
                 </div>
               ))}
             </div>
           ) : artistAlbums.length > 0 ? (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
               {artistAlbums.slice(0, 10).map((album) => {
                 const added = addedAlbums.get(album.spotify_id);
                 const isAdding = addingAlbums.has(album.spotify_id);
                 return (
-                  <div key={album.spotify_id} className="shrink-0" style={{ width: 72 }}>
+                  <div key={album.spotify_id} className="shrink-0" style={{ width: ARTIST_TILE }}>
                     <div
                       className="relative"
                       style={{
-                        width: 72,
-                        height: 72,
+                        width: ARTIST_TILE,
+                        height: ARTIST_TILE,
                         background: album.image_url ? undefined : "rgb(var(--c-surface))",
                         boxShadow: "2px 3px 8px rgba(0,0,0,0.6)",
                       }}
@@ -735,8 +740,8 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                       )}
                       {added && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                          <span className="font-mono" style={{ fontSize: 10, color: added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
-                            {added === "favorite" ? "★ FAV" : "◈ REC"}
+                          <span className="font-mono" style={{ fontSize: 13, color: added === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
+                            {added === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
                           </span>
                         </div>
                       )}
@@ -748,59 +753,60 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
                     </div>
                     <div
                       className="font-mono truncate"
-                      style={{ fontSize: 10, color: "rgb(var(--c-text))", marginTop: 2, letterSpacing: "0.02em" }}
+                      style={{ fontSize: 13, color: "rgb(var(--c-text))", marginTop: 4, letterSpacing: "0.02em" }}
                       title={album.title}
                     >
                       {album.title}
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+                      <span className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>
                         {album.total_tracks} trk{album.total_tracks !== 1 ? "s" : ""}
                       </span>
-                      <span className="font-mono" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+                      <span className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>
                         {album.release_date?.slice(0, 4)}
                       </span>
                     </div>
                     {!added && !isAdding ? (
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex flex-col gap-2 mt-2">
                         <button
                           onClick={() => handleAddAlbum(album, "favorite")}
                           className="font-mono cursor-pointer"
-                          style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", background: "rgb(var(--c-accent) / calc(0.08 * var(--tint)))" }}
+                          style={{ ...ARTIST_ADD_BUTTON, border: "1px solid rgb(var(--c-accent) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-accent))", background: "rgb(var(--c-accent) / calc(0.08 * var(--tint)))" }}
                           title="Add to favorites"
                         >
-                          ★
+                          + FAVORITE
                         </button>
                         <button
                           onClick={() => handleAddAlbum(album, "recommendation")}
                           className="font-mono cursor-pointer"
-                          style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", background: "rgb(var(--c-rec) / calc(0.08 * var(--tint)))" }}
+                          style={{ ...ARTIST_ADD_BUTTON, border: "1px solid rgb(var(--c-rec) / calc(0.4 * var(--tint)))", color: "rgb(var(--c-rec))", background: "rgb(var(--c-rec) / calc(0.08 * var(--tint)))" }}
                           title="Add to recommendations"
                         >
-                          ◈
+                          + RECOMMENDATION
                         </button>
                         <a
                           href={album.spotify_uri}
-                          className="flex items-center justify-center no-underline"
-                          style={{ padding: "1px 4px", border: "1px solid rgb(var(--c-spotify) / calc(0.3 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.06 * var(--tint)))" }}
+                          className="flex items-center justify-center gap-1.5 font-mono no-underline"
+                          style={{ ...ARTIST_ADD_BUTTON, border: "1px solid rgb(var(--c-spotify) / calc(0.3 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.06 * var(--tint)))" }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                           </svg>
+                          SPOTIFY
                         </a>
                       </div>
                     ) : added ? (
                       <a
                         href={album.spotify_uri}
-                        className="flex items-center gap-1 font-mono no-underline mt-1"
-                        style={{ fontSize: 10, color: "rgb(var(--c-spotify))" }}
+                        className="flex items-center justify-center gap-1.5 font-mono no-underline mt-1.5"
+                        style={{ ...ARTIST_ADD_BUTTON, border: "1px solid rgb(var(--c-spotify) / calc(0.3 * var(--tint)))", color: "rgb(var(--c-spotify))", background: "rgb(var(--c-spotify) / calc(0.06 * var(--tint)))" }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                         </svg>
-                        Spotify
+                        SPOTIFY
                       </a>
                     ) : null}
                   </div>
@@ -808,7 +814,7 @@ export function DetailPanel({ item, pickCount, lastPickedTs, onClose, onRemove, 
               })}
             </div>
           ) : !loadingDetails ? (
-            <p className="font-mono italic" style={{ fontSize: 10, color: "rgb(var(--c-muted) / calc(0.5 * var(--tint)))" }}>
+            <p className="font-mono italic" style={{ fontSize: 12, color: "rgb(var(--c-muted) / calc(0.5 * var(--tint)))" }}>
               No other albums found
             </p>
           ) : null}

@@ -69,7 +69,7 @@ export function ItemSheet({ item, playSource, onClose, onRemove, onPromote, hide
       <div className="fixed inset-0 z-[60]" style={{ background: "rgba(0,0,0,0.65)" }} onClick={onClose} />
       <div
         className="fixed inset-x-0 bottom-0 z-[61] max-w-xl lg:max-w-4xl mx-auto overflow-y-auto scrollbar-hide"
-        style={{ maxHeight: "85vh" }}
+        style={{ maxHeight: "85vh", paddingBottom: "var(--safe-b)" }}
       >
         <DetailPanel
           key={current.external_id}

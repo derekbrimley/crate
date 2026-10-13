@@ -95,7 +95,7 @@ function HomeTile({ label, blurb, meta, color, icon, onClick }: {
       {meta && (
         <span
           className="absolute font-mono"
-          style={{ top: 12, right: 14, fontSize: 12, color: c, letterSpacing: "0.1em", opacity: 0.85 }}
+          style={{ top: 12, right: 14, fontSize: 13, color: c, letterSpacing: "0.1em", opacity: 0.85 }}
         >
           {meta}
         </span>

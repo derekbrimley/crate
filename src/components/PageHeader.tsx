@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProfileDropdown } from "./library/ProfileDropdown";
 
+/** Header buttons are 44px square, the minimum comfortable touch target. */
+export const HEADER_BUTTON_SIZE = 44;
+
 interface PageHeaderProps {
   title: string;
   onLogout: () => void;
@@ -30,9 +33,11 @@ export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: Pag
         background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid rgb(var(--c-border))",
+        paddingTop: "var(--safe-t)",
       }}
     >
-      <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center gap-2" style={{ padding: "10px 12px 9px" }}>
+      {/* 44px buttons + 8px padding each side + 1px border = --header-h. */}
+      <div className="max-w-xl lg:max-w-4xl mx-auto flex items-center gap-2" style={{ padding: "8px 12px" }}>
         {backTo && (
           <button
             onClick={() => {
@@ -43,10 +48,10 @@ export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: Pag
               else navigate("/");
             }}
             className="flex items-center justify-center cursor-pointer shrink-0"
-            style={{ width: 28, height: 28, color: "rgb(var(--c-accent))", background: "transparent", border: "none" }}
+            style={{ width: HEADER_BUTTON_SIZE, height: HEADER_BUTTON_SIZE, marginLeft: -8, color: "rgb(var(--c-accent))", background: "transparent", border: "none" }}
             title="Back"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -64,24 +69,7 @@ export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: Pag
         <div className="flex items-center gap-2 shrink-0">
           {actions}
           {!hideSearch && <SearchButton />}
-          <button
-            onClick={() => setShowProfile((v) => !v)}
-            className="flex items-center justify-center cursor-pointer"
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
-              border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
-              color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-              boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
-            }}
-            title="Profile"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-            </svg>
-          </button>
+          <ProfileButton open={showProfile} onClick={() => setShowProfile((v) => !v)} />
         </div>
       </div>
       {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
@@ -89,7 +77,32 @@ export function PageHeader({ title, onLogout, backTo, actions, hideSearch }: Pag
   );
 }
 
-/** Small square icon button for header actions. */
+/** Round button that opens the profile menu. */
+export function ProfileButton({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center cursor-pointer"
+      style={{
+        width: HEADER_BUTTON_SIZE,
+        height: HEADER_BUTTON_SIZE,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
+        border: open ? "2px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
+        color: open ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
+        boxShadow: open ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
+      }}
+      title="Profile"
+      aria-expanded={open}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+      </svg>
+    </button>
+  );
+}
+
+/** Square icon button for header actions; icons inside are drawn at 20px. */
 export function HeaderAction({ onClick, title, children, disabled }: {
   onClick: () => void;
   title: string;
@@ -103,8 +116,8 @@ export function HeaderAction({ onClick, title, children, disabled }: {
       title={title}
       className="flex items-center justify-center cursor-pointer disabled:opacity-40"
       style={{
-        width: 28,
-        height: 28,
+        width: HEADER_BUTTON_SIZE,
+        height: HEADER_BUTTON_SIZE,
         background: "transparent",
         border: "1px solid rgb(var(--c-border))",
         color: "rgb(var(--c-muted))",
@@ -120,7 +133,7 @@ export function SearchButton() {
   const navigate = useNavigate();
   return (
     <HeaderAction onClick={() => navigate("/search")} title="Search">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </HeaderAction>

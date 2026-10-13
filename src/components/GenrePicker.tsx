@@ -46,7 +46,7 @@ export function GenrePicker({ selected, onChange, available, large = false }: Ge
           borderRadius: 4,
           color: "rgb(var(--c-text))",
           fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: large ? 16 : 11,
+          fontSize: large ? 16 : 13,
           padding: large ? "9px 12px" : "5px 9px",
           width: "100%",
           outline: "none",
@@ -58,7 +58,7 @@ export function GenrePicker({ selected, onChange, available, large = false }: Ge
         <p
           style={{
             fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: 10,
+            fontSize: 12,
             color: "rgb(var(--c-muted))",
             letterSpacing: "0.12em",
             padding: "6px 0",
@@ -68,7 +68,7 @@ export function GenrePicker({ selected, onChange, available, large = false }: Ge
         </p>
       ) : (
         <div
-          className="flex flex-wrap gap-1.5 overflow-y-auto"
+          className="flex flex-wrap gap-2 overflow-y-auto"
           style={{ maxHeight: large ? 220 : 160 }}
         >
           {sorted.map((genre) => {
@@ -81,7 +81,7 @@ export function GenrePicker({ selected, onChange, available, large = false }: Ge
                 style={{
                   padding: large ? "8px 12px" : "3px 8px",
                   fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: large ? 13 : 10,
+                  fontSize: large ? 13 : 12,
                   letterSpacing: "0.1em",
                   border: isActive ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border) / calc(0.8 * var(--tint)))",
                   background: isActive ? "rgb(var(--c-accent) / calc(0.12 * var(--tint)))" : "transparent",

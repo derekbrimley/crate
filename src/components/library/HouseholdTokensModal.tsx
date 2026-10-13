@@ -65,9 +65,9 @@ export function HouseholdTokensModal({ onClose }: Props) {
 
   const fmt = (sec: number | null) => (sec ? new Date(sec * 1000).toLocaleDateString() : "never");
 
-  const label: React.CSSProperties = { fontSize: 10, letterSpacing: "0.1em", color: "rgb(var(--c-muted))" };
+  const label: React.CSSProperties = { fontSize: 12, letterSpacing: "0.1em", color: "rgb(var(--c-muted))" };
   const button: React.CSSProperties = {
-    padding: "8px 12px", fontSize: 10, letterSpacing: "0.1em",
+    padding: "8px 12px", fontSize: 12, letterSpacing: "0.1em",
     background: "transparent", color: "rgb(var(--c-text))",
     border: "1px solid rgb(var(--c-border))", cursor: "pointer",
   };
@@ -85,7 +85,7 @@ export function HouseholdTokensModal({ onClose }: Props) {
         }}
       >
         <div style={{ ...label, marginBottom: 6 }}>HOUSEHOLD TOKENS</div>
-        <p style={{ fontSize: 11, lineHeight: 1.5, color: "rgb(var(--c-muted))", margin: "0 0 14px" }}>
+        <p style={{ fontSize: 13, lineHeight: 1.5, color: "rgb(var(--c-muted))", margin: "0 0 14px" }}>
           A token lets a shared device, like the kitchen dashboard, see your crates and start
           an album on a speaker. It can never add, remove or search. The secret is shown once.
         </p>
@@ -93,12 +93,12 @@ export function HouseholdTokensModal({ onClose }: Props) {
         {fresh && (
           <div style={{ border: "1px solid rgb(var(--c-accent))", padding: 12, marginBottom: 14 }}>
             <div style={{ ...label, marginBottom: 6 }}>NEW TOKEN · {fresh.name.toUpperCase()}</div>
-            <code style={{ display: "block", fontSize: 11, wordBreak: "break-all", userSelect: "all", marginBottom: 10 }}>
+            <code style={{ display: "block", fontSize: 13, wordBreak: "break-all", userSelect: "all", marginBottom: 10 }}>
               {fresh.token}
             </code>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button style={button} onClick={copy}>{copied ? "COPIED" : "COPY"}</button>
-              <span style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>Paste it into the dashboard's settings. It will not be shown again.</span>
+              <span style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>Paste it into the dashboard's settings. It will not be shown again.</span>
             </div>
           </div>
         )}
@@ -110,7 +110,7 @@ export function HouseholdTokensModal({ onClose }: Props) {
             onChange={(e) => setName(e.target.value)}
             placeholder="Name, e.g. Kitchen tablet"
             style={{
-              flex: 1, fontSize: 11, padding: "8px 10px", background: "rgb(var(--c-surface))",
+              flex: 1, fontSize: 13, padding: "8px 10px", background: "rgb(var(--c-surface))",
               color: "rgb(var(--c-text))", border: "1px solid rgb(var(--c-border))", fontFamily: "inherit",
             }}
           />
@@ -120,12 +120,12 @@ export function HouseholdTokensModal({ onClose }: Props) {
         </div>
 
         <div style={{ ...label, marginBottom: 6 }}>ACTIVE</div>
-        {tokens.length === 0 && <div style={{ fontSize: 11, color: "rgb(var(--c-muted))" }}>No tokens yet.</div>}
+        {tokens.length === 0 && <div style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>No tokens yet.</div>}
         {tokens.map((t) => (
-          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "1px solid rgb(var(--c-border))", fontSize: 11 }}>
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "1px solid rgb(var(--c-border))", fontSize: 13 }}>
             <div style={{ flex: 1 }}>
               <div>{t.name}</div>
-              <div style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>
+              <div style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>
                 {t.scopes.join(" + ")} · created {fmt(t.created_at)} · last used {fmt(t.last_used_at)}
               </div>
             </div>
@@ -133,7 +133,7 @@ export function HouseholdTokensModal({ onClose }: Props) {
           </div>
         ))}
 
-        {error && <div style={{ fontSize: 11, color: "rgb(var(--c-danger))", marginTop: 10 }}>{error}</div>}
+        {error && <div style={{ fontSize: 13, color: "rgb(var(--c-danger))", marginTop: 10 }}>{error}</div>}
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
           <button style={button} onClick={onClose}>CLOSE</button>

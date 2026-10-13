@@ -12,7 +12,7 @@ interface NowPlayingSheetProps {
 /**
  * The album Spotify is playing right now, as an Item the DetailPanel can render.
  * A non-positive id marks it as "not in the library", which is what makes the
- * panel offer ★ FAV / ◈ REC instead of remove/favorite.
+ * panel offer + FAVORITE / + RECOMMENDATION instead of remove/favorite.
  */
 function toItem(album: PlayingAlbum): Item {
   return {
@@ -100,7 +100,7 @@ export function NowPlayingSheet({ album, onClose }: NowPlayingSheetProps) {
       />
       <div
         className="relative z-40 max-w-xl lg:max-w-4xl mx-auto w-full overflow-y-auto scrollbar-hide"
-        style={{ maxHeight: "calc(100vh - 230px)" }}
+        style={{ maxHeight: "calc(100dvh - var(--nav-h) - var(--safe-b) - var(--player-h) - var(--safe-t) - 48px)" }}
       >
         {item ? (
           <DetailPanel

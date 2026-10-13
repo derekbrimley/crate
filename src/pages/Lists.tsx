@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { LibraryShelf } from "../components/library/LibraryShelf";
 import { ProfileDropdown } from "../components/library/ProfileDropdown";
@@ -14,6 +13,7 @@ import { applyFilters, getItemGenres, ruleIsComplete, type FilterRule } from "..
 import { everythingRule } from "../../lib/crates";
 import { backfillReleaseDates } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
+import { ProfileButton, SearchButton } from "../components/PageHeader";
 
 const SPINES_PER_ROW = 14;
 
@@ -57,6 +57,9 @@ function crateFromLibraryView(
   };
 }
 
+/** Sort / list / group controls: touch-sized chips. */
+const CHIP: React.CSSProperties = { fontSize: 13, padding: "8px 12px", minHeight: 40 };
+
 interface ListsProps {
   onLogout: () => void;
 }
@@ -70,7 +73,6 @@ export function Lists({ onLogout }: ListsProps) {
     crateDefs, saveCrateDefs, crateMetaLoaded, loadCrateMeta,
   } = useDataCache();
 
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(!listsLoaded);
   const [sort, setSort] = useState<SortKey>("artist");
   const [sortDir, setSortDir] = useState<1 | -1>(1);
@@ -236,6 +238,7 @@ export function Lists({ onLogout }: ListsProps) {
           background: "rgb(var(--c-surface) / calc(0.97 * var(--tint)))",
           backdropFilter: "blur(12px)",
           borderBottom: "1px solid rgb(var(--c-border))",
+          paddingTop: "var(--safe-t)",
         }}
       >
         <div className="max-w-xl lg:max-w-4xl mx-auto" style={{ padding: "10px 12px 9px" }}>
@@ -248,67 +251,38 @@ export function Lists({ onLogout }: ListsProps) {
               LIBRARY
             </h1>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate("/search")}
-                className="flex items-center justify-center cursor-pointer"
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "rgb(var(--c-accent))",
-                  border: "none",
-                  color: "#fff",
-                  boxShadow: "0 2px 10px rgb(var(--c-accent) / calc(0.4 * var(--tint)))",
-                }}
-                title="Search for new albums"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setShowProfile((v) => !v)}
-                className="flex items-center justify-center cursor-pointer"
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, rgb(var(--c-knob-hi)), rgb(var(--c-knob-lo)))",
-                  border: showProfile ? "1.5px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
-                  color: showProfile ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-                  boxShadow: showProfile ? "0 0 10px rgb(var(--c-accent) / calc(0.35 * var(--tint)))" : "none",
-                }}
-                title="Profile"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                </svg>
-              </button>
+              <SearchButton />
+              <ProfileButton open={showProfile} onClick={() => setShowProfile((v) => !v)} />
             </div>
           </div>
 
           {/* Search bar */}
           <div
-            className="flex items-center gap-1.5 mb-2"
+            className="flex items-center gap-2 mb-3"
             style={{
               border: "1px solid rgb(var(--c-border))",
-              padding: "4px 8px",
+              padding: "0 4px 0 12px",
+              minHeight: 48,
               background: "rgb(var(--c-elevated))",
             }}
           >
-            <span style={{ color: "rgb(var(--c-muted))", fontSize: 11 }}>⌕</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0" style={{ color: "rgb(var(--c-muted))" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {/* 16px text: iOS zooms the page when focusing anything smaller. */}
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search albums or artists"
-              className="flex-1 bg-transparent border-none outline-none font-mono text-crate-text"
-              style={{ fontSize: 11 }}
+              className="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-crate-text"
+              style={{ fontSize: 16, padding: "10px 0" }}
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="bg-transparent border-none cursor-pointer"
-                style={{ color: "rgb(var(--c-muted))", fontSize: 10 }}
+                className="flex items-center justify-center bg-transparent border-none cursor-pointer shrink-0"
+                style={{ color: "rgb(var(--c-muted))", fontSize: 16, width: 40, height: 40 }}
+                aria-label="Clear search"
               >
                 ✕
               </button>
@@ -316,8 +290,8 @@ export function Lists({ onLogout }: ListsProps) {
           </div>
 
           {/* Sort + Group controls */}
-          <div className="flex gap-1 items-center flex-wrap">
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               SORT
             </span>
             {SORT_OPTIONS.map(({ key, label }) => (
@@ -326,8 +300,7 @@ export function Lists({ onLogout }: ListsProps) {
                 onClick={() => handleSort(key)}
                 className="font-mono shrink-0 cursor-pointer"
                 style={{
-                  fontSize: 10,
-                  padding: "2px 6px",
+                  ...CHIP,
                   letterSpacing: "0.08em",
                   border: sort === key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                   background: sort === key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
@@ -338,19 +311,18 @@ export function Lists({ onLogout }: ListsProps) {
               </button>
             ))}
 
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               LIST
             </span>
-            {([["all", "ALL"], ["favorite", "★ FAV"], ["recommendation", "◈ REC"]] as [ListFilter, string][]).map(([key, label]) => (
+            {([["all", "ALL"], ["favorite", "FAVORITES"], ["recommendation", "RECOMMENDATIONS"]] as [ListFilter, string][]).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => { setListFilter(key); setSelectedAlbumId(null); }}
                 className="font-mono shrink-0 cursor-pointer"
                 style={{
-                  fontSize: 10,
-                  padding: "2px 6px",
+                  ...CHIP,
                   letterSpacing: "0.08em",
                   border: listFilter === key ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                   background: listFilter === key ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
@@ -361,9 +333,9 @@ export function Lists({ onLogout }: ListsProps) {
               </button>
             ))}
 
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
 
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
               GROUP
             </span>
             <select
@@ -371,8 +343,7 @@ export function Lists({ onLogout }: ListsProps) {
               onChange={(e) => { setGroup(e.target.value as GroupKey); setSelectedAlbumId(null); }}
               className="font-mono cursor-pointer outline-none"
               style={{
-                fontSize: 10,
-                padding: "2px 4px",
+                ...CHIP,
                 border: group !== "none" ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                 background: "rgb(var(--c-elevated))",
                 color: group !== "none" ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
@@ -382,17 +353,16 @@ export function Lists({ onLogout }: ListsProps) {
                 <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </select>
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
-            <span className="font-mono shrink-0" style={{ fontSize: 10, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
+            <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
+            <span className="font-mono shrink-0" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.08em" }}>
               {ruleFiltered.length} {ruleFiltered.length === 1 ? "ALBUM" : "ALBUMS"}
             </span>
-            <div className="shrink-0" style={{ width: 1, height: 10, background: "rgb(var(--c-border))", margin: "0 1px" }} />
+            <div className="shrink-0" style={{ width: 1, height: 20, background: "rgb(var(--c-border))", margin: "0 4px" }} />
             <button
               onClick={() => setShowDuplicates((v) => { setSelectedAlbumId(null); setShowCoverage(false); return !v; })}
               className="font-mono shrink-0 cursor-pointer"
               style={{
-                fontSize: 10,
-                padding: "2px 6px",
+                ...CHIP,
                 letterSpacing: "0.08em",
                 border: showDuplicates ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                 background: showDuplicates ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
@@ -405,8 +375,7 @@ export function Lists({ onLogout }: ListsProps) {
               onClick={() => setShowCoverage((v) => { setSelectedAlbumId(null); setShowDuplicates(false); return !v; })}
               className="font-mono shrink-0 cursor-pointer"
               style={{
-                fontSize: 10,
-                padding: "2px 6px",
+                ...CHIP,
                 letterSpacing: "0.08em",
                 border: showCoverage ? "1px solid rgb(var(--c-accent))" : "1px solid rgb(var(--c-border))",
                 background: showCoverage ? "rgb(var(--c-accent) / calc(0.1 * var(--tint)))" : "transparent",
@@ -419,8 +388,7 @@ export function Lists({ onLogout }: ListsProps) {
               onClick={() => setEditing(crateFromLibraryView(crateDefs.length, rules, matchMode, listFilter))}
               className="font-mono shrink-0 cursor-pointer"
               style={{
-                fontSize: 10,
-                padding: "2px 6px",
+                ...CHIP,
                 letterSpacing: "0.08em",
                 border: "1px solid rgb(var(--c-border))",
                 background: "transparent",
@@ -437,6 +405,7 @@ export function Lists({ onLogout }: ListsProps) {
             onChangeRules={(r) => { setRules(r); setSelectedAlbumId(null); }}
             onChangeMatchMode={setMatchMode}
             hiddenFields={["all"]}
+            size="large"
           />
         </div>
         {showProfile && <ProfileDropdown onClose={() => setShowProfile(false)} onLogout={onLogout} />}
@@ -466,7 +435,7 @@ export function Lists({ onLogout }: ListsProps) {
         ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <VinylDisc size={56} />
-            <p className="font-mono text-center" style={{ fontSize: 11, color: "rgb(var(--c-muted))", opacity: 0.5 }}>
+            <p className="font-mono text-center" style={{ fontSize: 13, color: "rgb(var(--c-muted))", opacity: 0.5 }}>
               {search ? "no albums match" : listFilter === "recommendation" ? "no recommendations yet" : listFilter === "favorite" ? "no favorites yet — add some records" : "no albums yet — add some records"}
             </p>
           </div>

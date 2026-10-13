@@ -15,8 +15,9 @@ interface CoverGridProps {
 /** Album and playlist covers in a responsive grid; tapping one opens it. */
 export function CoverGrid({ items, onSelect, dimmed, caption }: CoverGridProps) {
   return (
-    // Two big covers per row in portrait; more across in landscape.
-    <div className="grid grid-cols-2 landscape:grid-cols-4 lg:landscape:grid-cols-5 gap-x-3 gap-y-5" style={{ padding: "0 12px" }}>
+    // Two big covers per row in portrait, three in landscape: big enough to
+    // read and tap from arm's length on a tablet.
+    <div className="grid grid-cols-2 landscape:grid-cols-3 gap-x-4 gap-y-6" style={{ padding: "0 12px" }}>
       {items.map((item) => (
         <CoverTile key={item.id} item={item} onSelect={onSelect} dimmed={dimmed} caption={caption?.(item) ?? null} />
       ))}
@@ -52,37 +53,37 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
         )}
         {item.list_type === "recommendation" && (item.metadata as Record<string, unknown> | null)?._ai_suggested !== true && (
           <span
-            className="absolute top-1.5 left-2 font-mono pointer-events-none"
-            style={{ fontSize: 14, color: "rgb(var(--c-rec))", textShadow: "0 0 4px rgb(var(--c-rec) / calc(0.8 * var(--tint))), 0 1px 2px rgba(0,0,0,0.9)" }}
+            className="tile-badge absolute top-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
           >
-            ◈
+            REC
           </span>
         )}
         {(item.metadata as Record<string, unknown> | null)?._ai_suggested === true && (
           <span
-            className="absolute top-1.5 right-1.5 font-mono pointer-events-none px-1.5 py-0.5"
-            style={{ fontSize: 10, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
+            className="tile-badge absolute top-1.5 right-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-rec))", background: "rgba(0,0,0,0.65)", letterSpacing: "0.1em" }}
           >
             ✦ NEW
           </span>
         )}
         {playlist && (
           <span
-            className="absolute bottom-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
-            style={{ fontSize: 10, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
+            className="tile-badge absolute bottom-1.5 left-1.5 font-mono pointer-events-none px-1.5 py-0.5"
+            style={{ fontSize: 12, color: "rgb(var(--c-text))", background: "rgba(0,0,0,0.6)", letterSpacing: "0.1em" }}
           >
             ≡ PLAYLIST
           </span>
         )}
       </div>
-      <div className="font-mono truncate mt-2" style={{ fontSize: 13, color: "rgb(var(--c-text))" }}>
+      <div className="font-mono truncate mt-2" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>
         {item.title}
       </div>
-      <div className="font-mono truncate mt-0.5" style={{ fontSize: 11, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
+      <div className="font-mono truncate mt-0.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
         {item.creator}
       </div>
       {caption && (
-        <div className="font-mono truncate" style={{ fontSize: 11, color: "rgb(var(--c-friend))" }}>
+        <div className="font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-friend))" }}>
           {caption}
         </div>
       )}
@@ -99,7 +100,7 @@ export function GridHeading({ label, count, action }: { label: string; count?: n
       </span>
       <div className="flex-1 h-px" style={{ background: "rgb(var(--c-border))" }} />
       {count !== undefined && (
-        <span className="font-mono" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{count}</span>
+        <span className="font-mono" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{count}</span>
       )}
       {action}
     </div>

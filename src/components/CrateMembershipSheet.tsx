@@ -71,7 +71,7 @@ export function CrateMembershipSheet({ item, onClose }: CrateMembershipSheetProp
       <div className="fixed inset-0 z-[80]" style={{ background: "rgba(0,0,0,0.6)" }} onClick={onClose} />
       <div
         className="fixed inset-x-0 bottom-0 z-[81] max-w-lg mx-auto flex flex-col"
-        style={{ background: "rgb(var(--c-modal))", borderTop: "2px solid rgb(var(--c-accent))", borderRadius: "12px 12px 0 0", maxHeight: "80dvh" }}
+        style={{ background: "rgb(var(--c-modal))", borderTop: "2px solid rgb(var(--c-accent))", borderRadius: "12px 12px 0 0", maxHeight: "80dvh", paddingBottom: "var(--safe-b)" }}
       >
         <div className="flex items-center gap-2 shrink-0" style={{ padding: "12px 8px 10px 18px", borderBottom: "1px solid rgb(var(--c-border))" }}>
           <div className="flex-1 min-w-0">
@@ -116,7 +116,7 @@ export function CrateMembershipSheet({ item, onClose }: CrateMembershipSheetProp
                   <span className="flex-1 min-w-0">
                     <span className="block font-mono truncate" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>{crate.name || "Untitled"}</span>
                     {STATUS[membership] && (
-                      <span className="block font-mono" style={{ fontSize: 12, color: membership === "excluded" ? "rgb(var(--c-danger))" : "rgb(var(--c-muted))" }}>
+                      <span className="block font-mono" style={{ fontSize: 13, color: membership === "excluded" ? "rgb(var(--c-danger))" : "rgb(var(--c-muted))" }}>
                         {STATUS[membership]}
                       </span>
                     )}

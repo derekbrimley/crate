@@ -177,7 +177,7 @@ function Tabs({ tab, onChange }: { tab: SpotifyTab; onChange: (t: SpotifyTab) =>
             onClick={() => onChange(key)}
             className="flex-1 font-mono cursor-pointer"
             style={{
-              fontSize: 12, minHeight: 44, letterSpacing: "0.12em", border: "none",
+              fontSize: 13, minHeight: 44, letterSpacing: "0.12em", border: "none",
               background: active ? "rgb(var(--c-accent) / calc(0.14 * var(--tint)))" : "transparent",
               color: active ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
             }}
@@ -290,7 +290,7 @@ function ArtistResults({ query, isOwned, onOpen, onAdd }: ResultsProps) {
           <span className="flex-1 min-w-0">
             <span className="block font-mono truncate" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>{a.name}</span>
             {a.genres.length > 0 && (
-              <span className="block font-mono truncate" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{a.genres.slice(0, 3).join(" · ")}</span>
+              <span className="block font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{a.genres.slice(0, 3).join(" · ")}</span>
             )}
           </span>
           <span className="shrink-0 font-mono" style={{ fontSize: 18, color: "rgb(var(--c-muted))" }}>›</span>
@@ -339,8 +339,8 @@ function PlayButton({ uri }: { uri: string | null }) {
 
 function ListLabel({ listType }: { listType: ListType }) {
   return (
-    <span className="shrink-0 font-mono" style={{ fontSize: 12, color: listType === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.08em" }}>
-      {listType === "favorite" ? "★ FAV" : "◈ REC"}
+    <span className="shrink-0 font-mono" style={{ fontSize: 13, color: listType === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.08em" }}>
+      {listType === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
     </span>
   );
 }
@@ -364,7 +364,7 @@ function RowText({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <span className="flex-1 min-w-0">
       <span className="block font-mono truncate" style={{ fontSize: 14, color: "rgb(var(--c-text))" }}>{title}</span>
-      <span className="block font-mono truncate mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{subtitle}</span>
+      <span className="block font-mono truncate mt-0.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))" }}>{subtitle}</span>
     </span>
   );
 }
@@ -408,9 +408,9 @@ function ResultRow({ row, owned, onOpen, onAdd }: {
       <Cover url={row.image_url} />
       <RowText title={row.title} subtitle={failed ? "Couldn't add. Try again." : subtitle} />
       {filed ? <ListLabel listType={filed} /> : (
-        <span className="shrink-0 flex gap-1.5">
-          <AddButton label="★" title="Add to favorites" color="--c-accent" busy={adding === "favorite"} disabled={adding !== null} onClick={(e) => add(e, "favorite")} />
-          <AddButton label="◈" title="Add to recommendations" color="--c-rec" busy={adding === "recommendation"} disabled={adding !== null} onClick={(e) => add(e, "recommendation")} />
+        <span className="shrink-0 flex flex-col gap-2">
+          <AddButton label="+ FAVORITE" title="Add to favorites" color="--c-accent" busy={adding === "favorite"} disabled={adding !== null} onClick={(e) => add(e, "favorite")} />
+          <AddButton label="+ RECOMMENDATION" title="Add to recommendations" color="--c-rec" busy={adding === "recommendation"} disabled={adding !== null} onClick={(e) => add(e, "recommendation")} />
         </span>
       )}
       <PlayButton uri={row.spotify_uri || null} />
@@ -427,9 +427,9 @@ function AddButton({ label, title, color, busy, disabled, onClick }: {
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="flex items-center justify-center cursor-pointer disabled:opacity-50"
+      className="flex items-center justify-start font-mono cursor-pointer disabled:opacity-50"
       style={{
-        width: 40, height: 40, borderRadius: 6, fontSize: 16,
+        minHeight: 36, padding: "0 10px", borderRadius: 6, fontSize: 13, letterSpacing: "0.06em",
         border: `1px solid rgb(var(${color}) / calc(0.45 * var(--tint)))`,
         color: `rgb(var(${color}))`, background: `rgb(var(${color}) / calc(0.08 * var(--tint)))`,
       }}

@@ -42,7 +42,7 @@ export function ProfileDropdown({ onClose, onLogout }: ProfileDropdownProps) {
             className="block w-full text-left font-mono cursor-pointer"
             style={{
               padding: "9px 14px",
-              fontSize: 10,
+              fontSize: 12,
               letterSpacing: "0.1em",
               color: color || "rgb(var(--c-muted))",
               background: "transparent",
