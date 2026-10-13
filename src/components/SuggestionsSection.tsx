@@ -36,8 +36,8 @@ export function SuggestionsSection({ target, onSelect }: SuggestionsSectionProps
     <>
       <GridHeading label="✦ SUGGESTED BY CLAUDE" action={refreshButton} />
       {loading && suggestions.length === 0 ? (
-        <div className="grid grid-cols-2 landscape:grid-cols-4 lg:landscape:grid-cols-5 gap-x-3 gap-y-5" style={{ padding: "0 12px" }}>
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-2 landscape:grid-cols-3 gap-x-4 gap-y-6" style={{ padding: "0 12px" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
             <div key={i}>
               <div className="animate-pulse aspect-square" style={{ background: "rgb(var(--c-elevated))" }} />
               <div className="animate-pulse mt-2" style={{ height: 13, width: "70%", background: "rgb(var(--c-elevated))" }} />

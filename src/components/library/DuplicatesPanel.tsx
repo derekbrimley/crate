@@ -92,7 +92,7 @@ export default function DuplicatesPanel({ items, pickStats, onDeleted, onClose }
                   const metaLine = [
                     it.creator,
                     itemYear(it),
-                    it.list_type === "favorite" ? "★ FAV" : "◈ REC",
+                    it.list_type === "favorite" ? "favorite" : "recommendation",
                     ...(trackCount !== null ? [`${trackCount} tracks`] : []),
                     `${pickStats.get(it.id)?.pickCount ?? 0} plays`,
                   ].join(" · ");

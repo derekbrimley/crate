@@ -15,8 +15,9 @@ interface CoverGridProps {
 /** Album and playlist covers in a responsive grid; tapping one opens it. */
 export function CoverGrid({ items, onSelect, dimmed, caption }: CoverGridProps) {
   return (
-    // Two big covers per row in portrait; more across in landscape.
-    <div className="grid grid-cols-2 landscape:grid-cols-4 lg:landscape:grid-cols-5 gap-x-3 gap-y-5" style={{ padding: "0 12px" }}>
+    // Two big covers per row in portrait, three in landscape: big enough to
+    // read and tap from arm's length on a tablet.
+    <div className="grid grid-cols-2 landscape:grid-cols-3 gap-x-4 gap-y-6" style={{ padding: "0 12px" }}>
       {items.map((item) => (
         <CoverTile key={item.id} item={item} onSelect={onSelect} dimmed={dimmed} caption={caption?.(item) ?? null} />
       ))}
@@ -75,14 +76,14 @@ function CoverTile({ item, onSelect, dimmed, caption }: {
           </span>
         )}
       </div>
-      <div className="font-mono truncate mt-2" style={{ fontSize: 13, color: "rgb(var(--c-text))" }}>
+      <div className="font-mono truncate mt-2" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>
         {item.title}
       </div>
-      <div className="font-mono truncate mt-0.5" style={{ fontSize: 11, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
+      <div className="font-mono truncate mt-0.5" style={{ fontSize: 13, color: "rgb(var(--c-muted))", letterSpacing: "0.04em" }}>
         {item.creator}
       </div>
       {caption && (
-        <div className="font-mono truncate" style={{ fontSize: 11, color: "rgb(var(--c-friend))" }}>
+        <div className="font-mono truncate" style={{ fontSize: 13, color: "rgb(var(--c-friend))" }}>
           {caption}
         </div>
       )}

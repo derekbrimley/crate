@@ -101,6 +101,10 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+  /* No double-tap-to-zoom on controls, so taps register without a delay. */
+  button, a, input, select, [role="button"] {
+    touch-action: manipulation;
+  }
 }
 
 /* ── Film grain overlay ───────────────────────────── */
@@ -169,6 +173,12 @@ body::after {
     border-color: #ff5e00 !important;
   }
 
+  /* ── Touch-sized sliders ────────────────────────── */
+  /* A taller input widens the grab area around the native thumb. */
+  .touch-range {
+    height: 32px;
+  }
+
   /* ── Scrollbar hide ─────────────────────────────── */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -187,11 +197,15 @@ body::after {
     cursor: pointer;
     display: block;
   }
-  .record-sleeve:hover {
-    transform: perspective(700px) rotateY(-16deg) translateY(-10px) rotate(-2deg);
-    box-shadow:
-      10px 18px 40px rgba(0, 0, 0, 0.85),
-      4px 6px 12px rgba(0, 0, 0, 0.6);
+  /* Hover only where there is a real pointer: on touch screens :hover sticks
+     after a tap, leaving the sleeve lifted. */
+  @media (hover: hover) {
+    .record-sleeve:hover {
+      transform: perspective(700px) rotateY(-16deg) translateY(-10px) rotate(-2deg);
+      box-shadow:
+        10px 18px 40px rgba(0, 0, 0, 0.85),
+        4px 6px 12px rgba(0, 0, 0, 0.6);
+    }
   }
   .record-sleeve:active {
     transform: perspective(700px) rotateY(-8deg) translateY(-5px) rotate(-1deg);
@@ -298,6 +312,26 @@ body::after {
   height: 5px !important;
   background: repeating-linear-gradient(90deg, #000 0 4px, #fff 4px 8px) !important;
   border-top: 1px solid #000;
+}
+
+/* Switches: all-black on all-black can't show state, so off is an outlined
+   white track with a black knob, and on is a solid black track with a white
+   knob pushed to the right. */
+:root[data-theme="paper"] .switch-track {
+  background: #fff !important;
+  border: 2px solid #000;
+}
+:root[data-theme="paper"] .switch-track .switch-knob {
+  top: 1px !important;
+  left: 1px !important;
+  background: #000 !important;
+}
+:root[data-theme="paper"] .switch-track[data-on="true"] {
+  background: #000 !important;
+}
+:root[data-theme="paper"] .switch-track[data-on="true"] .switch-knob {
+  left: 21px !important;
+  background: #fff !important;
 }
 
 /* Bottom nav: the active tab is shown by a heavy rule, not by color. */

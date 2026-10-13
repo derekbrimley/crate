@@ -105,12 +105,13 @@ export default function AdvancedFilters({
         onClick={() => setOpen((v) => !v)}
         className="font-mono cursor-pointer"
         style={{
-          fontSize: 10,
+          fontSize: large ? 13 : 10,
           letterSpacing: "0.12em",
           background: "transparent",
           border: "none",
           color: rules.length > 0 ? "rgb(var(--c-accent))" : "rgb(var(--c-muted))",
-          padding: 0,
+          padding: large ? "10px 0" : 0,
+          minHeight: large ? 40 : undefined,
         }}
       >
         ADVANCED FILTERS {open ? "▴" : "▾"}

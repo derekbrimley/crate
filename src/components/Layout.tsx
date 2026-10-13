@@ -33,7 +33,7 @@ export function Layout({ children, title, headerRight }: LayoutProps) {
           </div>
         </header>
       )}
-      <main className={`flex-1 max-w-xl lg:max-w-4xl mx-auto w-full ${barVisible ? "pb-44" : "pb-24"}`}>{children}</main>
+      <main className={`flex-1 max-w-xl lg:max-w-4xl mx-auto w-full ${barVisible ? "pb-52" : "pb-24"}`}>{children}</main>
       <BottomNav />
     </div>
   );

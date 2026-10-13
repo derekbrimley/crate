@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdvancedFilters from "./library/AdvancedFilters";
+import { SwitchTrack } from "./SwitchTrack";
 import { VinylDisc } from "./VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
 import { cratePool, makeEmptyCrate, everythingRule } from "../../lib/crates";
@@ -277,18 +278,7 @@ function Switch({ label, help, on, onChange }: { label: string; help: string; on
         <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>{label}</span>
         <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>{help}</span>
       </span>
-      <span
-        className="shrink-0 relative transition-colors"
-        style={{
-          width: 50, height: 30, borderRadius: 15,
-          background: on ? "rgb(var(--c-accent))" : "rgb(var(--c-border))",
-        }}
-      >
-        <span
-          className="absolute transition-all"
-          style={{ top: 3, left: on ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "rgb(var(--c-text))" }}
-        />
-      </span>
+      <SwitchTrack on={on} />
     </button>
   );
 }

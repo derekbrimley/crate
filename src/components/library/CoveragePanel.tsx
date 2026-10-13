@@ -70,7 +70,7 @@ export default function CoveragePanel({ albums, genres, onClose }: CoveragePanel
                   <p className="font-mono truncate" style={{ fontSize: 10, color: "rgb(var(--c-muted))" }}>{a.creator}</p>
                 </div>
                 <span className="font-mono shrink-0" style={{ fontSize: 10, color: a.list_type === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))" }}>
-                  {a.list_type === "favorite" ? "★" : "◈"}
+                  {a.list_type === "favorite" ? "FAVORITE" : "REC"}
                 </span>
               </li>
             ))}

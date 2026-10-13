@@ -19,7 +19,7 @@ export function PlayerBar() {
 
   if (!currentTrack) return null;
 
-  const btn = "flex items-center justify-center w-9 h-9 text-crate-text/80 hover:text-crate-text transition-colors cursor-pointer";
+  const btn = "flex items-center justify-center w-14 h-14 text-crate-text/80 hover:text-crate-text transition-colors cursor-pointer";
 
   // Podcast episodes have no album, so there are no album details to open.
   const album = currentTrack.album;
@@ -51,14 +51,14 @@ export function PlayerBar() {
               <img
                 src={currentTrack.image_url}
                 alt=""
-                className="w-11 h-11 object-cover shrink-0"
+                className="w-14 h-14 object-cover shrink-0"
                 style={{ outline: detailsOpen ? "1px solid rgb(var(--c-accent))" : undefined }}
               />
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate font-mono text-[12px] text-crate-text">{currentTrack.name}</p>
-              <p className="truncate font-mono text-[10px] text-crate-muted">{currentTrack.artist}</p>
+              <p className="truncate font-mono text-[14px] text-crate-text">{currentTrack.name}</p>
+              <p className="truncate font-mono text-[12px] text-crate-muted">{currentTrack.artist}</p>
             </div>
           </button>
 
@@ -88,7 +88,7 @@ export function PlayerBar() {
                 step={0.01}
                 value={volume}
                 onChange={(e) => { void setVolume(Number(e.target.value)); }}
-                className="w-full accent-crate-accent cursor-pointer"
+                className="w-full touch-range accent-crate-accent cursor-pointer"
                 aria-label="Volume"
               />
             </div>
@@ -97,24 +97,24 @@ export function PlayerBar() {
           {/* Transport */}
           <div className="flex items-center gap-1">
             <button aria-label="Previous" className={btn} onClick={() => { void previous(); }}>
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
             </button>
             <button aria-label={paused ? "Play" : "Pause"} className={btn} onClick={() => { void togglePlay(); }}>
               {paused ? (
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
               ) : (
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z" /></svg>
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z" /></svg>
               )}
             </button>
             <button aria-label="Next" className={btn} onClick={() => { void next(); }}>
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" /></svg>
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" /></svg>
             </button>
           </div>
         </div>
 
         {/* Seek bar */}
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[9px] text-crate-muted shrink-0 w-8 text-right">{fmt(position)}</span>
+          <span className="font-mono text-[11px] text-crate-muted shrink-0 w-10 text-right">{fmt(position)}</span>
           <input
             type="range"
             min={0}
@@ -122,10 +122,10 @@ export function PlayerBar() {
             step={1000}
             value={Math.min(position, duration || 0)}
             onChange={(e) => { void seek(Number(e.target.value)); }}
-            className="flex-1 accent-crate-accent cursor-pointer"
+            className="flex-1 touch-range accent-crate-accent cursor-pointer"
             aria-label="Seek"
           />
-          <span className="font-mono text-[9px] text-crate-muted shrink-0 w-8">{fmt(duration)}</span>
+          <span className="font-mono text-[11px] text-crate-muted shrink-0 w-10">{fmt(duration)}</span>
         </div>
       </div>
     </div>

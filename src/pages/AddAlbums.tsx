@@ -39,8 +39,8 @@ function SelectableRow({ album, selected, onToggle }: { album: LibraryAlbum; sel
         </p>
       </div>
       {album.already_added && (
-        <span className="font-mono text-[9px] text-crate-accent shrink-0 px-1" style={{ letterSpacing: "0.1em" }}>
-          {album.already_added === "favorite" ? "★" : "◈"}
+        <span className="font-mono text-[11px] text-crate-accent shrink-0 px-1" style={{ letterSpacing: "0.1em" }}>
+          {album.already_added === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
         </span>
       )}
     </li>
@@ -56,14 +56,14 @@ function BulkBar({ count, adding, onAdd }: { count: number; adding: boolean; onA
         <span className="font-mono text-xs text-crate-text" style={{ letterSpacing: "0.08em" }}>{count} SELECTED</span>
         <div className="flex gap-2">
           <button onClick={() => onAdd("favorite")} disabled={adding}
-            className="font-mono text-[9px] px-3 py-2 transition-all disabled:opacity-40"
+            className="font-mono text-[12px] px-3 min-h-[44px] transition-all disabled:opacity-40"
             style={{ background: "rgb(var(--c-accent) / calc(0.15 * var(--tint)))", border: "1px solid rgb(var(--c-accent) / calc(0.5 * var(--tint)))", color: "rgb(var(--c-accent))", letterSpacing: "0.12em" }}>
-            {adding ? "ADDING…" : "★ FAVORITES"}
+            {adding ? "ADDING…" : "+ FAVORITES"}
           </button>
           <button onClick={() => onAdd("recommendation")} disabled={adding}
-            className="font-mono text-[9px] px-3 py-2 transition-all disabled:opacity-40"
+            className="font-mono text-[12px] px-3 min-h-[44px] transition-all disabled:opacity-40"
             style={{ background: "transparent", border: "1px solid rgb(var(--c-border))", color: "rgb(var(--c-muted))", letterSpacing: "0.12em" }}>
-            {adding ? "ADDING…" : "◈ RECS"}
+            {adding ? "ADDING…" : "+ RECOMMENDATIONS"}
           </button>
         </div>
       </div>

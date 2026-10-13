@@ -3,6 +3,7 @@ import { Layout } from "../components/Layout";
 import { PageHeader, HeaderAction } from "../components/PageHeader";
 import { VinylDisc } from "../components/VinylDisc";
 import { CoverGrid, GridHeading } from "../components/CoverGrid";
+import { SwitchTrack } from "../components/SwitchTrack";
 import { SuggestionsSection } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { useLibraryData } from "../hooks/useLibraryData";
@@ -88,7 +89,7 @@ export function Discover({ onLogout }: DiscoverProps) {
         onLogout={onLogout}
         actions={
           <HeaderAction onClick={reshuffle} title="Reshuffle" disabled={!ready}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
             </svg>
           </HeaderAction>
@@ -108,9 +109,7 @@ export function Discover({ onLogout }: DiscoverProps) {
             <span className="block font-mono" style={{ fontSize: 15, color: "rgb(var(--c-text))" }}>✦ Claude suggestions</span>
             <span className="block font-mono mt-0.5" style={{ fontSize: 12, color: "rgb(var(--c-muted))" }}>New albums picked to match your favorites</span>
           </span>
-          <span className="shrink-0 relative transition-colors" style={{ width: 50, height: 30, borderRadius: 15, background: discoverSuggestions ? "rgb(var(--c-rec))" : "rgb(var(--c-border))" }}>
-            <span className="absolute transition-all" style={{ top: 3, left: discoverSuggestions ? 23 : 3, width: 24, height: 24, borderRadius: 12, background: "rgb(var(--c-text))" }} />
-          </span>
+          <SwitchTrack on={discoverSuggestions} color="--c-rec" />
         </button>
 
         {friendRecs.length > 0 && (
@@ -130,7 +129,7 @@ export function Discover({ onLogout }: DiscoverProps) {
           <div className="mt-16 flex flex-col items-center gap-3">
             <VinylDisc size={56} />
             <p className="font-mono text-xs text-crate-muted text-center" style={{ letterSpacing: "0.1em" }}>
-              NO RECOMMENDATIONS YET — ADD SOME WITH ◈ REC
+              NO RECOMMENDATIONS YET — ADD SOME WITH + RECOMMENDATION
             </p>
           </div>
         ) : (

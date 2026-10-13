@@ -340,7 +340,7 @@ function PlayButton({ uri }: { uri: string | null }) {
 function ListLabel({ listType }: { listType: ListType }) {
   return (
     <span className="shrink-0 font-mono" style={{ fontSize: 12, color: listType === "favorite" ? "rgb(var(--c-accent))" : "rgb(var(--c-rec))", letterSpacing: "0.08em" }}>
-      {listType === "favorite" ? "★ FAV" : "◈ REC"}
+      {listType === "favorite" ? "FAVORITE" : "RECOMMENDATION"}
     </span>
   );
 }
@@ -408,9 +408,9 @@ function ResultRow({ row, owned, onOpen, onAdd }: {
       <Cover url={row.image_url} />
       <RowText title={row.title} subtitle={failed ? "Couldn't add. Try again." : subtitle} />
       {filed ? <ListLabel listType={filed} /> : (
-        <span className="shrink-0 flex gap-1.5">
-          <AddButton label="★" title="Add to favorites" color="--c-accent" busy={adding === "favorite"} disabled={adding !== null} onClick={(e) => add(e, "favorite")} />
-          <AddButton label="◈" title="Add to recommendations" color="--c-rec" busy={adding === "recommendation"} disabled={adding !== null} onClick={(e) => add(e, "recommendation")} />
+        <span className="shrink-0 flex flex-col gap-1.5">
+          <AddButton label="+ FAVORITE" title="Add to favorites" color="--c-accent" busy={adding === "favorite"} disabled={adding !== null} onClick={(e) => add(e, "favorite")} />
+          <AddButton label="+ RECOMMENDATION" title="Add to recommendations" color="--c-rec" busy={adding === "recommendation"} disabled={adding !== null} onClick={(e) => add(e, "recommendation")} />
         </span>
       )}
       <PlayButton uri={row.spotify_uri || null} />
@@ -427,9 +427,9 @@ function AddButton({ label, title, color, busy, disabled, onClick }: {
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="flex items-center justify-center cursor-pointer disabled:opacity-50"
+      className="flex items-center justify-start font-mono cursor-pointer disabled:opacity-50"
       style={{
-        width: 40, height: 40, borderRadius: 6, fontSize: 16,
+        minHeight: 36, padding: "0 10px", borderRadius: 6, fontSize: 12, letterSpacing: "0.06em",
         border: `1px solid rgb(var(${color}) / calc(0.45 * var(--tint)))`,
         color: `rgb(var(${color}))`, background: `rgb(var(${color}) / calc(0.08 * var(--tint)))`,
       }}
