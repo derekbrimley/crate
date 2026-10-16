@@ -112,8 +112,16 @@ export async function getArtistAlbums(artistId: string): Promise<{ albums: Libra
   return request<{ albums: LibraryAlbum[] }>(`/albums/search?artist=${encodeURIComponent(artistId)}`);
 }
 
-export async function backfillReleaseDates(): Promise<{ updated: number }> {
-  return request<{ updated: number }>("/albums/backfill", { method: "POST" });
+/** Fills in missing album facts (release date, type, explicit, save date), a batch per request. */
+export async function backfillMetadata(): Promise<{ updated: number }> {
+  let updated = 0;
+  // Bounded: an album Spotify never answers for stays "missing" and must not loop forever.
+  for (let round = 0; round < 10; round++) {
+    const r = await request<{ updated: number; remaining?: number }>("/albums/backfill", { method: "POST" });
+    updated += r.updated;
+    if (!r.remaining || r.updated === 0) break;
+  }
+  return { updated };
 }
 
 // ── Spotify Import ───────────────────────────────────────────────────────────

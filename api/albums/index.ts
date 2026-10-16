@@ -67,15 +67,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ item });
     }
 
-    // Fetch artist genres + release date from Spotify (best-effort — don't block the add if it fails)
+    // Fetch artist genres, release date, type and explicitness from Spotify
+    // (best-effort — don't block the add if it fails). The Spotify save date
+    // is filled in later by the backfill.
     let metadata: Record<string, unknown> = {};
     if (genres?.length) metadata.genres = genres;
 
     try {
-      const meta = await fetchAlbumMeta(spotify_id);
-      if (meta.genres.length > 0) metadata.genres = meta.genres;
-      if (meta.release_date) metadata.release_date = meta.release_date;
-      if (meta.total_tracks !== null) metadata.total_tracks = meta.total_tracks;
+      metadata = { ...metadata, ...(await fetchAlbumMeta(spotify_id)) };
     } catch {
       // Spotify metadata unavailable — album still gets added without it
     }

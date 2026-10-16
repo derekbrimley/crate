@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { isRepeatPlay, type PlayTarget } from "./plays";
+import { isMissingMetadata } from "./filters";
 import type { User, Item, Pick, LastPickInfo, FriendRecommendation } from "./types";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -478,10 +479,7 @@ export async function getItemsMissingMetadata(userId: number): Promise<Item[]> {
     .eq("media_type", "album");
   if (error) throw error;
   const items = (data ?? []) as Item[];
-  return items.filter((i) => {
-    const m = i.metadata as Record<string, unknown> | null;
-    return !m || !m.release_date || m.total_tracks === undefined;
-  });
+  return items.filter(isMissingMetadata);
 }
 
 // ── Household tokens ──────────────────────────────────────────────────────────

@@ -117,6 +117,18 @@ export function everythingRule(id = "r-all"): FilterRule {
   return { id, field: "all", operator: "is", value: "" };
 }
 
+/**
+ * Favorites saved over a year ago that haven't been played in six months
+ * (never played counts). Saved is the Spotify save date or the Crate add
+ * date, whichever is earlier.
+ */
+export function forgottenFavoritesRules(): FilterRule[] {
+  return [
+    { id: "r-saved", field: "saved", operator: "more_than_days_ago", value: "365" },
+    { id: "r-played", field: "last_played", operator: "more_than_days_ago", value: "180" },
+  ];
+}
+
 const SEED_GENRE_CRATES: { name: string; genres: string[] }[] = [
   { name: "Morning", genres: ["indie pop", "folk", "acoustic", "singer-songwriter", "jazz", "soul"] },
   { name: "Deep Work", genres: ["ambient", "electronic", "post-rock", "classical", "instrumental", "lo-fi", "neo-classical"] },
@@ -125,7 +137,7 @@ const SEED_GENRE_CRATES: { name: string; genres: string[] }[] = [
   { name: "Winding Down", genres: ["ambient", "folk", "acoustic", "indie folk", "classical", "lo-fi", "neo-soul"] },
 ];
 
-/** First-run crates: all favorites, a few genre-based moods, and Claude's picks. */
+/** First-run crates: all favorites, a few genre-based moods, forgotten favorites, and Claude's picks. */
 export function seedCrates(): CrateDefinition[] {
   const crates: CrateDefinition[] = [
     { ...makeEmptyCrate(0), name: "Favorites", filters: { rules: [everythingRule()], matchMode: "AND" } },
@@ -141,6 +153,11 @@ export function seedCrates(): CrateDefinition[] {
       include_recommendations: true,
     });
   }
+  crates.push({
+    ...makeEmptyCrate(crates.length),
+    name: "Forgotten Favorites",
+    filters: { rules: forgottenFavoritesRules(), matchMode: "AND" },
+  });
   crates.push({ ...makeEmptyCrate(crates.length), name: "Surprise Me", ai_suggestions: true });
   return crates;
 }

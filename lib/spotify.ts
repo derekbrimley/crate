@@ -18,6 +18,23 @@ export interface SpotifyAlbum {
   uri: string;
   genres?: string[];
   popularity?: number;
+  // Present on full album objects (GET /albums, /albums/:id): the first 50 tracks.
+  tracks?: { items: { explicit?: boolean }[] };
+}
+
+/**
+ * The facts Crate stores in an album item's metadata, from a full album object:
+ * release_date, total_tracks, album_type, and explicit (any explicit track,
+ * judged from the first 50 tracks Spotify returns with the album).
+ */
+export function albumFacts(album: SpotifyAlbum): Record<string, unknown> {
+  const facts: Record<string, unknown> = {};
+  if (album.release_date) facts.release_date = album.release_date;
+  if (typeof album.total_tracks === "number") facts.total_tracks = album.total_tracks;
+  if (album.album_type) facts.album_type = album.album_type;
+  const tracks = album.tracks?.items ?? [];
+  if (tracks.length > 0) facts.explicit = tracks.some((t) => t?.explicit === true);
+  return facts;
 }
 
 async function refreshAccessToken(userId: number): Promise<string> {
@@ -226,6 +243,27 @@ export async function getSavedAlbums(
   return { items: data.items, total: data.total };
 }
 
+const MAX_SAVED_PAGES = 40;
+
+/**
+ * When each of the given albums was saved to the user's Spotify library
+ * (ISO timestamps, from GET /me/albums). Pages newest-first and stops once
+ * every id is found, or after 2,000 saved albums. Albums not found aren't
+ * in the library (or were saved before that point) and are left out.
+ */
+export async function getSavedDates(userId: number, albumIds: string[]): Promise<Map<string, string>> {
+  const wanted = new Set(albumIds);
+  const found = new Map<string, string>();
+  for (let page = 0; page < MAX_SAVED_PAGES && found.size < wanted.size; page++) {
+    const { items, total } = await getSavedAlbums(userId, 50, page * 50);
+    for (const saved of items) {
+      if (saved.album?.id && wanted.has(saved.album.id)) found.set(saved.album.id, saved.added_at);
+    }
+    if (items.length === 0 || (page + 1) * 50 >= total) break;
+  }
+  return found;
+}
+
 export async function getUserPlaylists(
   userId: number,
   limit = 50,
@@ -294,10 +332,6 @@ export function getBestImageUrl(images: SpotifyAlbum["images"] | null | undefine
 // Spotify deprecated /audio-features for apps created after Nov 2024.
 // Artist genres are still available and work well for context-based filtering.
 
-interface SpotifyAlbumDetail {
-  artists: { id: string }[];
-}
-
 interface SpotifyArtistDetail {
   id: string;
   genres: string[];
@@ -355,18 +389,13 @@ export async function getAlbumFull(
   return (await res.json()) as SpotifyAlbum & { artists: { id: string; name: string }[] };
 }
 
-export async function fetchAlbumMeta(
-  albumId: string
-): Promise<{ genres: string[]; release_date: string | null; total_tracks: number | null }> {
-  // Single album fetch gives us artist IDs (for genres), the release date, and track count.
-  const albumRes = await spotifyPublicFetch(`/albums/${albumId}?fields=artists(id),release_date,total_tracks`);
-  if (!albumRes.ok) throw new Error(`Failed to fetch album: ${albumRes.status}`);
-  const albumData = (await albumRes.json()) as SpotifyAlbumDetail & { release_date?: string; total_tracks?: number };
-  const release_date = albumData.release_date ?? null;
-  const total_tracks = typeof albumData.total_tracks === "number" ? albumData.total_tracks : null;
+/** Artist genres plus the album's own facts (see albumFacts), for adding one album. */
+export async function fetchAlbumMeta(albumId: string): Promise<Record<string, unknown>> {
+  const album = await getAlbumFull(albumId);
+  const meta = albumFacts(album);
 
-  const artistIds = albumData.artists.map((a) => a.id).filter(Boolean);
-  if (artistIds.length === 0) return { genres: [], release_date, total_tracks };
+  const artistIds = (album.artists as { id: string }[]).map((a) => a.id).filter(Boolean);
+  if (artistIds.length === 0) return meta;
 
   const params = new URLSearchParams({ ids: artistIds.slice(0, 50).join(",") });
   const artistRes = await spotifyPublicFetch(`/artists?${params}`);
@@ -377,7 +406,8 @@ export async function fetchAlbumMeta(
   for (const artist of artistData.artists ?? []) {
     for (const g of artist.genres ?? []) genres.add(g);
   }
-  return { genres: Array.from(genres), release_date, total_tracks };
+  if (genres.size > 0) meta.genres = Array.from(genres);
+  return meta;
 }
 
 export interface SpotifyDevice {

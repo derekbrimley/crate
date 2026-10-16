@@ -9,9 +9,9 @@ import AdvancedFilters from "../components/library/AdvancedFilters";
 import DuplicatesPanel from "../components/library/DuplicatesPanel";
 import CoveragePanel from "../components/library/CoveragePanel";
 import { findUncovered } from "../lib/coverage";
-import { applyFilters, getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
+import { applyFilters, getItemGenres, isMissingMetadata, ruleIsComplete, type FilterRule } from "../lib/filters";
 import { everythingRule } from "../../lib/crates";
-import { backfillReleaseDates } from "../services/api";
+import { backfillMetadata } from "../services/api";
 import { CrateEditorModal, makeEmptyCrate } from "../components/CrateEditorModal";
 import { ProfileButton, SearchButton } from "../components/PageHeader";
 
@@ -101,10 +101,7 @@ export function Lists({ onLogout }: ListsProps) {
 
   useEffect(() => {
     if (!listsLoaded) return;
-    const hasMissing = [...favorites, ...recommendations].some((i) => {
-      const m = (typeof i.metadata === "string" ? null : i.metadata) as Record<string, unknown> | null;
-      return !m || !m.release_date || m.total_tracks === undefined;
-    });
+    const hasMissing = [...favorites, ...recommendations].some(isMissingMetadata);
     if (!hasMissing) return;
     // Gate: run at most once per browser session
     try {
@@ -118,7 +115,7 @@ export function Lists({ onLogout }: ListsProps) {
         sessionStorage.setItem("crate_backfill_done", "1");
       }
     } catch {}
-    backfillReleaseDates()
+    backfillMetadata()
       .then((r) => {
         if (!cancelled && r.updated > 0) loadLists();
       })

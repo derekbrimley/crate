@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthenticatedUser } from "../../lib/auth";
 import { bulkAddItems } from "../../lib/queries";
-import { getAlbumsBatch } from "../../lib/spotify";
+import { albumFacts, getAlbumsBatch, getSavedDates } from "../../lib/spotify";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -26,28 +26,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid list_type" });
   }
 
-  // Best-effort: fetch release dates + track counts from Spotify (20 ids per request)
-  const releaseDates = new Map<string, string>();
-  const trackCounts = new Map<string, number>();
+  // Best-effort: fetch each album's facts from Spotify (20 ids per request)
+  // and when it was saved to the user's Spotify library.
+  const facts = new Map<string, Record<string, unknown>>();
+  let savedDates: Map<string, string> | null = null;
   try {
     for (let i = 0; i < albums.length; i += 20) {
       const chunk = albums.slice(i, i + 20).map((a) => a.spotify_id);
-      const fetched = await getAlbumsBatch(chunk);
-      for (const alb of fetched) {
-        if (alb?.id && alb.release_date) releaseDates.set(alb.id, alb.release_date);
-        if (alb?.id && typeof alb.total_tracks === "number") trackCounts.set(alb.id, alb.total_tracks);
+      for (const alb of await getAlbumsBatch(chunk)) {
+        if (alb?.id) facts.set(alb.id, albumFacts(alb));
       }
     }
   } catch (err) {
     console.warn("Bulk import: Spotify fetch failed, albums added without metadata", err);
   }
+  try {
+    savedDates = await getSavedDates(user.id, albums.map((a) => a.spotify_id));
+  } catch (err) {
+    console.warn("Bulk import: Spotify library fetch failed, save dates left for the backfill", err);
+  }
 
   const rows = albums.map((a) => {
-    const rd = releaseDates.get(a.spotify_id);
-    const tc = trackCounts.get(a.spotify_id);
-    const metadata: Record<string, unknown> = {};
-    if (rd) metadata.release_date = rd;
-    if (typeof tc === "number") metadata.total_tracks = tc;
+    const metadata: Record<string, unknown> = { ...facts.get(a.spotify_id) };
+    // null: looked for and not in the Spotify library, so the backfill skips it.
+    if (savedDates) metadata.saved_at = savedDates.get(a.spotify_id) ?? null;
     return {
       title: a.title,
       creator: a.artist,

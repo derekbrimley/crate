@@ -3,7 +3,7 @@ import AdvancedFilters from "./library/AdvancedFilters";
 import { SwitchTrack } from "./SwitchTrack";
 import { VinylDisc } from "./VinylDisc";
 import { useDataCache } from "../contexts/DataCache";
-import { cratePool, makeEmptyCrate, everythingRule } from "../../lib/crates";
+import { cratePool, makeEmptyCrate, everythingRule, forgottenFavoritesRules } from "../../lib/crates";
 import { getItemGenres, ruleIsComplete, type FilterRule } from "../lib/filters";
 import { isPlaylist } from "../lib/media";
 import type { CrateDefinition, Item } from "../types";
@@ -141,6 +141,20 @@ export function CrateEditorModal({ initial, onSave, onDelete, onClose }: CrateEd
                   style={{ background: "transparent", border: "none", padding: 0, color: "rgb(var(--c-accent))", fontSize: 13, textDecoration: "underline" }}
                 >
                   Include everything
+                </button>
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRules(forgottenFavoritesRules());
+                    setMatchMode("AND");
+                    setIncludeRecs(false);
+                    if (!name.trim()) setName("Forgotten Favorites");
+                  }}
+                  className="font-mono cursor-pointer"
+                  style={{ background: "transparent", border: "none", padding: 0, color: "rgb(var(--c-accent))", fontSize: 13, textDecoration: "underline" }}
+                >
+                  Forgotten favorites
                 </button>
               </p>
             )}

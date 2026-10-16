@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FIELD_DEFS, makeRuleId, MULTI_SEP } from "../../lib/filters";
+import { FIELD_DEFS, makeRuleId, MULTI_SEP, TYPE_OPTIONS } from "../../lib/filters";
 import type { FilterRule, FieldKey } from "../../lib/filters";
 import { GenrePicker } from "../GenrePicker";
 
@@ -167,6 +167,18 @@ export default function AdvancedFilters({
                       <option value="">—</option>
                       <option value="favorite">Favorite</option>
                       <option value="recommendation">Recommendation</option>
+                    </select>
+                  ) : def.valueType === "type" ? (
+                    <select
+                      value={rule.value}
+                      onChange={(e) => updateRule(rule.id, { value: e.target.value })}
+                      style={sel}
+                      className="font-mono cursor-pointer"
+                    >
+                      <option value="">—</option>
+                      {TYPE_OPTIONS.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
                     </select>
                   ) : def.valueType === "genre" ? (
                     <input

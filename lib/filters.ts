@@ -1,6 +1,7 @@
 import type { Item } from "./types";
 
-export type FieldKey = "all" | "year" | "genre" | "artist" | "list" | "plays" | "last_played";
+export type FieldKey =
+  | "all" | "year" | "genre" | "artist" | "type" | "explicit" | "list" | "plays" | "last_played" | "saved";
 
 export interface FilterRule {
   id: string;
@@ -22,7 +23,7 @@ export const MULTI_SEP = "|";
 interface FieldDef {
   label: string;
   operators: { key: string; label: string }[];
-  valueType: "number" | "text" | "genre" | "list";
+  valueType: "number" | "text" | "genre" | "list" | "type";
   needsValue2?: (op: string) => boolean;
   // Operators that need no value at all (e.g. "never played").
   needsValue?: (op: string) => boolean;
@@ -66,6 +67,27 @@ export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
     ],
     valueType: "text",
   },
+  // Spotify's album_type ("album", "single" or "compilation"), or "playlist".
+  // Records with no stored type never match "is" and always match "is not".
+  type: {
+    label: "Type",
+    operators: [
+      { key: "is", label: "is" },
+      { key: "is_not", label: "is not" },
+    ],
+    valueType: "type",
+  },
+  // Whether any track is marked explicit. Records with no stored answer
+  // (playlists, or albums not yet backfilled) match neither operator.
+  explicit: {
+    label: "Explicit",
+    operators: [
+      { key: "no", label: "no (clean)" },
+      { key: "yes", label: "yes" },
+    ],
+    valueType: "text",
+    needsValue: () => false,
+  },
   list: {
     label: "List",
     operators: [{ key: "is", label: "is" }],
@@ -90,7 +112,24 @@ export const FIELD_DEFS: Record<FieldKey, FieldDef> = {
     valueType: "number",
     needsValue: (op) => op !== "never",
   },
+  // When it entered your collection: saved to your Spotify library, or added
+  // to Crate, whichever came first.
+  saved: {
+    label: "Saved",
+    operators: [
+      { key: "more_than_days_ago", label: "more than (days) ago" },
+      { key: "within_days", label: "within (days)" },
+    ],
+    valueType: "number",
+  },
 };
+
+export const TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "album", label: "Album" },
+  { value: "compilation", label: "Compilation" },
+  { value: "single", label: "Single / EP" },
+  { value: "playlist", label: "Playlist" },
+];
 
 function parseMeta(item: Item): Record<string, unknown> {
   const m = item.metadata;
@@ -115,6 +154,34 @@ export function getItemYear(item: Item): number | null {
 export function getItemGenres(item: Item): string[] {
   const g = parseMeta(item).genres;
   return Array.isArray(g) ? (g as string[]) : [];
+}
+
+export function getItemType(item: Item): string | null {
+  if (item.media_type === "playlist") return "playlist";
+  const t = parseMeta(item).album_type;
+  return typeof t === "string" ? t : null;
+}
+
+export function getItemExplicit(item: Item): boolean | null {
+  const e = parseMeta(item).explicit;
+  return typeof e === "boolean" ? e : null;
+}
+
+/** Unix seconds: the Spotify save date or the Crate add date, whichever is earlier. */
+export function getItemSavedTs(item: Item): number {
+  const savedAt = parseMeta(item).saved_at;
+  const spotifyTs = typeof savedAt === "string" ? Date.parse(savedAt) / 1000 : NaN;
+  return Number.isFinite(spotifyTs) ? Math.min(spotifyTs, item.added_at) : item.added_at;
+}
+
+/** Album facts the backfill fills in. Each is null once looked for and not found. */
+export const BACKFILL_KEYS = ["release_date", "total_tracks", "album_type", "explicit", "saved_at"] as const;
+
+/** An album the backfill hasn't looked up every fact for yet. */
+export function isMissingMetadata(item: Item): boolean {
+  if (item.media_type === "playlist") return false;
+  const m = parseMeta(item);
+  return BACKFILL_KEYS.some((k) => m[k] === undefined);
 }
 
 export function makeRuleId(seed: number): string {
@@ -170,6 +237,15 @@ function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>
       const target = rule.value.toLowerCase();
       return rule.operator === "contains" ? a.includes(target) : a === target;
     }
+    case "type": {
+      const has = getItemType(item) === rule.value;
+      return rule.operator === "is_not" ? !has : has;
+    }
+    case "explicit": {
+      const explicit = getItemExplicit(item);
+      if (explicit === null) return false;
+      return rule.operator === "yes" ? explicit : !explicit;
+    }
     case "list":
       return item.list_type === rule.value;
     case "plays": {
@@ -190,6 +266,14 @@ function evaluate(item: Item, rule: FilterRule, pickStats: Map<number, PickStat>
       const days = parseInt(rule.value, 10);
       if (Number.isNaN(days)) return false;
       const daysSince = (Date.now() / 1000 - lastTs) / 86400;
+      if (rule.operator === "more_than_days_ago") return daysSince > days;
+      if (rule.operator === "within_days") return daysSince <= days;
+      return false;
+    }
+    case "saved": {
+      const days = parseInt(rule.value, 10);
+      if (Number.isNaN(days)) return false;
+      const daysSince = (Date.now() / 1000 - getItemSavedTs(item)) / 86400;
       if (rule.operator === "more_than_days_ago") return daysSince > days;
       if (rule.operator === "within_days") return daysSince <= days;
       return false;

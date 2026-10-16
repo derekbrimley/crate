@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyFilters, getItemYear, getItemGenres, FIELD_DEFS } from "./filters";
+import { applyFilters, getItemYear, getItemGenres, getItemSavedTs, isMissingMetadata, FIELD_DEFS } from "./filters";
 import type { Item } from "../types";
 
 function item(over: Partial<Item>): Item {
@@ -126,5 +126,83 @@ describe("FIELD_DEFS", () => {
   it("between needs value2 only for year between", () => {
     expect(FIELD_DEFS.year.needsValue2?.("between")).toBe(true);
     expect(FIELD_DEFS.year.needsValue2?.("is")).toBe(false);
+  });
+});
+
+describe("type filter", () => {
+  const items = [
+    item({ id: 1, metadata: { album_type: "album" } }),
+    item({ id: 2, metadata: { album_type: "compilation" } }),
+    item({ id: 3, media_type: "playlist" }),
+    item({ id: 4 }),
+  ];
+  const run = (operator: string, value: string) =>
+    applyFilters(items, [{ id: "r", field: "type", operator, value }], "AND", NO_STATS).map((i) => i.id);
+
+  it("matches the stored album_type, and playlists as playlist", () => {
+    expect(run("is", "compilation")).toEqual([2]);
+    expect(run("is", "playlist")).toEqual([3]);
+  });
+
+  it("is not keeps records with no stored type", () => {
+    expect(run("is_not", "compilation")).toEqual([1, 3, 4]);
+  });
+});
+
+describe("explicit filter", () => {
+  const items = [
+    item({ id: 1, metadata: { explicit: true } }),
+    item({ id: 2, metadata: { explicit: false } }),
+    item({ id: 3 }),
+  ];
+  const run = (operator: string) =>
+    applyFilters(items, [{ id: "r", field: "explicit", operator, value: "" }], "AND", NO_STATS).map((i) => i.id);
+
+  it("needs no value and leaves out records with no answer", () => {
+    expect(run("yes")).toEqual([1]);
+    expect(run("no")).toEqual([2]);
+  });
+});
+
+describe("saved filter", () => {
+  const now = Date.now() / 1000;
+  const day = 86400;
+  const iso = (ts: number) => new Date(ts * 1000).toISOString();
+
+  it("uses the earlier of the Spotify save date and the Crate add date", () => {
+    const saved = now - 400 * day;
+    expect(getItemSavedTs(item({ added_at: now, metadata: { saved_at: iso(saved) } }))).toBeCloseTo(saved, 0);
+    expect(getItemSavedTs(item({ added_at: now - 10 * day, metadata: { saved_at: iso(now) } }))).toBe(now - 10 * day);
+    expect(getItemSavedTs(item({ added_at: 123, metadata: { saved_at: null } }))).toBe(123);
+  });
+
+  it("finds forgotten favorites alongside last played", () => {
+    const items = [
+      item({ id: 1, added_at: now, metadata: { saved_at: iso(now - 500 * day) } }),
+      item({ id: 2, added_at: now - 500 * day }),
+      item({ id: 3, added_at: now - 20 * day }),
+    ];
+    const stats = new Map([[2, { pickCount: 1, lastPickedTs: now - 5 * day }]]);
+    const ids = applyFilters(
+      items,
+      [
+        { id: "a", field: "saved", operator: "more_than_days_ago", value: "365" },
+        { id: "b", field: "last_played", operator: "more_than_days_ago", value: "180" },
+      ],
+      "AND",
+      stats
+    ).map((i) => i.id);
+    expect(ids).toEqual([1]);
+  });
+});
+
+describe("isMissingMetadata", () => {
+  const full = { release_date: "1999", total_tracks: 10, album_type: "album", explicit: false, saved_at: null };
+
+  it("counts null as looked up, and skips playlists", () => {
+    expect(isMissingMetadata(item({ metadata: full }))).toBe(false);
+    expect(isMissingMetadata(item({ metadata: { ...full, saved_at: undefined } }))).toBe(true);
+    expect(isMissingMetadata(item({ metadata: null }))).toBe(true);
+    expect(isMissingMetadata(item({ media_type: "playlist" }))).toBe(false);
   });
 });
