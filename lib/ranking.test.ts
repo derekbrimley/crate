@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rankPool, DISCOVER_WEIGHTING } from "./ranking";
+import { rankPool, sortPool, DISCOVER_WEIGHTING } from "./ranking";
 import { DEFAULT_WEIGHTING } from "./crates";
 import type { Item, LastPickInfo } from "./types";
 
@@ -48,5 +48,41 @@ describe("rankPool", () => {
     }
     // Weights are 16 vs 6, so the never-played item leads well over half the time.
     expect(neverPlayedFirst).toBeGreaterThan(240);
+  });
+});
+
+describe("sortPool", () => {
+  const named = (id: number, creator: string, added_at: number): Item => ({ ...item(id), creator, added_at });
+  // 1 never played (added first), 2 never played (added later), 3 played 100
+  // days ago once, 4 played 10 days ago 5 times, 5 played today (cooldown).
+  const pool = [named(4, "D", 40), named(2, "B", 20), named(5, "E", 50), named(3, "C", 30), named(1, "A", 10)];
+  const picks: LastPickInfo[] = [
+    { item_id: 3, picked_at: daysAgo(100), pick_count: 1 },
+    { item_id: 4, picked_at: daysAgo(10), pick_count: 5 },
+    { item_id: 5, picked_at: daysAgo(0.1), pick_count: 2 },
+  ];
+  const ids = (sort: Parameters<typeof sortPool>[2]) => {
+    const { ranked, resting } = sortPool(pool, picks, sort, DEFAULT_WEIGHTING);
+    return { ranked: ranked.map((i) => i.id), resting: resting.map((i) => i.id) };
+  };
+
+  it("longest unplayed: never played (earliest added first), then least recently played", () => {
+    expect(ids("unplayed")).toEqual({ ranked: [1, 2, 3, 4], resting: [5] });
+  });
+
+  it("fewest and most plays", () => {
+    expect(ids("least_played").ranked).toEqual([1, 2, 3, 4]);
+    expect(ids("most_played").ranked).toEqual([4, 3, 1, 2]);
+  });
+
+  it("recently added and artist", () => {
+    expect(ids("added").ranked).toEqual([4, 3, 2, 1]);
+    expect(ids("artist").ranked).toEqual([1, 2, 3, 4]);
+  });
+
+  it("shuffle keeps every item once, with the same cooldown split", () => {
+    const { ranked, resting } = ids("shuffle");
+    expect([...ranked].sort()).toEqual([1, 2, 3, 4]);
+    expect(resting).toEqual([5]);
   });
 });

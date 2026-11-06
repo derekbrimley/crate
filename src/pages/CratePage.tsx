@@ -7,9 +7,11 @@ import { CoverGrid, GridHeading } from "../components/CoverGrid";
 import { SuggestionsSection, SuggestionsRail } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { CrateEditorModal } from "../components/CrateEditorModal";
+import { SortMenu, sortLabel } from "../components/SortMenu";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
 import { cratePool, DEFAULT_WEIGHTING } from "../../lib/crates";
+import type { CrateSort } from "../../lib/ranking";
 import type { CrateDefinition, Item } from "../types";
 
 interface CratePageProps {
@@ -17,9 +19,9 @@ interface CratePageProps {
 }
 
 /**
- * One crate's whole contents: playable records in weighted-random order, then
- * the ones played too recently, faded. The order holds for the session until
- * reshuffled.
+ * One crate's whole contents in the crate's chosen sort (longest unplayed by
+ * default): playable records, then the ones played too recently, faded. A
+ * shuffled order holds for the session until reshuffled.
  */
 export function CratePage({ onLogout }: CratePageProps) {
   const { id = "" } = useParams();
@@ -27,13 +29,30 @@ export function CratePage({ onLogout }: CratePageProps) {
   const { crateDefs, saveCrateDefs, allItems, pickStats, ready, setRankOrder } = useLibraryData();
   const [selected, setSelected] = useState<Item | null>(null);
   const [editing, setEditing] = useState<CrateDefinition | null>(null);
+  // The sort just picked, shown while it saves.
+  const [pendingSort, setPendingSort] = useState<CrateSort | null>(null);
 
   const crate = crateDefs.find((c) => c.id === id) ?? null;
   const pool = useMemo(
     () => (ready && crate ? cratePool(crate, allItems, pickStats) : null),
     [ready, crate, allItems, pickStats]
   );
-  const { ranked, resting, reshuffle } = useRankedPool(`crate:${id}`, pool, DEFAULT_WEIGHTING);
+  const sort = pendingSort ?? crate?.sort ?? "unplayed";
+  const { ranked, resting, reshuffle } = useRankedPool(`crate:${id}`, pool, DEFAULT_WEIGHTING, sort);
+
+  const handleSort = async (next: CrateSort) => {
+    if (!crate) return;
+    setPendingSort(next);
+    // Switching to shuffle should deal a fresh order, not one from earlier.
+    if (next === "shuffle") setRankOrder(`crate:${crate.id}`, undefined);
+    try {
+      await saveCrateDefs(crateDefs.map((c) => (c.id === crate.id ? { ...c, sort: next } : c)));
+    } catch (err) {
+      console.error("Failed to save sort:", err);
+    } finally {
+      setPendingSort(null);
+    }
+  };
 
   const handleSave = async (next: CrateDefinition) => {
     // New filters deserve a fresh order, not the old one with additions tacked on.
@@ -57,11 +76,7 @@ export function CratePage({ onLogout }: CratePageProps) {
         actions={
           crate && (
             <>
-              <HeaderAction onClick={reshuffle} title="Reshuffle" disabled={!pool}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-                </svg>
-              </HeaderAction>
+              <SortMenu value={sort} onChange={handleSort} onReshuffle={reshuffle} disabled={!pool} />
               <HeaderAction onClick={() => setEditing(crate)} title="Edit crate">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -95,7 +110,7 @@ export function CratePage({ onLogout }: CratePageProps) {
             <div className="flex-1 min-w-0">
               {ranked.length > 0 && (
                 <>
-                  <GridHeading label="UP NEXT" count={ranked.length} />
+                  <GridHeading label={`UP NEXT · ${sortLabel(sort).toUpperCase()}`} count={ranked.length} />
                   <CoverGrid items={ranked} onSelect={setSelected} />
                 </>
               )}

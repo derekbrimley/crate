@@ -84,7 +84,7 @@ function CrateCard({ crate, items, pickStats, onOpen }: {
 }) {
   const pool = useMemo(() => cratePool(crate, items, pickStats), [crate, items, pickStats]);
   // Shares the crate page's order, so the covers here are the ones it opens with.
-  const { ranked, resting } = useRankedPool(`crate:${crate.id}`, pool, DEFAULT_WEIGHTING);
+  const { ranked, resting } = useRankedPool(`crate:${crate.id}`, pool, DEFAULT_WEIGHTING, crate.sort);
   // A crate with nothing of its own (e.g. Surprise Me) borrows Claude's latest
   // picks for its cover, when this session has fetched them.
   const { getCachedSuggestions } = useDataCache();
