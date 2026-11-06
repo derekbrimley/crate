@@ -1,6 +1,6 @@
 import { cratePool, DEFAULT_WEIGHTING, normalizeCrates, type CrateDefinition } from "./crates";
 import type { PickStat } from "./filters";
-import { rankPool } from "./ranking";
+import { sortPool } from "./ranking";
 import type { Item, LastPickInfo } from "./types";
 
 export interface Shelf {
@@ -14,8 +14,8 @@ export const MAX_SHELF_SIZE = 24;
 
 /**
  * Every crate as a short shelf of picks, for devices that can't rank on their
- * own (the kitchen dashboard). Same pool and the same weighted-random order the
- * crate page shows, cut to `size`; if too few records are playable right now,
+ * own (the kitchen dashboard). Same pool and the same sort the crate page
+ * uses, cut to `size`; if too few records are playable right now,
  * resting ones fill the rest, least recently played first.
  */
 export function buildShelves(
@@ -33,7 +33,7 @@ export function buildShelves(
     .filter((c) => c.name.trim())
     .map((c) => {
       const pool = cratePool(c, items, stats);
-      const { ranked, resting } = rankPool(pool, picks, DEFAULT_WEIGHTING);
+      const { ranked, resting } = sortPool(pool, picks, c.sort, DEFAULT_WEIGHTING);
       return { id: c.id, name: c.name, items: [...ranked, ...resting].slice(0, n) };
     });
 }

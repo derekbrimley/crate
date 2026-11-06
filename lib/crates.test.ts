@@ -106,6 +106,7 @@ describe("normalizeCrates", () => {
       id: "fav", name: "Favorites", position: 0,
       filters: { rules: [everythingRule()], matchMode: "AND" },
       include_recommendations: false, include_ids: [], exclude_ids: [], ai_suggestions: false,
+      sort: "unplayed",
     });
     expect(crates[2].include_recommendations).toBe(true);
     expect(crates[2].position).toBe(2);
@@ -130,6 +131,16 @@ describe("normalizeCrates", () => {
     const again = normalizeCrates(shuffled);
     expect(again.changed).toBe(false);
     expect(again.crates).toEqual(current);
+  });
+
+  it("keeps a valid sort and replaces a missing or unknown one", () => {
+    const [current] = normalizeCrates(old).crates;
+    expect(normalizeCrates([{ ...current, sort: "most_played" }]).crates[0].sort).toBe("most_played");
+    expect(normalizeCrates([{ ...current, sort: "bogus" }]).crates[0].sort).toBe("unplayed");
+    const { sort: _drop, ...noSort } = current;
+    const { crates, changed } = normalizeCrates([noSort]);
+    expect(crates[0].sort).toBe("unplayed");
+    expect(changed).toBe(true);
   });
 
   it("keeps a recommendations-only crate that has hand-picked items", () => {

@@ -1,5 +1,6 @@
 import { applyFilters, ruleIsComplete, MULTI_SEP, type FilterRule, type PickStat } from "./filters";
 import type { SelectionConfig } from "./selection";
+import { DEFAULT_CRATE_SORT, isCrateSort, type CrateSort } from "./ranking";
 import type { Item } from "./types";
 
 export type Weighting = SelectionConfig;
@@ -28,6 +29,8 @@ export interface CrateDefinition {
   exclude_ids: number[];
   /** Show Claude's suggestions for new albums that fit the crate. */
   ai_suggestions: boolean;
+  /** How the crate page (and its kitchen-dashboard shelf) orders records. */
+  sort: CrateSort;
 }
 
 /** The one weighting every crate is ranked with. */
@@ -109,6 +112,7 @@ export function makeEmptyCrate(position: number): CrateDefinition {
     include_ids: [],
     exclude_ids: [],
     ai_suggestions: false,
+    sort: DEFAULT_CRATE_SORT,
   };
 }
 
@@ -198,6 +202,7 @@ export function normalizeCrates(raw: unknown): { crates: CrateDefinition[]; chan
       exclude_ids: numberArray(c.exclude_ids),
       ai_suggestions:
         typeof c.ai_suggestions === "boolean" ? c.ai_suggestions : strategy === "ai_new" || strategy === "hybrid",
+      sort: isCrateSort(c.sort) ? c.sort : DEFAULT_CRATE_SORT,
     });
   }
 
