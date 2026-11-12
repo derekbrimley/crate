@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
 import { getCrateMeta, getAlbums, getHistory, saveCrates, updateConfig } from "../services/api";
 import type { Item, PickHistoryEntry, PickStat, CrateDefinition } from "../types";
+import { DEFAULT_CRATE_SORT, isCrateSort, type CrateSort } from "../../lib/ranking";
 
 /** A frozen browse order: item ids, playable first, then resting (in cooldown). */
 export interface RankOrder {
@@ -33,6 +34,10 @@ interface DataCacheState {
   discoverSuggestions: boolean;
   setDiscoverSuggestions: (on: boolean) => Promise<void>;
 
+  // Discover's sort, stored in user config (crates keep theirs on the crate).
+  discoverSort: CrateSort;
+  setDiscoverSort: (sort: CrateSort) => Promise<void>;
+
   // Lists
   favorites: Item[];
   recommendations: Item[];
@@ -63,6 +68,8 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
   const rankOrders = useRef(new Map<string, RankOrder>());
   const suggestionCache = useRef(new Map<string, Item[]>());
   const [discoverSuggestions, setDiscoverSuggestionsState] = useState(false);
+  const [discoverSort, setDiscoverSortState] = useState<CrateSort>(DEFAULT_CRATE_SORT);
+  const savedDiscoverSort = useRef<CrateSort>(DEFAULT_CRATE_SORT);
 
   // Lists state
   const [favorites, setFavorites] = useState<Item[]>([]);
@@ -87,6 +94,9 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
       if (result._config) {
         setCrateDefs(sortByPosition(result._config.crates));
         setDiscoverSuggestionsState(result._config.discover_ai_suggestions === true);
+        const sort = result._config.discover_sort;
+        savedDiscoverSort.current = isCrateSort(sort) ? sort : DEFAULT_CRATE_SORT;
+        setDiscoverSortState(savedDiscoverSort.current);
       }
       if (result._picks) setPickInfos(result._picks);
       setCrateMetaLoaded(true);
@@ -119,6 +129,17 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       setDiscoverSuggestionsState(!on);
       console.error("Failed to save Discover setting:", err);
+    }
+  }, []);
+
+  const setDiscoverSort = useCallback(async (sort: CrateSort) => {
+    setDiscoverSortState(sort); // optimistic
+    try {
+      await updateConfig({ discover_sort: sort });
+      savedDiscoverSort.current = sort;
+    } catch (err) {
+      setDiscoverSortState(savedDiscoverSort.current);
+      console.error("Failed to save Discover sort:", err);
     }
   }, []);
 
@@ -159,6 +180,8 @@ export function DataCacheProvider({ children }: { children: React.ReactNode }) {
         setCachedSuggestions,
         discoverSuggestions,
         setDiscoverSuggestions,
+        discoverSort,
+        setDiscoverSort,
         favorites,
         recommendations,
         listsLoaded,

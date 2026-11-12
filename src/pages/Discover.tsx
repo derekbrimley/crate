@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Layout } from "../components/Layout";
-import { PageHeader, HeaderAction } from "../components/PageHeader";
+import { PageHeader } from "../components/PageHeader";
+import { SortMenu, sortLabel } from "../components/SortMenu";
 import { VinylDisc } from "../components/VinylDisc";
 import { CoverGrid, GridHeading } from "../components/CoverGrid";
 import { SwitchTrack } from "../components/SwitchTrack";
@@ -8,7 +9,7 @@ import { SuggestionsSection } from "../components/SuggestionsSection";
 import { ItemSheet } from "../components/ItemSheet";
 import { useLibraryData } from "../hooks/useLibraryData";
 import { useRankedPool } from "../hooks/useRankedPool";
-import { DISCOVER_WEIGHTING } from "../../lib/ranking";
+import { DISCOVER_WEIGHTING, type CrateSort } from "../../lib/ranking";
 import { getPendingRecommendations, actOnRecommendation } from "../services/api";
 import type { FriendRecommendation, Item } from "../types";
 
@@ -38,9 +39,15 @@ function friendRecToItem(rec: FriendRecommendation): Item {
   };
 }
 
-/** Recommendations, weighted hard toward what you haven't heard; friend recs on top. */
+/**
+ * Recommendations in the chosen sort (longest unplayed by default; shuffle is
+ * weighted hard toward what you haven't heard); friend recs on top.
+ */
 export function Discover({ onLogout }: DiscoverProps) {
-  const { recommendations, ready, loadLists, discoverSuggestions, setDiscoverSuggestions } = useLibraryData();
+  const {
+    recommendations, ready, loadLists, discoverSuggestions, setDiscoverSuggestions,
+    discoverSort, setDiscoverSort, setRankOrder,
+  } = useLibraryData();
   const [selected, setSelected] = useState<{ item: Item; fromFriend: boolean } | null>(null);
   const [friendRecs, setFriendRecs] = useState<Item[]>([]);
 
@@ -52,7 +59,15 @@ export function Discover({ onLogout }: DiscoverProps) {
 
   useEffect(() => { loadFriendRecs(); }, [loadFriendRecs]);
 
-  const { ranked, resting, reshuffle } = useRankedPool("discover", ready ? recommendations : null, DISCOVER_WEIGHTING);
+  const { ranked, resting, reshuffle } = useRankedPool(
+    "discover", ready ? recommendations : null, DISCOVER_WEIGHTING, discoverSort
+  );
+
+  const handleSort = (next: CrateSort) => {
+    // Switching to shuffle should deal a fresh order, not one from earlier.
+    if (next === "shuffle") setRankOrder("discover", undefined);
+    void setDiscoverSort(next);
+  };
 
   // Accepting files the album under favorites server-side, so the lists reload.
   const handleAccept = async (item: Item) => {
@@ -88,11 +103,7 @@ export function Discover({ onLogout }: DiscoverProps) {
         backTo="/"
         onLogout={onLogout}
         actions={
-          <HeaderAction onClick={reshuffle} title="Reshuffle" disabled={!ready}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-            </svg>
-          </HeaderAction>
+          <SortMenu value={discoverSort} onChange={handleSort} onReshuffle={reshuffle} disabled={!ready} />
         }
       />
 
@@ -136,7 +147,7 @@ export function Discover({ onLogout }: DiscoverProps) {
           <>
             {ranked.length > 0 && (
               <>
-                <GridHeading label="UP NEXT" count={ranked.length} />
+                <GridHeading label={`UP NEXT · ${sortLabel(discoverSort).toUpperCase()}`} count={ranked.length} />
                 <CoverGrid items={ranked} onSelect={(item) => setSelected({ item, fromFriend: false })} />
               </>
             )}
