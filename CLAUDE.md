@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is s?
 
-Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums and playlists (favorites + recommendations), and pick what to play from **crates** (user-defined sets: library filters plus records added or left out by hand), **search**, or **Discover** (recommendations, least-heard first). Crate and Discover pages list everything — crates in a per-crate sort (longest unplayed by default; also fewest/most plays, recently added, artist, or a weighted-random shuffle), Discover in weighted-random order — and can show Claude's suggestions for new albums (a per-crate toggle, and one on Discover). The redesign plan and its remaining steps are in `docs/superpowers/specs/2026-10-08-redesign-design.md`.
+Crates is an intentional album picker web app. Users authenticate via Spotify OAuth (through Supabase), curate a library of albums and playlists (favorites + recommendations), and pick what to play from **crates** (user-defined sets: library filters plus records added or left out by hand), **search**, or **Discover** (recommendations, least-heard first). Crate and Discover pages list everything — each in its own sort (longest unplayed by default; also fewest/most plays, recently added, artist, or a weighted-random shuffle) — and can show Claude's suggestions for new albums (a per-crate toggle, and one on Discover). The redesign plan and its remaining steps are in `docs/superpowers/specs/2026-10-08-redesign-design.md`.
 
 ## Development Commands
 
@@ -26,7 +26,7 @@ Single Vercel project: React client (static) + serverless API functions in `api/
 - `useAuth` hook manages Supabase session state, calls `POST /api/auth/sync` after Spotify OAuth
 - `services/api.ts` attaches `Authorization: Bearer <token>` to every request (token from Supabase session)
 - Pages: Home (`/`: Crates / Search / Discover tiles), CratesIndex (`/crates`), CratePage (`/crates/:id`), Discover (`/discover`), Search (`/search?q=`: library matches, then Spotify albums / artists / your playlists; a 🔍 button in every page header opens it), AddAlbums (`/import`: bulk import from your Spotify library and playlists; `/add` redirects to `/search`), Lists (`/library`), History, Login
-- Crate and Discover pages show the **whole** pool, ranked on the client (`lib/ranking.ts` → `useRankedPool`): playable items first, then items still in cooldown ("Recently played"). Each crate has a `sort` (`CrateSort`, picked from the sort menu in the crate header): plain sorts are recomputed from play stats on each visit; `shuffle` (and Discover) is weighted-random, frozen per page in `DataCache` for the session until reshuffled.
+- Crate and Discover pages show the **whole** pool, ranked on the client (`lib/ranking.ts` → `useRankedPool`): playable items first, then items still in cooldown ("Recently played"). Each crate has a `sort` (`CrateSort`, picked from the sort menu in the crate header): Discover's is the `discover_sort` config key. Plain sorts are recomputed from play stats on each visit; `shuffle` is weighted-random (Discover with `DISCOVER_WEIGHTING`), frozen per page in `DataCache` for the session until reshuffled.
 
 ### API (`api/`)
 - Vercel serverless functions — each file exports a default `handler(req, res)`
